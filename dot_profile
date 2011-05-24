@@ -1,0 +1,215 @@
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+#determine OS type
+OS='unknown'
+unamestr=`uname`
+if [[ "$unamestr" == 'Linux' ]]; then
+   OS='linux'
+elif [[ "$unamestr" == 'Darwin' ]]; then
+   OS='darwin'
+elif [[ ${unamestr:0:6} == 'CYGWIN' ]]; then
+   OS='cygwin'
+fi
+
+#sytem variables
+export PATH=/usr/local/bin:$PATH:$HOME/bin:/Users/zwickl/Desktop/GarliDEV/ncl/ncl-2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/bin
+PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
+export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
+export PS1="\w/ $ "
+
+#machines
+export CSEM=zwickl@cluster1.csem.duke.edu
+export DUKE=zwickl@godzilla.acpub.duke.edu
+export LONESTAR=zwickl@lonestar.tacc.utexas.edu
+export DLONESTAR=dhillis@lonestar.tacc.utexas.edu
+export LONEWORK=zwickl@lonestar.tacc.utexas.edu:/work/utexas/ib/zwickl/
+export MONTY=zwickl@129.237.138.231
+export KU=zwickl@people.ku.edu
+export HOME2=Derrick@192.168.2.2
+export DESKTOP=zwickl@129.237.139.73
+export KWY=zwickl@129.237.24.139
+export PHYLO=zwickl@phylo.bio.ku.edu
+export HOMECMP="-p 2222 Derrick@66.45.154.119"
+export JASPER=zwickl@129.237.138.173
+export DANIEL=zwickl@machcdxi.getmyip.com
+export HOWIN=129.237.139.38
+export MDGPUS=openlab.umiacs.umd.edu
+export LAP_BACKUP_PHYLO=$PHYLO:/mnt/backup1/zwickl/laptop/
+export SAKURA="zwickl@129.237.138.128"
+export LAP=zwickl@129.237.138.142
+export BIGRED=dzwickl@bigred.teragrid.iu.edu
+export ORRORIN=zwickl@orrorin.nescent.org
+export KANG=zwickl@129.237.138.171
+export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
+
+
+#ssh aliases
+alias lonestar='ssh $LONESTAR'
+alias dlonestar='ssh $DLONESTAR'
+alias csem='ssh zwickl@dscr-login-03.oit.duke.edu'
+alias nescent='ssh derrickzwickl@xserve1.nescent.org'
+alias orrorin='ssh zwickl@orrorin.nescent.org'
+alias duke='ssh zwickl@godzilla.acpub.duke.edu'
+alias tunnelToHome='ssh -L 5899:127.0.0.1:5999 -p 2222 Derrick@24.124.109.231'
+alias tunnelWithinHome='ssh -L 5899:192.168.2.2:5999  Derrick@192.168.2.2'
+#alias kwy='ssh $KWY'
+alias phylo='ssh $PHYLO'
+alias jasper='ssh $JASPER'
+alias lap='ssh $LAP'
+alias kang='ssh $KANG'
+
+#machine dependent stuff
+
+if [ $OS = "darwin" ];then
+	export DESK=$HOME/Desktop/
+	export DEV=$DESK/GarliDEV/
+	export EF=$DESK/efish/april08/
+	export WIN=$EF/selection/windowStuff/
+	export NCL=$DEV/ncl/
+	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
+	export NCL_INSTALL_DIR=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
+	PATH=$PATH:/usr/local/cuda/bin
+	GNUTERM=x11
+    export ORYZA=/Users/zwickl/Desktop/GarliDEV/experiments/sandersonOryza
+    alias oryza='cd $ORYZA'
+elif [ $OS = "cygwin" ];then
+	export DESK=/cygdrive/d/Docume~1/Derrick/Desktop/
+	export DEV=$DESK/GarliDEV/
+	export NCL=$DEV/ncl/
+	export PROJ=$TRUNK/project/standardGarliVC/
+elif [ $OS = "linux" ];then
+	PATH=$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/home/zwickl/my_usr/bin/:/usr/local/cuda/bin
+	export DEV=$HOME
+	alias qa='qstat -u "*" | sort' 
+	alias qz='qstat | sort' 
+	alias countUsed='qa  | grep [0-9] | awk '\''{print $9}'\'' | grep [0-9] | ~/bin/sumCol.py'
+	alias devQrsh='qrsh -q dev.q -l h_vmem=4G -l vf=4G'
+	alias ViewLog='vi $TESTS/RUNLOG.log'
+	alias ViewTests='vi $TESTS/TESTRESULTS.log'
+	alias c0='ssh compute-0-0'
+	alias backupToPhylo='rsync --progress -avz --exclude-from=$HOME/.rsync_exclude $HOME/ $PHYLO:fromKwy/'
+fi
+
+#temporary exports
+export HYPHY_SCRIPTS=/Applications/HYPHY/hyphySVN/HYPHY/TemplateBatchFiles/
+export TESTING_EXEC=/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/trunk/builds/iccAsserts/installed/bin/Garli0.961b
+export SAMP=/Users/zwickl/Desktop/GarliDEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/singleSite/del2Xins/ranaDepth0.1/totRate0.04/00/
+export ASAMP=/Users/zwickl/Desktop/GarliDEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/singleSiteAligned/del2Xins/ranaDepth0.1/totRate0.04/00/
+export MSAMP=/Users/zwickl/Desktop/GarliDEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/multiSite/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
+export MASAMP=/Users/zwickl/Desktop/GarliDEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/multiSiteAligned/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
+
+
+#filesystem locations - largely machine independent
+export TRUNK=$DEV/googleCodeRepo/trunk/
+export BRANCHES=$DEV/googleCodeRepo/branches/
+export BEAG=$BRANCHES/beagle/
+export PART=$BRANCHES/partitioning/
+export TESTS=$DEV/git/garlitests/
+export TB=$TRUNK/builds/
+export PB=$PART/builds/
+
+export PART_EXEC=$PART/builds/gccAss/installed/bin/Garli
+export TRUNK_EXEC=$TRUNK/builds/gccAss/installed/bin/Garli
+export INDEL_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/scripts/
+export ROOT_INDEL=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/
+export TANDY_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/tandyData/scripts
+export ROOT_TANDY=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/tandyData/
+export JANSEN_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64/scripts
+export ROOT_JANSEN=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64/
+export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commonScripts/
+
+#command aliases
+alias desk='cd $DESK'
+alias lsl='ls -ltrh'
+alias xterm='xterm -ls'
+alias synHome='synergyc  -f --name newlap 192.168.1.64'
+alias lsl='ls -ltrh'
+alias hist='history | grep'
+alias mi='nice make -j 2 && nice make install && pwd > $HOME/.lastMake'
+alias mc='nice make -j 2 && nice make install && nice make check && pwd > $HOME/.lastMake'
+alias dev='cd $DEV'
+alias tunk='cd $TRUNK'
+alias branch='cd $BRANCHES'
+alias fin='grep Final'
+alias cdtr='cd `ls -d $TESTS/rev* | tail -1`'
+alias cdr='cd `ls -dtr * | tail -1`'
+alias dush='du -shc *'
+alias llog='*.log00.log'
+alias cdt='cd $TESTS'
+alias tabify="perl -p -i -e 's/[ ]+/\t/g'"
+alias mark="pwd > $HOME/.markedDir"
+alias cdm="cd `cat $HOME/.markedDir`"
+alias mark2="pwd > $HOME/.markedDir2"
+alias cdm2="cd `cat $HOME/.markedDir2`"
+alias vig="vi garli.conf"
+
+alias runLast='`cat $HOME/.lastMake`/installed/bin/Garli'
+alias debLast='gdb `cat $HOME/.lastMake`/installed/bin/Garli'
+
+#functions
+function inEachDir(){
+	source /Users/zwickl/.profile
+        for dir in */
+        do
+               	cd $dir || return 1
+                $@ || return 1
+                cd .. || return 1
+        done
+}
+
+if [[ $OS == 'darwin' ]]; then
+	function rce(){
+		vi $HOME/.profile
+		source $HOME/.profile
+	}
+	function transpose(){
+		cat $@ | rs -c -T	
+
+	}
+else
+	function rce(){
+		vi $HOME/.bashrc
+		source $HOME/.bashrc
+	}
+fi
+
+function mkcd ()
+{
+    mkdir $@;
+    cd $@
+}
+
+function kwy (){
+    NOPROXY=`ifconfig | grep inet | grep 129.237 | wc -l`
+    if [ "$NOPROXY" -eq 0 ];then
+        ssh -t $PHYLO 'ssh zwickl@129.237.24.139'
+     else
+        ssh $KWY
+     fi
+}
+
+#mac specific
+if [[ $OS == 'darwin' ]]; then
+	alias temp='sysctl kern.cpu_temp'
+	alias top='top -u'
+	export COPYFILE_DISABLE=true
+	source /opt/intel/cc/9.1.037/bin/iccvars.sh
+
+elif [[ $OS == 'cygwin' ]]; then
+	stty lnext ^q stop undef start undef
+	export INPUTRC=$HOME/.inputrc
+	alias killall='taskkill /f /im"$1"'
+fi
+
+#ignore sucessive duplicate commands
+HISTIGNORE=\&
+HISTFILESIZE=1000
+
+# Setting PATH for Python 2.7
+# The orginal version is saved in .profile.pysave
+PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
+export PATH

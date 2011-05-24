@@ -1,0 +1,20 @@
+
+:syntax on
+:set scrolloff=20
+:set incsearch
+:set ruler
+:set fileformats=unix,dos,mac
+:set viminfo='10,\"100,:20,%,n~/.viminfo
+:set tabstop=4
+:set shiftwidth=4
+:set expandtab
+:set softtabstop=4
+:set autoindent
+autocmd BufRead *.py set smartindent cinwords=if,elif,else,for,while,try,except,finally,def,class
+au BufReadPost * if line("'\"") > 0|if line("'\"") <= line("$")|exe("norm '\"")|else|exe "norm $"|endif|endif 
+
+" Maintainer:	Lars H. Nielsen (dengmao@gmail.com)
+" Last Change:	January 22 2007
+
+"set background=dark
+"set background=light
