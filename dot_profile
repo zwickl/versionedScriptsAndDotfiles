@@ -16,7 +16,7 @@ elif [[ ${unamestr:0:6} == 'CYGWIN' ]]; then
 fi
 
 #sytem variables
-export PATH=/usr/local/bin:$PATH:$HOME/bin:/Users/zwickl/Desktop/GarliDEV/ncl/ncl-2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/bin
+export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:/Users/zwickl/Desktop/GarliDEV/ncl/ncl-2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/bin
 PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
 export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
 export PS1="\w/ $ "
@@ -121,6 +121,8 @@ export ROOT_TANDY=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/tandyData
 export JANSEN_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64/scripts
 export ROOT_JANSEN=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64/
 export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commonScripts/
+
+export PYTHONPATH=$HOME/bin/pyscripts/:$PYTHONPATH
 
 #command aliases
 alias desk='cd $DESK'
