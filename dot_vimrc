@@ -21,3 +21,12 @@ au BufReadPost * if line("'\"") > 0|if line("'\"") <= line("$")|exe("norm '\"")|
 
 "set background=dark
 "set background=light
+":color sorcerer
+
+" FROM "xterm16" vim color package:
+" Select colormap: 'soft', 'softlight', 'standard' or 'allblue'
+let xterm16_colormap    = 'softlight'
+" Select brightness: 'low', 'med', 'high', 'default' or custom levels.
+let xterm16_brightness  = 'default'
+colo xterm16
+
