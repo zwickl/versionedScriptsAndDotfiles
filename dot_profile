@@ -91,6 +91,7 @@ elif [ $OS = "cygwin" ];then
 	alias backupHomeToJ='rsync -av --exclude-from=/home/zwickl/.rsyncBackupExclude /cygdrive/c/Documents\ and\ settings/zwickl/ /cygdrive/j/derrickHomeBackup/'
 	alias syncWorkDeskUp='rsync -avzu --exclude-from=/home/zwickl/.syncExclude /cygdrive/f/Desk/ $MONTY:WIN_SYNC/Desk/'
 	alias syncWorkDeskDown='rsync -avz --exclude-from=/home/zwickl/.syncExclude $MONTY:WIN_SYNC/Desk/ /cygdrive/f/Desk/'
+    alias ls='ls --color=auto'
 elif [ $OS = "linux" ];then
 	PATH=$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/home/zwickl/my_usr/bin/:/usr/local/cuda/bin
 	export DEV=$HOME
