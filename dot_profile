@@ -93,11 +93,14 @@ elif [ $OS = "cygwin" ];then
 	alias syncWorkDeskDown='rsync -avz --exclude-from=/home/zwickl/.syncExclude $MONTY:WIN_SYNC/Desk/ /cygdrive/f/Desk/'
     alias ls='ls --color=auto'
 elif [ $OS = "linux" ];then
-	PATH=$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/home/zwickl/my_usr/bin/:/usr/local/cuda/bin
+	PATH=/home/zwickl/my_usr/bin/:$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
+	export PYTHONPATH=/home/zwickl/my_usr/lib/python
+	export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
 	export DEV=$HOME
+	export NCL=/home/zwickl/ncl/
+	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
 	alias qa='qstat -u "*" | sort' 
 	alias qz='qstat | sort' 
-	alias countUsed='qa  | grep [0-9] | awk '\''{print $9}'\'' | grep [0-9] | ~/bin/sumCol.py'
 	alias devQrsh='qrsh -q dev.q -l h_vmem=4G -l vf=4G'
 	alias ViewLog='vi $TESTS/RUNLOG.log'
 	alias ViewTests='vi $TESTS/TESTRESULTS.log'
@@ -115,6 +118,7 @@ export MASAMP=$ROOT_INDEL/multiSiteAligned/zipfian1.5/del2Xins/ranaDepth0.1/totR
 
 
 #filesystem locations - largely machine independent
+export HYPHY_SCRIPTS=/Applications/HYPHY/hyphySVN/HYPHY/TemplateBatchFiles/
 export TRUNK=$DEV/googleCodeRepo/trunk/
 export BRANCHES=$DEV/googleCodeRepo/branches/
 export BEAG=$BRANCHES/beagle/
@@ -124,7 +128,12 @@ export TB=$TRUNK/builds/
 export PB=$PART/builds/
 
 export PART_EXEC=$PART/builds/gccAss/installed/bin/Garli
+export PART_EXEC_MPI=$PART/builds/gccAss.MPI/installed/bin/Garli
+export PART_EXEC_DEB=$PART/builds/gccAss.DEB/installed/bin/Garli
 export TRUNK_EXEC=$TRUNK/builds/gccAss/installed/bin/Garli
+export TRUNK_EXEC_MPI=$TRUNK/builds/gccAss.MPI/installed/bin/Garli
+export TESTING_EXEC=$PART_EXEC
+export TESTING_EXEC_MPI=$PART_EXEC_MPI
 export INDEL_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/scripts/
 export ROOT_INDEL=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/
 export TANDY_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/tandyData/scripts
@@ -134,6 +143,11 @@ export ROOT_JANSEN=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64
 export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commonScripts/
 
 export PYTHONPATH=$HOME/bin/pyscripts/:$PYTHONPATH
+export MAFFT_BINARIES=/share/apps/lib/mafft/
+
+export ORYZA_ROOT=/home/zwickl/experiments/oryza/
+
+export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
 
 #command aliases
 alias desk='cd $DESK'
@@ -149,31 +163,80 @@ alias tunk='cd $TRUNK'
 alias branch='cd $BRANCHES'
 alias fin='grep Final'
 alias cdtr='cd `ls -d $TESTS/rev* | tail -1`'
-alias cdr='cd `ls -dtr * | tail -1`'
+alias cdr='cd "`ls -dtr */ | tail -1`"'
+#alias vir='vi `ls -trl . | grep -v "^d" | awk '{print $9}' | tail -n1`'
+alias vir='vi `ls -tr . | tail -1`'
 alias dush='du -shc *'
 alias llog='*.log00.log'
 alias cdt='cd $TESTS'
 alias tabify="perl -p -i -e 's/[ ]+/\t/g'"
+alias vig='vi garli.conf'
+#alias dstat="disq_stat"
+alias dsub="disq_sub"
+alias ddel="disq_del"
+
 alias mark="pwd > $HOME/.markedDir"
 alias cdm="cd `cat $HOME/.markedDir`"
 alias mark2="pwd > $HOME/.markedDir2"
 alias cdm2="cd `cat $HOME/.markedDir2`"
 alias mark3="pwd > $HOME/.markedDir3"
 alias cdm3="cd `cat $HOME/.markedDir3`"
-alias vig="vi garli.conf"
-
 alias runLast='`cat $HOME/.lastMake`/installed/bin/Garli'
 alias debLast='gdb `cat $HOME/.lastMake`/installed/bin/Garli'
 
 #functions
+
+
 function inEachDir(){
-	source /Users/zwickl/.profile
-        for dir in */
-        do
-               	cd $dir || return 1
-                $@ || return 1
-                cd .. || return 1
-        done
+	if [ $OS = "darwin" ];then
+		source /Users/zwickl/.profile
+	        for dir in */
+	        do
+	               	cd $dir || return 1
+	                $@ || return 1
+	                cd .. || return 1
+	        done
+	elif [ $OS = "linux" ];then
+	for dir in */
+		do
+			cd $dir || exit
+			$@ || exit
+			cd .. || exit
+		done
+	fi
+}
+
+function usedCount(){
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly
+	do
+		echo -n "$name	"
+		qstat -u $name | grep [0-9] | awk '{print $9}' | grep [0-9] | ~/bin/sumCol.py
+	done
+	echo -n "total	"
+	qstat -u "*" | grep [0-9] | awk '{print $9}' | grep [0-9] | ~/bin/sumCol.py
+}
+
+function queuedCount(){
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly
+	do
+		echo -n "$name	"
+		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | ~/bin/sumCol.py
+	done
+	echo -n "total	"
+	qstat -u "*" | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | ~/bin/sumCol.py
+}
+
+function dstat(){
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly
+	do
+		echo -n "$name	"
+		disq_stat -u $name 2>/dev/null
+	done
+}
+
+function mkcd(){
+	mkdir $@
+	cd $@
 }
 
 if [[ $OS == 'darwin' ]]; then
@@ -191,12 +254,6 @@ else
 		source $HOME/.bashrc
 	}
 fi
-
-function mkcd ()
-{
-    mkdir $@;
-    cd $@
-}
 
 function kwy (){
     NOPROXY=`ifconfig | grep inet | grep 129.237 | wc -l`
