@@ -16,24 +16,24 @@ elif [[ ${unamestr:0:6} == 'CYGWIN' ]]; then
 fi
 
 #sytem variables
-export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:/Users/zwickl/Desktop/GarliDEV/ncl/ncl-2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/bin
+export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$NCL_INST/bin
 PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
 export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
 export PS1="\w/ $ "
 
 #machines
-export CSEM=zwickl@cluster1.csem.duke.edu
+export CSEM=zwickl@dscr-login-05.oit.duke.edu
 export DUKE=zwickl@godzilla.acpub.duke.edu
 export LONESTAR=zwickl@lonestar.tacc.utexas.edu
 export DLONESTAR=dhillis@lonestar.tacc.utexas.edu
 export LONEWORK=zwickl@lonestar.tacc.utexas.edu:/work/utexas/ib/zwickl/
 export MONTY=zwickl@129.237.138.231
 export KU=zwickl@people.ku.edu
-export HOME2=Derrick@192.168.2.2
+export HOME2=zwickl@192.168.2.2
 export DESKTOP=zwickl@129.237.139.73
 export KWY=zwickl@129.237.24.139
 export PHYLO=zwickl@phylo.bio.ku.edu
-export HOMECMP="-p 2222 Derrick@66.45.154.119"
+export HOMECMP="-p 2222 zwickl@66.45.154.119"
 export JASPER=zwickl@129.237.138.173
 export DANIEL=zwickl@machcdxi.getmyip.com
 export HOWIN=129.237.139.38
@@ -54,9 +54,8 @@ alias csem='ssh zwickl@dscr-login-03.oit.duke.edu'
 alias nescent='ssh derrickzwickl@xserve1.nescent.org'
 alias orrorin='ssh zwickl@orrorin.nescent.org'
 alias duke='ssh zwickl@godzilla.acpub.duke.edu'
-alias tunnelToHome='ssh -L 5899:127.0.0.1:5999 -p 2222 Derrick@24.124.109.231'
-alias tunnelWithinHome='ssh -L 5899:192.168.2.2:5999  Derrick@192.168.2.2'
-#alias kwy='ssh $KWY'
+alias tunnelToHome='ssh -L 5899:127.0.0.1:5999 -p 2222 zwickl@24.124.109.231'
+alias tunnelWithinHome='ssh -L 5899:192.168.2.2:5999  zwickl@192.168.2.2'
 alias phylo='ssh $PHYLO'
 alias jasper='ssh $JASPER'
 alias lap='ssh $LAP'
@@ -77,10 +76,21 @@ if [ $OS = "darwin" ];then
     export ORYZA=/Users/zwickl/Desktop/GarliDEV/experiments/sandersonOryza
     alias oryza='cd $ORYZA'
 elif [ $OS = "cygwin" ];then
-	export DESK=/cygdrive/d/Docume~1/Derrick/Desktop/
+	export HOMEDRIVE=/cygdrive/c/
+	export DESK=/cygdrive/f/Desk/
 	export DEV=$DESK/GarliDEV/
 	export NCL=$DEV/ncl/
+	export NCL_INST=$NCL/branches/v2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/
 	export PROJ=$TRUNK/project/standardGarliVC/
+	export HOMELAP='zwickl@192.168.1.65'
+	PATH=$PATH:/cygdrive/c/Program\ Files/Java/jre6/bin/
+	PATH=$PATH:$HOME/bin/pyscripts/:/cygdrive/c/Program\ Files/NCBI/blast-2.2.25/bin/
+	PATH=$PATH:/usr/local/emboss/bin/
+	alias backupHomeToG='rsync -av --exclude-from=/home/zwickl/.rsyncBackupExclude /cygdrive/c/Documents\ and\ settings/zwickl/ /cygdrive/g/derrickHomeBackup/'
+	alias backupHomeToI='rsync -av --exclude-from=/home/zwickl/.rsyncBackupExclude /cygdrive/c/Documents\ and\ settings/zwickl/ /cygdrive/i/derrickHomeBackup/'
+	alias backupHomeToJ='rsync -av --exclude-from=/home/zwickl/.rsyncBackupExclude /cygdrive/c/Documents\ and\ settings/zwickl/ /cygdrive/j/derrickHomeBackup/'
+	alias syncWorkDeskUp='rsync -avzu --exclude-from=/home/zwickl/.syncExclude /cygdrive/f/Desk/ $MONTY:WIN_SYNC/Desk/'
+	alias syncWorkDeskDown='rsync -avz --exclude-from=/home/zwickl/.syncExclude $MONTY:WIN_SYNC/Desk/ /cygdrive/f/Desk/'
 elif [ $OS = "linux" ];then
 	PATH=$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/home/zwickl/my_usr/bin/:/usr/local/cuda/bin
 	export DEV=$HOME
@@ -97,10 +107,10 @@ fi
 #temporary exports
 export HYPHY_SCRIPTS=/Applications/HYPHY/hyphySVN/HYPHY/TemplateBatchFiles/
 export TESTING_EXEC=/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/trunk/builds/iccAsserts/installed/bin/Garli0.961b
-export SAMP=/Users/zwickl/Desktop/GarliDEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/singleSite/del2Xins/ranaDepth0.1/totRate0.04/00/
-export ASAMP=/Users/zwickl/Desktop/GarliDEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/singleSiteAligned/del2Xins/ranaDepth0.1/totRate0.04/00/
-export MSAMP=/Users/zwickl/Desktop/GarliDEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/multiSite/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
-export MASAMP=/Users/zwickl/Desktop/GarliDEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/multiSiteAligned/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
+export SAMP=$ROOT_INDEL/singleSite/del2Xins/ranaDepth0.1/totRate0.04/00/
+export ASAMP=$ROOT_INDEL/singleSiteAligned/del2Xins/ranaDepth0.1/totRate0.04/00/
+export MSAMP=$ROOT_INDEL/multiSite/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
+export MASAMP=$ROOT_INDEL/multiSiteAligned/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
 
 
 #filesystem locations - largely machine independent
@@ -147,6 +157,8 @@ alias mark="pwd > $HOME/.markedDir"
 alias cdm="cd `cat $HOME/.markedDir`"
 alias mark2="pwd > $HOME/.markedDir2"
 alias cdm2="cd `cat $HOME/.markedDir2`"
+alias mark3="pwd > $HOME/.markedDir3"
+alias cdm3="cd `cat $HOME/.markedDir3`"
 alias vig="vi garli.conf"
 
 alias runLast='`cat $HOME/.lastMake`/installed/bin/Garli'
@@ -200,18 +212,23 @@ if [[ $OS == 'darwin' ]]; then
 	alias top='top -u'
 	export COPYFILE_DISABLE=true
 	source /opt/intel/cc/9.1.037/bin/iccvars.sh
+	export PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
 
 elif [[ $OS == 'cygwin' ]]; then
 	stty lnext ^q stop undef start undef
 	export INPUTRC=$HOME/.inputrc
 	alias killall='taskkill /f /im"$1"'
+	alias c:='cd /cygdrive/c/'
+	alias e:='cd /cygdrive/e/'
+	alias f:='cd /cygdrive/f/'
+	export CD=/cygdrive/c/
+	export ED=/cygdrive/e/
+	export FD=/cygdrive/f/
+
 fi
 
 #ignore sucessive duplicate commands
 HISTIGNORE=\&
 HISTFILESIZE=1000
 
-# Setting PATH for Python 2.7
-# The orginal version is saved in .profile.pysave
-PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
-export PATH
+
