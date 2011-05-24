@@ -1,3 +1,6 @@
+set bs=2
+set nocompatible
+set t_kb=
 
 :syntax on
 :set scrolloff=20
