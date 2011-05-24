@@ -34,20 +34,14 @@ else:
 if len(args) == 1:
 	filename = args[0]
 	try:
-		file = open(filename, 'r')
+		file = open(filename, 'rb')
 	except:
 		sys.exit("problem opening file")
 elif len(args) > 0:
 	sys.exit("expecting only one argument, got %s" % args)
 else:
 	file = sys.stdin
-'''
-if len(sys.argv) > 1:
-	filename = sys.argv[1]
-	file = open(filename, 'r')
-else:
-	file = sys.stdin
-'''
+
 col = [float(line) for line in file]
 
 cSum = sum(col)

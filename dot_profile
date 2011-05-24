@@ -75,6 +75,7 @@ if [ $OS = "darwin" ];then
 	GNUTERM=x11
     export ORYZA=/Users/zwickl/Desktop/GarliDEV/experiments/sandersonOryza
     alias oryza='cd $ORYZA'
+    alias ls='ls -G'
 elif [ $OS = "cygwin" ];then
 	export HOMEDRIVE=/cygdrive/c/
 	export DESK=/cygdrive/f/Desk/
