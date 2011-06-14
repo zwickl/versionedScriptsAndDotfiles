@@ -45,7 +45,7 @@ export BIGRED=dzwickl@bigred.teragrid.iu.edu
 export ORRORIN=zwickl@orrorin.nescent.org
 export KANG=zwickl@129.237.138.171
 export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
-export HAL=zwickl@hal.biosci.arizona.edu
+
 
 #ssh aliases
 alias lonestar='ssh $LONESTAR'
@@ -211,10 +211,10 @@ function usedCount(){
 	for name in zwickl jeet tracyh mholder joaks1 johnkelly
 	do
 		echo -n "$name	"
-		qstat -u $name | grep [0-9] | awk '{print $9}' | grep [0-9] | ~/bin/sumCol.py
+		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | ~/bin/sumCol.py
 	done
 	echo -n "total	"
-	qstat -u "*" | grep [0-9] | awk '{print $9}' | grep [0-9] | ~/bin/sumCol.py
+	qstat -u "*" | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | ~/bin/sumCol.py
 }
 
 function queuedCount(){
