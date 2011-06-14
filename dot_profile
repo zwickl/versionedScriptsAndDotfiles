@@ -45,7 +45,7 @@ export BIGRED=dzwickl@bigred.teragrid.iu.edu
 export ORRORIN=zwickl@orrorin.nescent.org
 export KANG=zwickl@129.237.138.171
 export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
-
+export HAL=zwickl@hal.biosci.arizona.edu
 
 #ssh aliases
 alias lonestar='ssh $LONESTAR'
@@ -73,7 +73,7 @@ if [ $OS = "darwin" ];then
 	export NCL_INSTALL_DIR=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
 	PATH=$PATH:/usr/local/cuda/bin
 	GNUTERM=x11
-    export ORYZA=/Users/zwickl/Desktop/GarliDEV/experiments/sandersonOryza
+    export ORYZA=/Users/zwickl/Desktop/GarliDEV/experiments/oryza
     alias oryza='cd $ORYZA'
     alias ls='ls -G'
 elif [ $OS = "cygwin" ];then
