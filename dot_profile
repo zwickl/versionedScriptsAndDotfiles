@@ -100,8 +100,8 @@ elif [ $OS = "linux" ];then
 	export DEV=$HOME
 	export NCL=/home/zwickl/ncl/
 	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
-	alias qa='qstat -u "*" | sort' 
-	alias qz='qstat | sort' 
+	alias qa='qstat -u "*" | sort | grep [0-9]' 
+	alias qz='qstat | sort | grep [0-9]' 
 	alias devQrsh='qrsh -q dev.q -l h_vmem=4G -l vf=4G'
 	alias ViewLog='vi $TESTS/RUNLOG.log'
 	alias ViewTests='vi $TESTS/TESTRESULTS.log'
