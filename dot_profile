@@ -257,7 +257,12 @@ else
 fi
 
 function kwy (){
+if [[ $OS == 'darwin' ]]; then
     NOPROXY=`ifconfig | grep inet | grep 129.237 | wc -l`
+elif [[ $OS == 'cygwin' ]]; then
+    NOPROXY=`ipconfig | grep IPv4 | grep 129.237 | wc -l`
+fi
+
     if [ "$NOPROXY" -eq 0 ];then
         ssh -t $PHYLO 'ssh zwickl@129.237.24.139'
      else
