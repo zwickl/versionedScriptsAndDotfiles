@@ -17,8 +17,6 @@ fi
 
 #sytem variables
 export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$NCL_INST/bin
-PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
-export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
 export PS1="\w/ $ "
 
 #machines
@@ -71,6 +69,8 @@ if [ $OS = "darwin" ];then
 	export NCL=$DEV/ncl/
 	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
 	export NCL_INSTALL_DIR=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
+    export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
+    PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
 	PATH=$PATH:/usr/local/cuda/bin
 	GNUTERM=x11
     export ORYZA=/Users/zwickl/Desktop/GarliDEV/experiments/oryza
@@ -87,6 +87,7 @@ elif [ $OS = "cygwin" ];then
 	PATH=$PATH:/cygdrive/c/Program\ Files/Java/jre6/bin/
 	PATH=$PATH:$HOME/bin/pyscripts/:/cygdrive/c/Program\ Files/NCBI/blast-2.2.25/bin/
 	PATH=$PATH:/usr/local/emboss/bin/
+	PATH=/usr/bin:$PATH
 	alias backupHomeToG='rsync -av --exclude-from=/home/zwickl/.rsyncBackupExclude /cygdrive/c/Documents\ and\ settings/zwickl/ /cygdrive/g/derrickHomeBackup/'
 	alias backupHomeToI='rsync -av --exclude-from=/home/zwickl/.rsyncBackupExclude /cygdrive/c/Documents\ and\ settings/zwickl/ /cygdrive/i/derrickHomeBackup/'
 	alias backupHomeToJ='rsync -av --exclude-from=/home/zwickl/.rsyncBackupExclude /cygdrive/c/Documents\ and\ settings/zwickl/ /cygdrive/j/derrickHomeBackup/'
