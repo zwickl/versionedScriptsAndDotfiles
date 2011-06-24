@@ -88,6 +88,8 @@ Mrxvt.scrollTtyKeypress:	true
 # Scroll bar colors
 Mrxvt.scrollColor:		#000000
 Mrxvt.troughColor:		#000000
+#Mrxvt.scrollColor:		white
+#Mrxvt.troughColor:		white
 
 # Mrxvt.scrollbarPixmap:	scrollbarbg.jpg
 
@@ -118,7 +120,8 @@ Mrxvt.shading:			0
 #Mrxvt.xft:			1
 #Mrxvt.xftFont:			Bitstream Vera Sans Mono
 #Mrxvt.font:			-b&h-lucidatypewriter-medium-r-*-*-12-*-*-*-*-*-iso8859-1
-Mrxvt.font:			-misc-fixed-bold-r-normal--14-140-75-75-c-90-iso8859-1
+#Mrxvt.font:			-misc-fixed-bold-r-normal--14-140-75-75-c-90-iso8859-1
+Mrxvt.font:			-b&h-lucidatypewriter-bold-r-normal-sans-0-0-100-100-m-0-iso10646-1
 #Mrxvt.font:			-misc-fixed-medium-r-normal--14-140-75-75-c-90-iso8859-1
 #Mrxvt.font:			-bitstream-bitstream vera sans mono-medium-r-*-*-13-*-*-*-*-*-iso8859-1
 #Mrxvt.font:			-bitstream-bitstream vera sans-medium-r-normal-*-12-140-*-*-*-60-iso8859-1	
@@ -167,10 +170,10 @@ Mrxvt.cursorColor2:		#000000
 #
 
 # Setup colors for a black background.
-Mrxvt.background:		White
-#Mrxvt.background:		#000000
-#Mrxvt.foreground:		#9a9a9a
-Mrxvt.foreground:		Black
+#Mrxvt.background:		White
+Mrxvt.background:		#000000
+Mrxvt.foreground:		#9a9a9a
+#Mrxvt.foreground:		Black
 
 # NOTE:  Standard hexadecimal color codes can also be used - edb
 Mrxvt.color0:			#000000
