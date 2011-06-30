@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "set incr=auto;"
+for i in $*
+do
+	echo "gett file=$i mode=7 storebr;"
+done
+	

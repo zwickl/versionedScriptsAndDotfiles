@@ -1,0 +1,8 @@
+#!/bin/bash
+
+for i in $@
+do
+	echo $i
+	rm  -f $i/*.log00.log $i/*.screen.log $i/*.best*.tre $i/*.best*.tre.phy $i/*.boot.tre $i/*.boot.phy $i/*treelog00.tre $i/*treelog00.log $i/*problog00.log $i/*fate00.log $i/.*lock* $i/*swaplog* $i/*.check $i/out.* $i/qout.* $i/mpi_m* $i/*SiteLikes.log $i/*sitelikes.log $i/*best.all.phy $i/*best.phy $i/*current.phy $i/*internalstates.log $i/*AArmatrix.dat
+done
+

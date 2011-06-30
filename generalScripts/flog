@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for i in $@
+do
+	grep -H Final "$i"*.log00.log
+done
+
