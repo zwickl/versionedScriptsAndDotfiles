@@ -1,0 +1,54 @@
+#!/bin/bash
+
+if (( $# < 2 ))
+then echo "Usage: flip.linux -<u, d, m> <filename>"
+echo "Where u=unix, d=dos m=mac"
+exit
+fi
+
+if [ "$1" = "-u" ]
+	then
+	perl -p -i -e 's/\r\n/\n/g' $2
+	perl -p -i -e 's/\r/\n/g' $2
+
+	#get rid of the damn .bak files that perl replaces make in cygwin
+	for i in $2
+	do
+		echo "flipped $i"
+		rm -f $i.bak
+	done
+
+elif [ "$1" = "-d" ]
+	then 
+	perl -p -i -e 's/\r/\n/g' $2
+	perl -p -i -e 's/\n\n/\n/g' $2
+	perl -p -i -e 's/\n/\r\n/g' $2
+
+	#get rid of the damn .bak files that perl replaces make in cygwin
+	for i in $2
+	do
+		echo "flipped $i"
+		rm -f $i.bak
+	done
+
+elif [ "$1" = "-m" ]
+	then
+	perl -p -i -e 's/\r\n/\r/g' $2
+	perl -p -i -e 's/\n/\r/g' $2
+
+	#get rid of the damn .bak files that perl replaces make in cygwin
+	for i in $2
+	do
+		echo "flipped $i"
+		rm -f $i.bak
+	done
+
+else 
+	echo "Usage: flip.linux -<u, d, m> <filename>"
+	echo "Where u=unix, d=dos m=mac"
+	exit
+
+fi
+
+
+
