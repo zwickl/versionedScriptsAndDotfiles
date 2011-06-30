@@ -15,6 +15,7 @@ set t_kb=
 :set autoindent
 autocmd BufRead *.py set smartindent cinwords=if,elif,else,for,while,try,except,finally,def,class
 au BufReadPost * if line("'\"") > 0|if line("'\"") <= line("$")|exe("norm '\"")|else|exe "norm $"|endif|endif 
+autocmd BufEnter * :syntax sync fromstart
 
 " Maintainer:	Lars H. Nielsen (dengmao@gmail.com)
 " Last Change:	January 22 2007
