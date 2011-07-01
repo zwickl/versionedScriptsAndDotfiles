@@ -16,7 +16,7 @@ elif [[ ${unamestr:0:6} == 'CYGWIN' ]]; then
 fi
 
 #sytem variables
-export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$NCL_INST/bin
+export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$HOME/bin/bin:$NCL_INST/bin
 export PS1="\w/ $ "
 
 #machines
@@ -216,20 +216,20 @@ function usedCount(){
 	for name in zwickl jeet tracyh mholder joaks1 johnkelly
 	do
 		echo -n "$name	"
-		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | ~/bin/sumCol.py
+		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | ~/bin/pyscripts/sumCol.py
 	done
 	echo -n "total	"
-	qstat -u "*" | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | ~/bin/sumCol.py
+	qstat -u "*" | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | ~/bin/pyscripts/sumCol.py
 }
 
 function queuedCount(){
 	for name in zwickl jeet tracyh mholder joaks1 johnkelly
 	do
 		echo -n "$name	"
-		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | ~/bin/sumCol.py
+		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | ~/bin/pyscripts/sumCol.py
 	done
 	echo -n "total	"
-	qstat -u "*" | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | ~/bin/sumCol.py
+	qstat -u "*" | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | ~/bin/pyscripts/sumCol.py
 }
 
 function dstat(){
