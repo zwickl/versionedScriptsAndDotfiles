@@ -16,7 +16,7 @@ elif [[ ${unamestr:0:6} == 'CYGWIN' ]]; then
 fi
 
 #sytem variables
-export PATH=$HOME/bin/:/usr/local/bin:$PATH:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/x86_64:$NCL_INST/bin
+export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin
 export PS1="\w/ $ "
 
 #machines
@@ -179,6 +179,7 @@ alias vig='vi garli.conf'
 #alias dstat="disq_stat"
 alias dsub="disq_sub"
 alias ddel="disq_del"
+alias gits="git status | less"
 
 alias mark="pwd > $HOME/.markedDir"
 alias cdm="cd `cat $HOME/.markedDir`"
