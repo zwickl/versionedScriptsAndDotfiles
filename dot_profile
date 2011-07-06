@@ -16,7 +16,7 @@ elif [[ ${unamestr:0:6} == 'CYGWIN' ]]; then
 fi
 
 #sytem variables
-export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$NCL_INST/bin
+export PATH=$HOME/bin/:/usr/local/bin:$PATH:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/x86_64:$NCL_INST/bin
 export PS1="\w/ $ "
 
 #machines
@@ -98,7 +98,7 @@ elif [ $OS = "cygwin" ];then
     alias ls='ls --color=auto'
 elif [ $OS = "linux" ];then
 	PATH=/home/zwickl/my_usr/bin/:$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
-	export PYTHONPATH=/home/zwickl/my_usr/lib/python
+	export PYTHONPATH=/home/zwickl/my_usr/lib/python2.7/:/share/apps/Python-2.6.4/lib/python2.6/
 	export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
 	export DEV=$HOME
 	export NCL=/home/zwickl/ncl/
@@ -215,20 +215,20 @@ function usedCount(){
 	for name in zwickl jeet tracyh mholder joaks1 johnkelly
 	do
 		echo -n "$name	"
-		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | ~/bin/sumCol.py
+		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
 	done
 	echo -n "total	"
-	qstat -u "*" | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | ~/bin/sumCol.py
+	qstat -u "*" | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
 }
 
 function queuedCount(){
 	for name in zwickl jeet tracyh mholder joaks1 johnkelly
 	do
 		echo -n "$name	"
-		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | ~/bin/sumCol.py
+		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
 	done
 	echo -n "total	"
-	qstat -u "*" | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | ~/bin/sumCol.py
+	qstat -u "*" | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
 }
 
 function dstat(){
