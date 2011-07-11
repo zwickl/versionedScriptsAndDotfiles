@@ -213,7 +213,7 @@ function inEachDir(){
 }
 
 function usedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
@@ -223,7 +223,7 @@ function usedCount(){
 }
 
 function queuedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
