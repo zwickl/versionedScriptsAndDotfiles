@@ -98,7 +98,7 @@ elif [ $OS = "cygwin" ];then
     alias ls='ls --color=auto'
 elif [ $OS = "linux" ];then
 	PATH=/home/zwickl/my_usr/bin/:$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
-	export PYTHONPATH=/home/zwickl/my_usr/lib/python2.7/:/share/apps/Python-2.6.4/lib/python2.6/
+	export PYTHONPATH=/home/zwickl/my_usr/lib/python2.7/:/home/zwickl/my_usr/lib/python/:/share/apps/Python-2.6.4/lib/python2.6/
 	export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
 	export DEV=$HOME
 	export NCL=/home/zwickl/ncl/
