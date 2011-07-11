@@ -6,7 +6,7 @@ import string
 from StringIO import StringIO
 import re
 import itertools
-from optparse import OptionParser
+import argparse
 
 from Bio import SeqIO
 from Bio import AlignIO
@@ -14,40 +14,31 @@ from Bio.Align.Applications import MuscleCommandline
 from Bio.Alphabet import IUPAC
 from Bio.Blast import NCBIStandalone
 
-parser = OptionParser(add_help_option=False)
+#use argparse module to parse commandline input
+parser = argparse.ArgumentParser(description='extract sequences from a fasta file')
 
-parser.add_option("-h", "--help", dest="helpflag")
-parser.add_option("-v", "--invert-match", action="store_true", default=False, dest="invertFlag", help="invert match sense")
-#parser.add_option("-i", "--inputfile", dest="filename", type="string", help="input file", metavar="FILE")
-#parser.add_option("-r", "--rows", dest="nrows", type="int", help="number of rows per chunk", metavar="#")
-#parser.add_option("-f", "--firstcols", dest="firstCols", type="string", action="callback", callback=comma_split, help="columns to use in first row set", metavar="# # ...")
-#parser.add_option("-c", "--cols", dest="cols", type="string", action="callback", callback=comma_split, help="columns to use in successive row sets", metavar="# # ...")
-#parser.add_option("-t", "--transpose", action="store_true", dest="transflag", default=False, help="transpose matrix")
+#add possible arguments
+parser.add_argument('-v', '--invert-match', dest='invertMatch', action='store_true', default=False,
+                    help='invert the sense of the match (default false)')
 
-(options, args) = parser.parse_args()
+parser.add_argument('--range', dest='baseRange', nargs=2, type=int, default=[1, -1], metavar=('startbase', 'endbase'),
+                    help='range of alignment positions to output, start at 1, last position included, -1 for end')
 
-'''
-if options.helpflag != None:
-    print_usage("")
+parser.add_argument('pattern',
+                    help='a quoted regular expression to search sequence names for')
 
-if options.filename == None:
-print_usage("you must pass the -i option")
-if options.nrows == None:
-print_usage("you must pass the -r option")
-if options.firstCols == None:
-print_usage("you must pass the -f option")
-if options.cols == None:
-print_usage("you must pass the -c option")
-'''
+parser.add_argument('filenames', nargs='*', default=[], 
+                    help='a list of filenames to search (none for stdin)')
 
-invertMatch = options.invertFlag
+#now process the command line
+parsed = parser.parse_args()
 
-if len(sys.argv) < 3:
-    sys.stderr.write("Enter a quoted sequence name regex and sequence file(s)\n")
-    exit(0)
-else:
-    seqFiles = args[1:]
-    seqPattern = args[0]
+invertMatch = parsed.invertMatch
+startBase = parsed.baseRange[0] - 1
+endBase = parsed.baseRange[1]
+print startBase, endBase
+seqPattern = parsed.pattern
+seqFiles = parsed.filenames
 
 sys.stderr.write("matching pattern %s ...\n" % seqPattern)
 try:
@@ -69,8 +60,7 @@ for oneSeqFile in seqFiles:
     for seq in allRecs:
         match = pat.search(seq.description)
         if ( match is not None and invertMatch is False ) or ( match is None and invertMatch is True ):
-        #if match is not None:
-            matchedSeqs.append(seq)
+            matchedSeqs.append(seq[startBase:endBase])
     
     if len(matchedSeqs) > 0:
         sys.stderr.write("matched %d sequences in %s\n" % (len(matchedSeqs), oneSeqFile))
@@ -79,39 +69,3 @@ for oneSeqFile in seqFiles:
 
     SeqIO.write(matchedSeqs, sys.stdout, "fasta")
 
-'''
-if len(sys.argv) < 3:
-    sys.stderr.write("Enter a sequence filename and a quoted sequence name regex(s)\n")
-    exit(0)
-else:
-    allSeqFile = sys.argv[1]
-    seqPatterns = sys.argv[2:]
-
-sys.stderr.write("Parsing sequence file %s ...\n" % allSeqFile)
-allRecs = [ rec for rec in SeqIO.parse(allSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ]
-
-matchedSeqs = []
-for patStr in seqPatterns:
-    sys.stderr.write("matching pattern %s ...\n" % patStr)
-    try:
-        pat = re.compile(patStr)
-    except:
-        sys.stderr.write("problem compiling regex pattern %s" % patStr)
-        exit(1)
-
-    patMatches = []
-    for seq in allRecs:
-        match = pat.search(seq.description)
-        if match is not None:
-            patMatches.append(seq)
-            sys.stderr.write("matched %d patterns\n" % len(patMatches))
-            matchedSeqs.extend(patMatches)
-            if len(matchedSeqs) > 0:
-                sys.stderr.write("matched sequences: %s\n" % ", ".join([ str(seq.name) for seq in matchedSeqs ]))
-            else:
-                sys.stderr.write("no sequences matched!\n")
-                exit(0)
-
-sys.stderr.write("outputting %s sequences\n" % len(matchedSeqs))
-SeqIO.write(matchedSeqs, sys.stdout, "fasta")
-'''
