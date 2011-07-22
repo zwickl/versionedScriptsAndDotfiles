@@ -7,14 +7,22 @@ if __name__ == "__main__":
     doctest.testmod()
 
 class BlinkCluster:
-    def __init__(self, num, members=[]):
+    def __init__(self, num, members=[], mapping=None):
         self.number = num
-        self.cluster_members = members
+        if mapping is None:
+            self.cluster_members = members
+        else:
+            self.cluster_members = []
+            for member in members:
+                self.cluster_members.append(mapping[member])
+
     def add(self, member):
         self.cluster_members.append(member)
     def __len__(self):
         return len(self.cluster_members)
-
+    def output(self, stream=sys.stdout):
+        for mem in self.cluster_members:
+            stream.write('%d\t%s\n' % (self.number, mem))
 
 def parse_blink_output(filename):
     '''read blink output, which looks like the below, return a list of BlinkClusters
@@ -69,11 +77,23 @@ def parse_blink_output(filename):
             exit(1)
     return allClusters
 
+'''
+def blink_cluster_from_clique(thisClust, maxClique, mapping=None):
+    if mapping is not None:
+        new_members = []
+        for member in clique:
+            if mapping is not None:
+                new_members.append(mapping[member]
+            else:
+                new_members.append(member)
+'''
+
 class HitList:
     def __init__(self, hits):
         #self.hitlist = sets.Set(hits)
         self.hitlist = set(hits)
         self.uniqueNames = None
+        self.numbersToNames = None
     
     def __len__(self):
         return len(self.hitlist)
@@ -107,13 +127,15 @@ class HitList:
         if self.uniqueNames is None:
             count = 1
             self.uniqueNames = {}
+            self.numbersToNames = {}
             for hit in self.hitlist:
-                if not hit[0] in self.uniqueNames:
-                    self.uniqueNames[hit[0]] = count
-                    count +=1
-                if not hit[1] in self.uniqueNames:
-                    self.uniqueNames[hit[1]] = count
-                    count +=1
+                for name in hit:
+                    if not name in self.uniqueNames:
+                        self.uniqueNames[name] = count
+                        self.numbersToNames[count] = name
+                        count +=1
+            if len(self.uniqueNames) != len(self.numbersToNames):
+                exit("problem mapping hit names to numbers")
         return self.uniqueNames.keys()
         '''
             self.uniqueNames = set()
@@ -141,7 +163,6 @@ class HitList:
         stream.write('p EDGE %s %s\n' % (str(len(self.uniqueNames)), str(len(self.hitlist))))
         for hit in self.hitlist:
             stream.write('e %s %s\n' % (self.uniqueNames[hit[0]], self.uniqueNames[hit[1]]))
-
 
 def parse_hits_file(filename):
     hitsFile = open(filename, "rb")
