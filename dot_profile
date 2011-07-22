@@ -138,6 +138,7 @@ export TRUNK_EXEC=$TRUNK/builds/gccAss/installed/bin/Garli
 export TRUNK_EXEC_MPI=$TRUNK/builds/gccAss.MPI/installed/bin/Garli
 export TESTING_EXEC=$PART_EXEC
 export TESTING_EXEC_MPI=$PART_EXEC_MPI
+export VER2_EXEC=$DEV/googleCodeRepo/tags/2.0-release/builds/gccAss/installed/bin/Garli
 export INDEL_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/scripts/
 export ROOT_INDEL=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/
 export TANDY_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/tandyData/scripts
@@ -213,7 +214,7 @@ function inEachDir(){
 }
 
 function usedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
@@ -223,7 +224,7 @@ function usedCount(){
 }
 
 function queuedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
