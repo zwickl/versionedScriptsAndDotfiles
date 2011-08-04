@@ -277,6 +277,14 @@ fi
      fi
 }
 
+function startScript(){
+    echo "#!/bin/bash" > $@ 
+    echo >> $@ 
+    echo >> $@ 
+    vi +3 $@
+    chmod +x $@
+}
+
 #mac specific
 if [[ $OS == 'darwin' ]]; then
 	alias temp='sysctl kern.cpu_temp'
