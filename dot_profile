@@ -17,6 +17,7 @@ fi
 
 #sytem variables
 export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin
+export MANPATH=`manpath`:/home/zwickl/my_usr/share/man/
 export PS1="\w/ $ "
 
 #machines

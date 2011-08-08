@@ -24,6 +24,24 @@ class BlinkCluster:
         for mem in self.cluster_members:
             stream.write('%d\t%s\n' % (self.number, mem))
 
+def parse_mcl_output(filename):
+    '''read MCL output, which looks like the below, return a list of BlinkClusters
+    output is simply one line per cluster:
+    OminuCC03S_FGT1789  OminuCC03S_FGT1792  OoffiCC03S_FGT1798  OminuBB03S_FGT0728  OminuBB03S_FGT0727  OoffiCC03S_FGT1799  OminuCC03S_FGT1791  OminuCC03S_FGT1790   
+    '''
+    mclOut = open(filename, "rb")
+    lines = [ l.split() for l in mclOut ]
+    allClusters = []
+
+    num = 1
+    for cluster in lines:
+        try:
+            allClusters.append(BlinkCluster(num, cluster))
+            num = num + 1
+        except:
+            exit("problem converting mcl cluster to blink format")
+    return allClusters
+
 def parse_blink_output(filename):
     '''read blink output, which looks like the below, return a list of BlinkClusters
     This indicates cluster 0 with one member, cluster 1 with 4, etc.
