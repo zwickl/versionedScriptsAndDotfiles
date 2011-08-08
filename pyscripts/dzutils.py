@@ -72,8 +72,10 @@ def parse_blink_output(filename):
                     thisCluster = []
                     thisCluster.append(line[1])
         except:
-            my_output("problem reading line %s of blink.out\n" % (str(line)), logfile)
-            my_output("expecting lines with only:\ncluster# seqname\n", logfile)
+            print "problem reading line %s of blink.out\n" % (str(line))
+            print "expecting lines with only:\ncluster# seqname\n"
+            #my_output("problem reading line %s of blink.out\n" % (str(line)), logfile)
+            #my_output("expecting lines with only:\ncluster# seqname\n", logfile)
             exit(1)
     return allClusters
 
