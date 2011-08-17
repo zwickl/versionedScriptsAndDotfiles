@@ -15,6 +15,18 @@ elif [[ ${unamestr:0:6} == 'CYGWIN' ]]; then
    OS='cygwin'
 fi
 
+IP='127.0.0.1'
+if [[ $OS == 'darwin' ]]; then
+    IP=`ipconfig getifaddr en0`
+    if [ $? = 1 ]; then
+        IP=`ipconfig getifaddr en1`
+    fi
+elif [[ $OS == 'cygwin' ]]; then
+    NOPROXY=`ipconfig | grep IPv4 | grep 129.237 | wc -l`
+else
+    IP=`hostname -i`
+fi
+
 #sytem variables
 export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin
 export MANPATH=`manpath`:/home/zwickl/my_usr/share/man/
