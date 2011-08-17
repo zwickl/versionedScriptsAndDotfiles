@@ -159,6 +159,7 @@ export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
 alias desk='cd $DESK'
 alias lsl='ls -ltrh'
 alias xterm='xterm -ls'
+alias gp='gnuplot'
 #alias synHome='synergyc  -f --name newlap 192.168.1.64'
 alias synHome='synergyc  -f --name newlap 192.168.2.5'
 alias lsl='ls -ltrh'
@@ -284,6 +285,13 @@ function startScript(){
     echo >> $@ 
     vi +3 $@
     chmod +x $@
+}
+
+function startGnuplotScript(){
+    echo "load ~/versionedScriptsAndDotfiles/generalScripts/default_gnuplot_styles.plt"  > $@
+    echo >> $@
+    echo >> $@
+    vi +3 $@
 }
 
 #mac specific

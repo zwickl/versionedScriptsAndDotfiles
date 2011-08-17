@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import re
 
 if __name__ == "__main__":
     import doctest
@@ -190,4 +191,60 @@ def parse_hits_file(filename):
     #return HitList(lines).get_sublist_by_query_names(['LOC'])
     return HitList(lines)
     
+class ParsedSequenceDescription:
+    def __init__(self, description):
+        '''
+        this will work on our files with sequence names like this:
+        ObartAA03S_FGT0284 seq=cds; coord=barthii_3s:735328..738974:-1; parent_gene=ObartAA03S_FG0284
+        but not the sativa genome names, like this
+        LOC_Os03g02540.1|13103.m00215|CDS proteasome subunit, putative, expressed
+        '''
+        if 'LOC' in description:
+            print "can't parse descriptions like\n\t%s" % description
+            print "only like\n\tObartAA03S_FGT0284 seq=cds; coord=barthii_3s:735328..738974:-1; parent_gene=ObartAA03S_FG0284"
+            exit(1)
+
+        desc = description.replace(";", " ")
+        #desc = desc.replace(":", " ")
+        split_desc = desc.split()
+        
+        #get the name
+        self.name = split_desc[0]
+
+        #get the sequence type
+        if not "seq" in split_desc[1]:
+            exit("no \"seq\" found in %s" % description)
+        match = re.search("seq=(.*)", split_desc[1])
+        if match is None:
+            exit("problem matching \"seq\" in %s" % description)
+        self.type = match.group(1)
+        
+        #get molecular, coordinates and strand
+        if not "coord" in split_desc[2]:
+            exit("no \"coord\" found in %s" % description)
+        match = re.search("coord=(.*):(.*):(.*)", split_desc[2])
+        if match is None:
+            exit("problem matching \"coord\" in %s" % description)
+        self.molecule = match.group(1)
+        coordSplit = match.group(2).split(".")
+        (self.coord_start, self.coord_end) = (coordSplit[0], coordSplit[2])
+        self.strand = match.group(3)
+
+        #get parent gene
+        if not "parent_gene" in split_desc[3]:
+            exit("no \"parent_gene\" found in %s" % description)
+        match = re.search("parent_gene=(.*)", split_desc[3])
+        if match is None:
+            exit("problem matching \"parent_gene\" in %s" % description)
+        self.parent = match.group(1)
+
+    def output(self):
+        print "name", self.name
+        print "type", self.type
+        print "molecule", self.molecule
+        print "start", self.coord_start
+        print "end", self.coord_end
+        print "strand", self.strand
+        print "parent", self.parent
+
 
