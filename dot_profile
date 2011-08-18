@@ -17,12 +17,13 @@ fi
 
 IP='127.0.0.1'
 if [[ $OS == 'darwin' ]]; then
+#first try getting ethernet address, then airport
     IP=`ipconfig getifaddr en0`
     if [ $? = 1 ]; then
         IP=`ipconfig getifaddr en1`
     fi
 elif [[ $OS == 'cygwin' ]]; then
-    NOPROXY=`ipconfig | grep IPv4 | grep 129.237 | wc -l`
+    IP=`ipconfig | grep IPv4 | grep -o '[0-9.]*$'`
 else
     IP=`hostname -i`
 fi
