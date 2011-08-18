@@ -88,7 +88,7 @@ if [ $OS = "darwin" ];then
     PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
 	PATH=$PATH:/usr/local/cuda/bin
 	GNUTERM=x11
-    export ORYZA=/Users/zwickl/Desktop/GarliDEV/experiments/oryza
+    export ORYZA=$DEV/experiments/oryza
     alias oryza='cd $ORYZA'
     alias ls='ls -G'
 elif [ $OS = "cygwin" ];then
@@ -164,7 +164,11 @@ export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commo
 export PYTHONPATH=$HOME/bin/pyscripts/:$PYTHONPATH
 export MAFFT_BINARIES=/share/apps/lib/mafft/
 
-export ORYZA_ROOT=/home/zwickl/experiments/oryza/
+export ORYZA_ROOT=$DEV/experiments/oryza/
+if [ ! -d "$ORYZA_ROOT" ];then
+    export ORYZA_ROOT=/share/work1/zwickl/experiments/oryza/
+    #ls $ORYZA_ROOT &> /dev/null
+fi
 
 export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
 
