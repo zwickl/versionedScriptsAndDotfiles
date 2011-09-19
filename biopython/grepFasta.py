@@ -36,7 +36,7 @@ parsed = parser.parse_args()
 invertMatch = parsed.invertMatch
 startBase = parsed.baseRange[0] - 1
 endBase = parsed.baseRange[1]
-print startBase, endBase
+#print startBase, endBase
 seqPattern = parsed.pattern
 seqFiles = parsed.filenames
 
@@ -60,7 +60,12 @@ for oneSeqFile in seqFiles:
     for seq in allRecs:
         match = pat.search(seq.description)
         if ( match is not None and invertMatch is False ) or ( match is None and invertMatch is True ):
-            matchedSeqs.append(seq[startBase:endBase])
+            #element -1 is the last element, but slicing includes up to but not including the second
+            #value.  So, leave it out to get up to the actual end
+            if endBase == -1:
+                matchedSeqs.append(seq[startBase:])
+            else:
+                matchedSeqs.append(seq[startBase:endBase])
     
     if len(matchedSeqs) > 0:
         sys.stderr.write("matched %d sequences in %s\n" % (len(matchedSeqs), oneSeqFile))

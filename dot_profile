@@ -18,7 +18,7 @@ fi
 IP='127.0.0.1'
 if [[ $OS == 'darwin' ]]; then
 #first try getting ethernet address, then airport
-    IP=`ipconfig getifaddr en0`
+    IP=`ipconfig getifaddr en0 &> /dev/null`
     if [ $? = 1 ]; then
         IP=`ipconfig getifaddr en1`
     fi
@@ -85,6 +85,8 @@ if [ $OS = "darwin" ];then
 	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
 	export NCL_INSTALL_DIR=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
     export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
+    #export MAFFT_BINARIES=/usr/local/bin/
+    export MAFFT_BINARIES=
     PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
 	PATH=$PATH:/usr/local/cuda/bin
 	GNUTERM=x11
@@ -117,6 +119,7 @@ elif [ $OS = "linux" ];then
 	export DEV=$HOME
 	export NCL=/home/zwickl/ncl/
 	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
+    export MAFFT_BINARIES=/share/apps/lib/mafft/
 	alias qa='qstat -u "*" | sort | grep [0-9]' 
 	alias qz='qstat | sort | grep [0-9]' 
 	alias devQrsh='qrsh -q dev.q -l h_vmem=4G -l vf=4G'
@@ -162,7 +165,6 @@ export ROOT_JANSEN=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64
 export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commonScripts/
 
 export PYTHONPATH=$HOME/bin/pyscripts/:$PYTHONPATH
-export MAFFT_BINARIES=/share/apps/lib/mafft/
 
 export ORYZA_ROOT=$DEV/experiments/oryza/
 if [ ! -d "$ORYZA_ROOT" ];then
@@ -280,6 +282,10 @@ else
 		source $HOME/.bashrc
 	}
 fi
+
+function viewDagchainer(){
+    ~/Desktop/code/DAGCHAINER/Java_XY_plotter/run_XYplot.pl $1 $2
+}
 
 function kwy (){
 NOPROXY=0
