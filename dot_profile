@@ -165,10 +165,14 @@ export PYTHONPATH=$HOME/bin/pyscripts/:$PYTHONPATH
 export MAFFT_BINARIES=/share/apps/lib/mafft/
 
 export ORYZA_ROOT=$DEV/experiments/oryza/
+export RELATIVE_ALIGNMENT_PATH_ORYZA=../../alignments/
 if [ ! -d "$ORYZA_ROOT" ];then
     export ORYZA_ROOT=/share/work1/zwickl/experiments/oryza/
     #ls $ORYZA_ROOT &> /dev/null
 fi
+export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/analysisScripts/
+export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/alignmentScripts/
+export GENERAL_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/generalScripts/
 
 export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
 
@@ -263,6 +267,10 @@ function dstat(){
 function mkcd(){
 	mkdir $@
 	cd $@
+}
+
+function countFastaSeqs(){
+    grep '^>' $@ | wc -l
 }
 
 if [[ $OS == 'darwin' ]]; then

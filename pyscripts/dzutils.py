@@ -231,12 +231,14 @@ class ParsedSequenceDescription:
         self.strand = match.group(3)
 
         #get parent gene
-        if not "parent_gene" in split_desc[3]:
-            exit("no \"parent_gene\" found in %s" % description)
-        match = re.search("parent_gene=(.*)", split_desc[3])
-        if match is None:
-            exit("problem matching \"parent_gene\" in %s" % description)
-        self.parent = match.group(1)
+        if len(split_desc) < 4 or not "parent_gene" in split_desc[3]:
+            self.parent = None
+            #exit("no \"parent_gene\" found in %s" % description)
+        else:
+            match = re.search("parent_gene=(.*)", split_desc[3])
+            if match is None:
+                exit("problem matching \"parent_gene\" in %s" % description)
+            self.parent = match.group(1)
 
     def output(self):
         print "name", self.name
