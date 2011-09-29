@@ -209,7 +209,6 @@ alias vig='vi garli.conf'
 #alias dstat="disq_stat"
 alias dsub="disq_sub"
 alias ddel="disq_del"
-alias gits="git status | less"
 
 alias mark="pwd > $HOME/.markedDir"
 alias cdm="cd `cat $HOME/.markedDir`"
@@ -222,6 +221,9 @@ alias debLast='gdb `cat $HOME/.lastMake`/installed/bin/Garli'
 
 #functions
 
+function gits(){
+    git status $@ | less
+}
 
 function inEachDir(){
 	if [ $OS = "darwin" ];then
