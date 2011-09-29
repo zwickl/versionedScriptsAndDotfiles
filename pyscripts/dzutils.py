@@ -58,6 +58,32 @@ def parse_blink_output(filename):
     blinkOut = open(filename, "rb")
     lines = [ l.split() for l in blinkOut ]
     allClusters = []
+ 
+    #this is a much smarter way to do this than the silliness below
+    clustDict = {}
+    for line in lines:
+        try:
+            num = int(line[0])
+            name = line[1]
+            if num in clustDict:
+                clustDict[num].append(name)
+            else:
+                #if the number is a float
+                if str(num) != line[0]:
+                    raise Exception
+                clustDict[num] = [ name ]
+        except:
+            print "problem reading line %s of blink.out\n" % (str(line))
+            print "expecting lines with only:\ncluster# seqname\n"
+            #my_output("problem reading line %s of blink.out\n" % (str(line)), logfile)
+            #my_output("expecting lines with only:\ncluster# seqname\n", logfile)
+            exit(1)
+ 
+    for c in sorted(clustDict.keys()):
+        allClusters.append(BlinkCluster(c, clustDict[c]))
+    return allClusters
+
+    '''
     thisCluster = []
     curNum = 0
     first = True
@@ -97,6 +123,7 @@ def parse_blink_output(filename):
             #my_output("expecting lines with only:\ncluster# seqname\n", logfile)
             exit(1)
     return allClusters
+    '''
 
 '''
 def blink_cluster_from_clique(thisClust, maxClique, mapping=None):
