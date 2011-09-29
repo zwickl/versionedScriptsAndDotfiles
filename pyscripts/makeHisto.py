@@ -17,9 +17,11 @@ def makeHisto(lines, width = 1.0, col = 0):
 	focalCol = [float(line[col]) for line in lines]
 	colMin = min(focalCol)
 	colMax   = max(focalCol)
+	#start is the beginning of the first bin
 	start = int(colMin - 1)
 	while start + width < colMin:
 		start = start + width
+	#end is the beginning of the last bin
 	end = int(colMax + 1)
 	while end > colMax:
 		end = end - width
@@ -30,7 +32,9 @@ def makeHisto(lines, width = 1.0, col = 0):
 	val = start
 	bins = []
 	bounds =[]
-	while val <= (end + width * 0.5):
+	#had a bug here, I think
+	#while val <= (end + width * 0.5):
+	while val <= (end + width):
 		#counts.append((val, 0))
 		bins.append(0)
 		bounds.append(val)
@@ -45,8 +49,10 @@ def makeHisto(lines, width = 1.0, col = 0):
 		b = 0
 	#	print element
 		while bounds[b] + width < element:
-			val = val + width
+			#val = val + width
 			b = b + 1
+			if b == len(bounds):
+				exit("Error: ran past end of bins")
 		bins[b] = bins[b] + 1
 	for c in range(0, len(bins)):
 		print "%f\t%f\t%d\t%f" % (bounds[c], bounds[c] + width, bins[c], float(bins[c]) / num)
