@@ -119,7 +119,11 @@ elif [ $OS = "linux" ];then
 	export DEV=$HOME
 	export NCL=/home/zwickl/ncl/
 	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
-    export MAFFT_BINARIES=/share/apps/lib/mafft/
+    if [ -d /share/apps/lib/mafft/ ];then
+        export MAFFT_BINARIES=/share/apps/lib/mafft/
+    else
+        export MAFFT_BINARIES=$HOME/my_usr/lib/mafft/
+    fi
 	alias qa='qstat -u "*" | sort | grep [0-9]' 
 	alias qz='qstat | sort | grep [0-9]' 
 	alias devQrsh='qrsh -q dev.q -l h_vmem=4G -l vf=4G'
@@ -239,7 +243,7 @@ function inEachDir(){
 }
 
 function usedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
@@ -249,7 +253,7 @@ function usedCount(){
 }
 
 function queuedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
