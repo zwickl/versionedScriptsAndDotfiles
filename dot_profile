@@ -356,6 +356,16 @@ function startGnuplotScript(){
     vi +3 $@
 }
 
+function myqrsh(){
+    if [ $# -eq 0 ];then
+        MEM=2
+    else
+        MEM=$@
+    fi
+    echo qrsh -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
+    qrsh -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
+}
+
 #mac specific
 if [[ $OS == 'darwin' ]]; then
 	alias temp='sysctl kern.cpu_temp'
