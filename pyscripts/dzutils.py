@@ -7,6 +7,73 @@ if __name__ == "__main__":
     import doctest
     doctest.testmod()
 
+#A set of chromosomal coordinates for each sequence in an alignment
+#Single copy ONLY!  Missing taxa are allowed though
+class CoordinateSet:
+    def __init__(self, taxa_names):
+        self.defaultCoord = -1
+        self.seqCoords = {}
+        #for tax in oryza.taxon_names:
+        if len(taxa_names) == 0:
+            exit("you must pass a list of taxon names")
+        for tax in taxa_names:
+            self.seqCoords[tax] = self.defaultCoord
+    def set_coordinate(self, taxon, coord):
+        try:
+            if self.seqCoords[taxon] is not None:
+                self.seqCoords[taxon] = int(coord)
+        except KeyError:
+            print self.seqCoords
+            exit("trying to assign coordinate to unknown taxon: %s" % taxon)
+    def set_filename(self, name):
+        self.filename = name
+        self.short_filename = extract_core_filename(name)
+
+    def output(self):
+        for t in self.seqCoords.keys():
+            print t,
+            print self.seqCoords[t]
+    def row_output(self, taxon_labels=None):
+        str = ''
+        if taxon_labels is None:
+            #this will sort the columns alphabetically by taxon name
+            for t in sorted(self.seqCoords.keys()):
+                str += '%d\t' % int(self.seqCoords[t])
+        #IMPORTANT: if taxon labels are passed in, the coord order will be the same, NOT alphabetical
+        else:
+            try:
+                for lab in taxon_labels:
+                    str += '%d\t' % int(self.seqCoords[lab])
+            except:
+                exit('could not match taxon %s with any coordinate' % lab)
+        return str
+
+def extract_core_filename(name):
+    '''
+    >>> extract_core_filename('../alignments/aligned.blink.00047.00002.8T.noDupes.954C.nex')
+    '00047.00002.8T.noDupes.954C'
+    '''
+    extracted = None
+    patts = [ '^.*blink[.](.*)', '^.*clique[.](.*)', '^.*MCL.*[.](.*)' ]
+    for p in patts:
+        search = re.search(p, name)
+        if search is not None:
+            extracted = search.group(1)
+            break
+    if extracted is None:
+        exit("problem shortening name: %s", name)
+   
+    extracted2 = None
+    patts = [ '(.*).nex$', '(.*).tre$', '(.*).boot$' ]
+    for p in patts:
+        search = re.search(p, extracted)
+        if search is not None:
+            extracted2 = search.group(1)
+            break
+    if extracted2 is None:
+        exit("problem shortening name: %s", name)
+    return extracted2
+
 class BlinkCluster:
     def __init__(self, num, members=[], mapping=None):
         self.number = num
