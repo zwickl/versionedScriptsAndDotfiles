@@ -64,7 +64,11 @@ class row:
 	#print [type(x) for x in self.colEntries]
 
     def element(self, c):
-	return self.colEntries[c]
+        if c >= len(self.colEntries):
+            mess = 'requested index (%d) > than length of list (%d)' % (c, len(self.colEntries))
+            sys.stderr.write(mess)
+            raise IndexError(mess)
+        return self.colEntries[c]
 
     def columns(self):
 	return len(self.colEntries)

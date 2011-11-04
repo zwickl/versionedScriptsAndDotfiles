@@ -93,6 +93,7 @@ if [ $OS = "darwin" ];then
     export ORYZA=$DEV/experiments/oryza
     alias oryza='cd $ORYZA'
     alias ls='ls -G'
+    alias inkscape="/Applications/Inkscape.app/Contents/Resources/bin/inkscape"
 elif [ $OS = "cygwin" ];then
 	export HOMEDRIVE=/cygdrive/c/
 	export DESK=/cygdrive/f/Desk/
