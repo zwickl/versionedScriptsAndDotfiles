@@ -115,6 +115,7 @@ elif [ $OS = "cygwin" ];then
     alias ls='ls --color=auto'
 elif [ $OS = "linux" ];then
 	PATH=/home/zwickl/my_usr/bin/:$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
+    PATH=$PATH:$HOME/libbuilds/lagan20/
 	export PYTHONPATH=/home/zwickl/my_usr/lib/python2.7/:/home/zwickl/my_usr/lib/python/:/share/apps/Python-2.6.4/lib/python2.6/
 	export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
 	export DEV=$HOME
@@ -132,6 +133,7 @@ elif [ $OS = "linux" ];then
 	alias ViewTests='vi $TESTS/TESTRESULTS.log'
 	alias c0='ssh compute-0-0'
 	alias backupToPhylo='rsync --progress -avz --exclude-from=$HOME/.rsync_exclude $HOME/ $PHYLO:fromKwy/'
+    alias emergencyShutdownHal='sudo rocks run host command=shutdown'
 fi
 
 #temporary exports
@@ -182,6 +184,8 @@ export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/alignmentScripts/
 export GENERAL_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/generalScripts/
 
 export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
+
+export LAGAN_DIR=$HOME/libbuilds/lagan20/
 
 #command aliases
 alias desk='cd $DESK'
