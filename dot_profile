@@ -171,10 +171,14 @@ export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commo
 
 export PYTHONPATH=$HOME/bin/pyscripts/:$PYTHONPATH
 
-export ORYZA_ROOT=$DEV/experiments/oryza/
+if [ $OS = "linux" ];then
+    export ORYZA_ROOT=$DEV/oryza/
+else
+    export ORYZA_ROOT=$DEV/experiments/oryza/
+fi
 export G34=$ORYZA_ROOT/gramene34_omap_genes/
 export C34=$ORYZA_ROOT/gramene34_cleanedByCSHL/
-export S34=$ORYZA_ROOT/gramene34_splitAnnotations_cleanedByCSHL/
+export S34=$ORYZA_ROOT/gramene34_split_cleanedByCSHL/
 export SERIOUS=$ORYZA_ROOT/gramene34_omap_genes/datasetAssembly/blastP.clean/seriousRun/
 export RELATIVE_ALIGNMENT_PATH_ORYZA=../../alignments/
 if [ ! -d "$ORYZA_ROOT" ];then

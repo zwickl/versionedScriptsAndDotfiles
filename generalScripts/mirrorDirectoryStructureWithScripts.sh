@@ -13,4 +13,4 @@ fi
 FROM=${1%/}
 TO=${2%/}
 
-rsync -av --include=*/ --include=*.py --include=*.sh --exclude=*  $FROM/ $TO/
+rsync -av --include=*/ --include=*.source --include=*.py --include=*.sh --exclude=*  $FROM/ $TO/
