@@ -58,6 +58,8 @@ export ORRORIN=zwickl@orrorin.nescent.org
 export KANG=zwickl@129.237.138.171
 export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
 export HAL=zwickl@hal.biosci.arizona.edu
+export WORKLAP=zwickl@128.196.198.91
+export FLOYD=zwickl@128.196.193.200
 
 #ssh aliases
 alias lonestar='ssh $LONESTAR'
@@ -403,3 +405,8 @@ HISTIGNORE=\&
 HISTFILESIZE=1000
 
 
+
+# Setting PATH for Python 2.7
+# The orginal version is saved in .profile.pysave
+PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
+export PATH
