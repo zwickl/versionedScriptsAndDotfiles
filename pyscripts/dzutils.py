@@ -7,6 +7,73 @@ if __name__ == "__main__":
     import doctest
     doctest.testmod()
 
+#A set of chromosomal coordinates for each sequence in an alignment
+#Single copy ONLY!  Missing taxa are allowed though
+class CoordinateSet:
+    def __init__(self, taxa_names):
+        self.defaultCoord = -1
+        self.seqCoords = {}
+        #for tax in oryza.taxon_names:
+        if len(taxa_names) == 0:
+            exit("you must pass a list of taxon names")
+        for tax in taxa_names:
+            self.seqCoords[tax] = self.defaultCoord
+    def set_coordinate(self, taxon, coord):
+        try:
+            if self.seqCoords[taxon] is not None:
+                self.seqCoords[taxon] = int(coord)
+        except KeyError:
+            print self.seqCoords
+            exit("trying to assign coordinate to unknown taxon: %s" % taxon)
+    def set_filename(self, name):
+        self.filename = name
+        self.short_filename = extract_core_filename(name)
+
+    def output(self):
+        for t in self.seqCoords.keys():
+            print t,
+            print self.seqCoords[t]
+    def row_output(self, taxon_labels=None):
+        str = ''
+        if taxon_labels is None:
+            #this will sort the columns alphabetically by taxon name
+            for t in sorted(self.seqCoords.keys()):
+                str += '%d\t' % int(self.seqCoords[t])
+        #IMPORTANT: if taxon labels are passed in, the coord order will be the same, NOT alphabetical
+        else:
+            try:
+                for lab in taxon_labels:
+                    str += '%d\t' % int(self.seqCoords[lab])
+            except:
+                exit('could not match taxon %s with any coordinate' % lab)
+        return str
+
+def extract_core_filename(name):
+    '''
+    >>> extract_core_filename('../alignments/aligned.blink.00047.00002.8T.noDupes.954C.nex')
+    '00047.00002.8T.noDupes.954C'
+    '''
+    extracted = None
+    patts = [ '^.*blink[.](.*)', '^.*clique[.](.*)', '^.*MCL.*[.](.*)' ]
+    for p in patts:
+        search = re.search(p, name)
+        if search is not None:
+            extracted = search.group(1)
+            break
+    if extracted is None:
+        exit("problem shortening name: %s", name)
+   
+    extracted2 = None
+    patts = [ '(.*).nex$', '(.*).tre$', '(.*).boot$' ]
+    for p in patts:
+        search = re.search(p, extracted)
+        if search is not None:
+            extracted2 = search.group(1)
+            break
+    if extracted2 is None:
+        exit("problem shortening name: %s", name)
+    return extracted2
+
 class BlinkCluster:
     def __init__(self, num, members=[], mapping=None):
         self.number = num
@@ -58,6 +125,32 @@ def parse_blink_output(filename):
     blinkOut = open(filename, "rb")
     lines = [ l.split() for l in blinkOut ]
     allClusters = []
+ 
+    #this is a much smarter way to do this than the silliness below
+    clustDict = {}
+    for line in lines:
+        try:
+            num = int(line[0])
+            name = line[1]
+            if num in clustDict:
+                clustDict[num].append(name)
+            else:
+                #if the number is a float
+                if str(num) != line[0]:
+                    raise Exception
+                clustDict[num] = [ name ]
+        except:
+            print "problem reading line %s of blink.out\n" % (str(line))
+            print "expecting lines with only:\ncluster# seqname\n"
+            #my_output("problem reading line %s of blink.out\n" % (str(line)), logfile)
+            #my_output("expecting lines with only:\ncluster# seqname\n", logfile)
+            exit(1)
+ 
+    for c in sorted(clustDict.keys()):
+        allClusters.append(BlinkCluster(c, clustDict[c]))
+    return allClusters
+
+    '''
     thisCluster = []
     curNum = 0
     first = True
@@ -97,6 +190,7 @@ def parse_blink_output(filename):
             #my_output("expecting lines with only:\ncluster# seqname\n", logfile)
             exit(1)
     return allClusters
+    '''
 
 '''
 def blink_cluster_from_clique(thisClust, maxClique, mapping=None):
@@ -190,53 +284,187 @@ def parse_hits_file(filename):
     lines = [ tuple(l.split()) for l in hitsFile ]
     #return HitList(lines).get_sublist_by_query_names(['LOC'])
     return HitList(lines)
-    
+   
+def make_dictionary_from_gff_arbitrary_field(string):
+    dict = {}
+    fields = string.split(';')
+    for f in fields:
+        sep = f.split('=')
+        try:
+            dict[sep[0]] = sep[1]
+        except:
+            exit("problem reading field, %s" % sep)
+    return dict
+
 class ParsedSequenceDescription:
-    def __init__(self, description):
+    def __init__(self, description=None, gff=None):
         '''
-        this will work on our files with sequence names like this:
-        ObartAA03S_FGT0284 seq=cds; coord=barthii_3s:735328..738974:-1; parent_gene=ObartAA03S_FG0284
-        but not the sativa genome names, like this
-        LOC_Os03g02540.1|13103.m00215|CDS proteasome subunit, putative, expressed
+        OGE gff lines:
+        >>> print ParsedSequenceDescription(gff='barthii_3s  ensembl gene    735328  738974  .   -   .   ID=ObartAA03S_FG0284;Name=ObartAA03S_FG0284;biotype=protein_coding').name
+        ObartAA03S_FG0284
+        >>> print ParsedSequenceDescription(gff='barthii_3s  ensembl mRNA    735328  738974  .   -   .   ID=ObartAA03S_FGT0284;Parent=ObartAA03S_FG0284;Name=ObartAA03S_FGT0284;biotype=protein_coding').name
+        ObartAA03S_FGT0284
+        >>> print ParsedSequenceDescription(gff='barthii_3s  ensembl CDS 738588  738974  .   -   0   Parent=ObartAA03S_FGT0284;Name=CDS.1419').name
+        ObartAA03S_FGT0284
+        
+        OGE fasta sequence names
+        >>> print ParsedSequenceDescription(description='ObartAA03S_FGT0284 seq=cds; coord=barthii_3s:735328..738974:-1; parent_gene=ObartAA03S_FG0284').name
+        ObartAA03S_FGT0284
+        >>> print ParsedSequenceDescription(description='>ObartAA03S_FG0284 seq=gene; coord=barthii_3s:735328..738974:-1').name
+        ObartAA03S_FG0284
+        
+        IRGSP gff
+        >>> print ParsedSequenceDescription(gff='Chr3    MSU_osa1r6  gene    934041  938212  .   -   .   ID=13103.t00151;Name=proteasome%20subunit%2C%20putative%2C%20expressed;Alias=LOC_Os03g02540').name
+        LOC_Os03g02540
+        >>> print ParsedSequenceDescription(gff='Chr3    MSU_osa1r6  mRNA    934041  938212  .   -   .   ID=13103.m00215;Parent=13103.t00151;Alias=LOC_Os03g02540.1').name
+        LOC_Os03g02540.1
+        >>> print ParsedSequenceDescription(gff='Chr3    MSU_osa1r6  CDS 937701  938087  .   -   0   Parent=13103.m00215').name
+        13103.m00215
+        
+        IRGSP fasta sequence names
+        >>> print ParsedSequenceDescription(description='>LOC_Os03g02540.1|13103.m00215|CDS proteasome subunit, putative, expressed').name
+        LOC_Os03g02540.1
+        >>> print ParsedSequenceDescription(description='>LOC_Os03g02540|13103.t00151|unspliced-genomic proteasome subunit, putative, expressed').name
+        LOC_Os03g02540
+        
         '''
-        if 'LOC' in description:
-            print "can't parse descriptions like\n\t%s" % description
-            print "only like\n\tObartAA03S_FGT0284 seq=cds; coord=barthii_3s:735328..738974:-1; parent_gene=ObartAA03S_FG0284"
-            exit(1)
 
-        desc = description.replace(";", " ")
-        #desc = desc.replace(":", " ")
-        split_desc = desc.split()
+        if gff is not None and description is not None:
+            exit("pass either a gff or description string, not both")
+
+        self.name = None
+        self.ID = None
+        self.description = None
+        self.type = None
+        self.molecule = None
+        self.coord_start = None
+        self.coord_end = None
+        self.strand = None
+        self.frame = None
+        self.parent = None
+        '''
+        #############################
+        OGE:
+
+        CDS fasta description:
+        >ObartAA03S_FGT0284 seq=cds; coord=barthii_3s:735328..738974:-1; parent_gene=ObartAA03S_FG0284
+
+        gene fasta description
+        >ObartAA03S_FG0284 seq=gene; coord=barthii_3s:735328..738974:-1
+
+        gff for this looks like:
+        barthii_3s  ensembl gene    735328  738974  .   -   .   ID=ObartAA03S_FG0284;Name=ObartAA03S_FG0284;biotype=protein_coding
+        barthii_3s  ensembl mRNA    735328  738974  .   -   .   ID=ObartAA03S_FGT0284;Parent=ObartAA03S_FG0284;Name=ObartAA03S_FGT0284;biotype=protein_coding
+        barthii_3s  ensembl intron  737785  738587  .   -   .   Parent=ObartAA03S_FGT0284;Name=intron.1408
+        barthii_3s  ensembl intron  736782  737463  .   -   .   Parent=ObartAA03S_FGT0284;Name=intron.1409
+        barthii_3s  ensembl intron  736578  736664  .   -   .   Parent=ObartAA03S_FGT0284;Name=intron.1410
+        barthii_3s  ensembl intron  735818  736491  .   -   .   Parent=ObartAA03S_FGT0284;Name=intron.1411
+        barthii_3s  ensembl intron  735508  735582  .   -   .   Parent=ObartAA03S_FGT0284;Name=intron.1412
+        barthii_3s  ensembl exon    738588  738974  .   -   .   Parent=ObartAA03S_FGT0284;Name=ObartAA03S_FG0284.exon1
+        barthii_3s  ensembl exon    737464  737784  .   -   .   Parent=ObartAA03S_FGT0284;Name=ObartAA03S_FG0284.exon2
+        barthii_3s  ensembl exon    736665  736781  .   -   .   Parent=ObartAA03S_FGT0284;Name=ObartAA03S_FG0284.exon3
+        barthii_3s  ensembl exon    736492  736577  .   -   .   Parent=ObartAA03S_FGT0284;Name=ObartAA03S_FG0284.exon4
+        barthii_3s  ensembl exon    735583  735817  .   -   .   Parent=ObartAA03S_FGT0284;Name=ObartAA03S_FG0284.exon5
+        barthii_3s  ensembl exon    735328  735507  .   -   .   Parent=ObartAA03S_FGT0284;Name=ObartAA03S_FG0284.exon6
+        barthii_3s  ensembl CDS 738588  738974  .   -   0   Parent=ObartAA03S_FGT0284;Name=CDS.1419
+        barthii_3s  ensembl CDS 737464  737784  .   -   0   Parent=ObartAA03S_FGT0284;Name=CDS.1420
+        barthii_3s  ensembl CDS 736665  736781  .   -   0   Parent=ObartAA03S_FGT0284;Name=CDS.1421
+        barthii_3s  ensembl CDS 736492  736577  .   -   0   Parent=ObartAA03S_FGT0284;Name=CDS.1422
+        barthii_3s  ensembl CDS 735583  735817  .   -   2   Parent=ObartAA03S_FGT0284;Name=CDS.1423
+        barthii_3s  ensembl CDS 735328  735507  .   -   0   Parent=ObartAA03S_FGT0284;Name=CDS.1424
+        ######################################
+        IRGSP:
+        CDS fasta description:
+        >LOC_Os03g02540.1|13103.m00215|CDS proteasome subunit, putative, expressed
         
-        #get the name
-        self.name = split_desc[0]
+        gene fasta description:
+        >LOC_Os03g02540|13103.t00151|unspliced-genomic proteasome subunit, putative, expressed
 
-        #get the sequence type
-        if not "seq" in split_desc[1]:
-            exit("no \"seq\" found in %s" % description)
-        match = re.search("seq=(.*)", split_desc[1])
-        if match is None:
-            exit("problem matching \"seq\" in %s" % description)
-        self.type = match.group(1)
-        
-        #get molecular, coordinates and strand
-        if not "coord" in split_desc[2]:
-            exit("no \"coord\" found in %s" % description)
-        match = re.search("coord=(.*):(.*):(.*)", split_desc[2])
-        if match is None:
-            exit("problem matching \"coord\" in %s" % description)
-        self.molecule = match.group(1)
-        coordSplit = match.group(2).split(".")
-        (self.coord_start, self.coord_end) = (coordSplit[0], coordSplit[2])
-        self.strand = match.group(3)
+        gff for this looks like:
+        Chr3    MSU_osa1r6  gene    934041  938212  .   -   .   ID=13103.t00151;Name=proteasome%20subunit%2C%20putative%2C%20expressed;Alias=LOC_Os03g02540
+        Chr3    MSU_osa1r6  mRNA    934041  938212  .   -   .   ID=13103.m00215;Parent=13103.t00151;Alias=LOC_Os03g02540.1
+        Chr3    MSU_osa1r6  five_prime_UTR  938088  938212  .   -   .   Parent=13103.m00215
+        Chr3    MSU_osa1r6  CDS 937701  938087  .   -   0   Parent=13103.m00215
+        Chr3    MSU_osa1r6  CDS 936586  936906  .   -   0   Parent=13103.m00215
+        Chr3    MSU_osa1r6  CDS 935789  935905  .   -   0   Parent=13103.m00215
+        Chr3    MSU_osa1r6  CDS 935616  935701  .   -   0   Parent=13103.m00215
+        Chr3    MSU_osa1r6  CDS 934712  934946  .   -   2   Parent=13103.m00215
+        Chr3    MSU_osa1r6  CDS 934457  934636  .   -   0   Parent=13103.m00215
+        Chr3    MSU_osa1r6  three_prime_UTR 934041  934456  .   -   .   Parent=13103.m00215
 
-        #get parent gene
-        if not "parent_gene" in split_desc[3]:
-            exit("no \"parent_gene\" found in %s" % description)
-        match = re.search("parent_gene=(.*)", split_desc[3])
-        if match is None:
-            exit("problem matching \"parent_gene\" in %s" % description)
-        self.parent = match.group(1)
+        '''
+        #this gff reading attempt was aborted, I think
+        if gff is not None:
+            #gff's are generally the same, except for random junk in the last field.  
+            #g = gff.replace(";", " ")
+            split_gff = gff.split()
+            #So, we end up with
+            # 0          1        2       3        4     5   6   7      8  
+            #Chr3    MSU_osa1r6  gene    3465    5944    .   +   .   ID=13103.t05666;Name=expressed%20protein;Alias=LOC_Os03g01008
+            
+            # 0             1     2     3       4    5   6   7      8                    
+            #nivara_3s   ensembl CDS 1001307 1001549 .   -   0   Parent=OnivaAA03S_FGT0137;Name=CDS.26236
+            self.molecule = split_gff[0]
+            self.program = split_gff[1]
+            self.type = split_gff[2]
+            self.coord_start = split_gff[3]
+            self.coord_end = split_gff[4]
+            self.score = split_gff[5]
+            self.strand = split_gff[6]
+
+            self.various = make_dictionary_from_gff_arbitrary_field(split_gff[8])
+
+            if self.type in [ 'gene', 'mRNA' ] :
+                if 'Alias' in self.various:
+                    self.name = self.various['Alias']
+                elif 'Name' in self.various:
+                    self.name = self.various['Name']
+            else:
+                try:
+                    self.name = self.various['Parent']
+                except:
+                    exit("problem extracting name from %s" % self.various)
+        else:
+            desc = description.replace(";", " ")
+            #desc = desc.replace(":", " ")
+            split_desc = desc.split()
+            
+            #get the name
+            self.name = split_desc[0].replace(">", "")
+
+            #get the sequence type
+            if not "seq" in split_desc[1]:
+                exit("no \"seq\" found in %s" % description)
+            match = re.search("seq=(.*)", split_desc[1])
+            if match is None:
+                exit("problem matching \"seq\" in %s" % description)
+            self.type = match.group(1)
+            
+            #get molecule, coordinates and strand
+            if not "coord" in split_desc[2]:
+                exit("no \"coord\" found in %s" % description)
+            match = re.search("coord=(.*):(.*):(.*)", split_desc[2])
+            if match is None:
+                exit("problem matching \"coord\" in %s" % description)
+            self.molecule = match.group(1)
+            coordSplit = match.group(2).split(".")
+            (self.coord_start, self.coord_end) = (coordSplit[0], coordSplit[2])
+            self.strand = match.group(3)
+
+            #get parent gene
+            if len(split_desc) > 3:
+#made some hasty changes here - check it through at some point
+                if not "parent_gene" in split_desc[3]:
+                    self.parent = 'none'
+                    #exit("no \"parent_gene\" found in %s" % description)
+                else:
+                    match = re.search("parent_gene=(.*)", split_desc[3])
+                    if match is None:
+                        exit("problem matching \"parent_gene\" in %s" % description)
+                    self.parent = match.group(1)
+            else:
+                #if this is a full gene, it has no parent
+                self.parent = 'none'
 
     def output(self):
         print "name", self.name
@@ -247,4 +475,7 @@ class ParsedSequenceDescription:
         print "strand", self.strand
         print "parent", self.parent
 
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
 

@@ -18,7 +18,7 @@ fi
 IP='127.0.0.1'
 if [[ $OS == 'darwin' ]]; then
 #first try getting ethernet address, then airport
-    IP=`ipconfig getifaddr en0`
+    IP=`ipconfig getifaddr en0 &> /dev/null`
     if [ $? = 1 ]; then
         IP=`ipconfig getifaddr en1`
     fi
@@ -58,6 +58,8 @@ export ORRORIN=zwickl@orrorin.nescent.org
 export KANG=zwickl@129.237.138.171
 export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
 export HAL=zwickl@hal.biosci.arizona.edu
+export WORKLAP=zwickl@128.196.198.91
+export FLOYD=zwickl@128.196.193.200
 
 #ssh aliases
 alias lonestar='ssh $LONESTAR'
@@ -85,12 +87,13 @@ if [ $OS = "darwin" ];then
 	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
 	export NCL_INSTALL_DIR=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
     export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
+    #export MAFFT_BINARIES=/usr/local/bin/
+    export MAFFT_BINARIES=
     PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
 	PATH=$PATH:/usr/local/cuda/bin
 	GNUTERM=x11
-    export ORYZA=$DEV/experiments/oryza
-    alias oryza='cd $ORYZA'
     alias ls='ls -G'
+    alias inkscape="/Applications/Inkscape.app/Contents/Resources/bin/inkscape"
 elif [ $OS = "cygwin" ];then
 	export HOMEDRIVE=/cygdrive/c/
 	export DESK=/cygdrive/f/Desk/
@@ -112,11 +115,17 @@ elif [ $OS = "cygwin" ];then
     alias ls='ls --color=auto'
 elif [ $OS = "linux" ];then
 	PATH=/home/zwickl/my_usr/bin/:$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
+    PATH=$PATH:$HOME/libbuilds/lagan20/
 	export PYTHONPATH=/home/zwickl/my_usr/lib/python2.7/:/home/zwickl/my_usr/lib/python/:/share/apps/Python-2.6.4/lib/python2.6/
 	export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
 	export DEV=$HOME
 	export NCL=/home/zwickl/ncl/
 	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
+    if [ -d /share/apps/lib/mafft/ ];then
+        export MAFFT_BINARIES=/share/apps/lib/mafft/
+    else
+        export MAFFT_BINARIES=$HOME/my_usr/lib/mafft/
+    fi
 	alias qa='qstat -u "*" | sort | grep [0-9]' 
 	alias qz='qstat | sort | grep [0-9]' 
 	alias devQrsh='qrsh -q dev.q -l h_vmem=4G -l vf=4G'
@@ -124,6 +133,7 @@ elif [ $OS = "linux" ];then
 	alias ViewTests='vi $TESTS/TESTRESULTS.log'
 	alias c0='ssh compute-0-0'
 	alias backupToPhylo='rsync --progress -avz --exclude-from=$HOME/.rsync_exclude $HOME/ $PHYLO:fromKwy/'
+    alias emergencyShutdownHal='sudo rocks run host command=shutdown'
 fi
 
 #temporary exports
@@ -162,15 +172,28 @@ export ROOT_JANSEN=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64
 export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commonScripts/
 
 export PYTHONPATH=$HOME/bin/pyscripts/:$PYTHONPATH
-export MAFFT_BINARIES=/share/apps/lib/mafft/
 
-export ORYZA_ROOT=$DEV/experiments/oryza/
+if [ $OS = "linux" ];then
+    export ORYZA_ROOT=$DEV/oryza/
+else
+    export ORYZA_ROOT=$DEV/experiments/oryza/
+fi
+export G34=$ORYZA_ROOT/gramene34_omap_genes/
+export C34=$ORYZA_ROOT/gramene34_cleanedByCSHL/
+export S34=$ORYZA_ROOT/gramene34_split_cleanedByCSHL/
+export SERIOUS=$ORYZA_ROOT/gramene34_omap_genes/datasetAssembly/blastP.clean/seriousRun/
+export RELATIVE_ALIGNMENT_PATH_ORYZA=../../alignments/
 if [ ! -d "$ORYZA_ROOT" ];then
     export ORYZA_ROOT=/share/work1/zwickl/experiments/oryza/
     #ls $ORYZA_ROOT &> /dev/null
 fi
+export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/analysisScripts/
+export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/alignmentScripts/
+export GENERAL_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/generalScripts/
 
 export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
+
+export LAGAN_DIR=$HOME/libbuilds/lagan20/
 
 #command aliases
 alias desk='cd $DESK'
@@ -178,7 +201,7 @@ alias lsl='ls -ltrh'
 alias xterm='xterm -ls'
 alias gp='gnuplot'
 #alias synHome='synergyc  -f --name newlap 192.168.1.64'
-alias synHome='synergyc  -f --name newlap 192.168.2.5'
+alias synHome='synergyc  -f --name newlap 192.168.1.141'
 alias lsl='ls -ltrh'
 alias hist='history | grep'
 alias mi='nice make -j 2 && nice make install && pwd > $HOME/.lastMake'
@@ -199,7 +222,6 @@ alias vig='vi garli.conf'
 #alias dstat="disq_stat"
 alias dsub="disq_sub"
 alias ddel="disq_del"
-alias gits="git status | less"
 
 alias mark="pwd > $HOME/.markedDir"
 alias cdm="cd `cat $HOME/.markedDir`"
@@ -212,6 +234,9 @@ alias debLast='gdb `cat $HOME/.lastMake`/installed/bin/Garli'
 
 #functions
 
+function gits(){
+    git status $@ | less
+}
 
 function inEachDir(){
 	if [ $OS = "darwin" ];then
@@ -233,7 +258,7 @@ function inEachDir(){
 }
 
 function usedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
@@ -243,7 +268,7 @@ function usedCount(){
 }
 
 function queuedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
@@ -265,6 +290,18 @@ function mkcd(){
 	cd $@
 }
 
+function countFastaSeqs(){
+    for i in $@
+    do
+        echo $i
+        grep '^>' $i | wc -l
+    done
+}
+
+function occurenceCount(){
+    grep $1 $2 | wc -l
+}
+
 if [[ $OS == 'darwin' ]]; then
 	function rce(){
 		vi $HOME/.profile
@@ -279,6 +316,12 @@ else
 		vi $HOME/.bashrc
 		source $HOME/.bashrc
 	}
+fi
+
+if [[ $OS == 'darwin' ]]; then
+    function viewDagchainer(){
+        ~/Desktop/code/DAGCHAINER/Java_XY_plotter/run_XYplot.pl $1 $2
+    }
 fi
 
 function kwy (){
@@ -296,6 +339,21 @@ fi
      fi
 }
 
+function dkwy (){
+NOPROXY=0
+if [[ $OS == 'darwin' ]]; then
+    NOPROXY=`ifconfig | grep inet | grep 129.237 | wc -l`
+elif [[ $OS == 'cygwin' ]]; then
+    NOPROXY=`ipconfig | grep IPv4 | grep 129.237 | wc -l`
+fi
+
+    if [ "$NOPROXY" -eq 0 ];then
+        ssh -t $PHYLO 'ssh derrick@129.237.24.139'
+     else
+        ssh derrick@129.237.24.139
+     fi
+}
+
 function startScript(){
     echo "#!/bin/bash" > $@ 
     echo >> $@ 
@@ -309,6 +367,16 @@ function startGnuplotScript(){
     echo >> $@
     echo >> $@
     vi +3 $@
+}
+
+function myqrsh(){
+    if [ $# -eq 0 ];then
+        MEM=2
+    else
+        MEM=$@
+    fi
+    echo qrsh -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
+    qrsh -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
 }
 
 #mac specific
@@ -337,3 +405,8 @@ HISTIGNORE=\&
 HISTFILESIZE=1000
 
 
+
+# Setting PATH for Python 2.7
+# The orginal version is saved in .profile.pysave
+PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
+export PATH
