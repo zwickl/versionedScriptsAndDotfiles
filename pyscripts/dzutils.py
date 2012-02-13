@@ -84,6 +84,15 @@ class BlinkCluster:
             for member in members:
                 self.cluster_members.append(mapping[member])
 
+        self.noDupes = True
+        membDict = {}
+        for memb in self.cluster_members:
+            if memb[0:7] in membDict:
+                self.noDupes = False
+                break
+            else:
+                membDict[memb[0:7]] = True
+
     def add(self, member):
         self.cluster_members.append(member)
     def __len__(self):

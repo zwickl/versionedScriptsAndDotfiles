@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import re
 from dzutils import *
 
 class Oryza:
@@ -29,6 +30,12 @@ def rename_sativa_to_oge_standard(name):
     '''standardize the naming format'''
     newName = name.replace('LOC_Os', 'OsatjAA')
     newName = newName.replace('BGIOSGA', 'OsatiAA03.')
+    if 'ORGLA' in name:
+        #glaberrima MIPS annotations are named like this: ORGLA03G0400100.1
+        #want OglabAA03S_M4001
+        newName = newName.replace('ORGLA03G0', 'OglabAA03S_M')
+        newName = re.sub('00[.](1)', '.\\1', newName)
+        newName = re.sub('00$', '', newName)
     return newName.replace('BGIOSIFCE', 'OsatiAA03.')
 
 def extract_coords_for_seqs_in_alignment(filenames):

@@ -19,12 +19,27 @@ def sort_feature_list(recList):
         qual = 'ID'
         if 'Alias' in recList[0].features[0].qualifiers:
             qual = 'Alias'
-        recList.sort(key=lambda rec:rec.features[0].qualifiers[qual])
-    elif isinstance(recList, SeqRecord):
+        try:
+            recList.sort(key=lambda rec:rec.features[0].qualifiers[qual])
+        except KeyError:
+            sys.stderr.write('ERROR qualifier %s not found\n' % qual)
+            for feat in recList.features:
+                if qual not in feat.qualifiers:
+                    sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+
+   elif isinstance(recList, SeqRecord):
         qual = 'ID'
         if 'Alias' in recList.features[0].qualifiers:
             qual = 'Alias'
-        recList.features.sort(key=lambda feat:feat.qualifiers[qual])
+        try:
+            recList.features.sort(key=lambda feat:feat.qualifiers[qual])
+        except KeyError:
+            sys.stderr.write('ERROR qualifier %s not found\n' % qual)
+            for feat in recList.features:
+                if qual not in feat.qualifiers:
+                    sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
 
 parser = argparse.ArgumentParser(description='extract records from a gff file')
 
