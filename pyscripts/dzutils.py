@@ -212,6 +212,79 @@ def blink_cluster_from_clique(thisClust, maxClique, mapping=None):
                 new_members.append(member)
 '''
 
+def get_dagline_set_for_cluster(genes, daglineDoubleDict):
+	clustHits = set()
+	for tax1 in range(0, len(genes)):
+		try:
+			sub_dict = daglineDoubleDict[genes[tax1]]
+		except:
+			continue
+		for tax2 in range(0, len(genes)):
+			if tax1 != tax2:
+				try:
+					foundLine = sub_dict[genes[tax2]]
+					clustHits.add('\t'.join(foundLine))
+				except:
+					continue
+	return clustHits
+	
+
+def get_dagline_list_for_cluster(genes, daglineDoubleDict):
+	clustHits = []
+	for tax1 in range(0, len(genes)):
+		try:
+			sub_dict = daglineDoubleDict[genes[tax1]]
+		except:
+			continue
+		for tax2 in range(0, len(genes)):
+			if tax1 != tax2:
+				try:
+					foundLine = sub_dict[genes[tax2]]
+					clustHits.append('\t'.join(foundLine))
+				except:
+					continue
+	return clustHits
+	
+
+def get_dagline_double_dict(lineList):
+	'''Create a dict with keys being query loci in dagchainer lines, and
+	values being dicts with keys being the loci hit by the higher level
+	loci.  Values of secondary dict are a list of strings for each element
+	of the dagchainer line.
+	
+	lineList can be either a list of strings for each line, or a list
+	of lists that already hold the individual fields of each line
+	
+	dagchainer lines look like:
+	rufipogon_3s    OrufiAA03S_FGT1690  1735    1735    glaberrima_3s   OglabAA03S_FGT1985  1972    1972    1e-199
+	where numbers are coords of locus (in this case gene number) and the last value is e-value
+	'''
+	my_dict = {}
+	if len(lineList) == 0:
+		exit("get_dagline_double_dict passed empty list")
+	if len(lineList[0]) == 1:
+		lineLIst = [ line.split() for line in lineList ]
+	
+	for line in lineList:
+		t1 = line[1]
+		
+		match = re.search('(.*)[.][0-9]*$', t1)
+		if match is not None:
+			t1 = match.group(1)
+		
+		t2 = line[5]
+		
+		match = re.search('(.*)[.][0-9]*$', t2)
+		if match is not None:
+			t2 = match.group(1)
+		
+		if t1 in my_dict:
+			my_dict[t1][t2] = line
+		else:
+			my_dict[t1] = {t2 : line}
+	return my_dict
+
+
 class HitList:
     def __init__(self, hits):
         #self.hitlist = sets.Set(hits)
