@@ -195,6 +195,7 @@ fi
 export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/analysisScripts/
 export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/alignmentScripts/
 export GENERAL_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/generalScripts/
+export ANNOTATION_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/annotationSplittingScripts/
 
 export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
 
