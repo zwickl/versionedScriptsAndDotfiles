@@ -7,9 +7,10 @@ if __name__ == "__main__":
     import doctest
     doctest.testmod()
 
-#A set of chromosomal coordinates for each sequence in an alignment
-#Single copy ONLY!  Missing taxa are allowed though
 class CoordinateSet:
+    '''A set of chromosomal coordinates for each sequence in an alignment
+    Single copy ONLY!  Missing taxa are allowed though
+    '''
     def __init__(self, taxa_names):
         self.defaultCoord = -1
         self.seqCoords = {}
