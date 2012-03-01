@@ -62,17 +62,17 @@ def extract_core_filename(name):
             extracted = search.group(1)
             break
     if extracted is None:
-        exit("problem shortening name: %s", name)
+        exit("problem shortening name: %s" % name)
    
     extracted2 = None
-    patts = [ '(.*).nex$', '(.*).tre$', '(.*).boot$' ]
+    patts = [ '(.*).nex$', '(.*).best.tre$', '(.*).boot.tre$', '(.*).tre$', '(.*).boot$' ]
     for p in patts:
         search = re.search(p, extracted)
         if search is not None:
             extracted2 = search.group(1)
             break
     if extracted2 is None:
-        exit("problem shortening name: %s", name)
+        exit("problem shortening name: %s" % name)
     return extracted2
 
 class BlinkCluster:
