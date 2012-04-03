@@ -53,9 +53,9 @@ if parsed.outfile:
 else:
     out = sys.stdout
 
-outgroup = None
 outtrees = dendropy.TreeList()
 ignoredCount = 0
+outgroupIgnoredCount = 0
 for intree in intrees:
     hasPoly = check_for_polytomies(intree)
     if parsed.ignoreBif is True and hasPoly is False:
@@ -66,6 +66,7 @@ for intree in intrees:
         #sys.stderr.write('ignoring polytomous tree\n')
     else:
         if parsed.patt is not None:
+            outgroup = None
             leaves = intree.leaf_nodes()
             for l in leaves:
                 if re.search(parsed.patt, l.taxon.label) is not None:
@@ -73,7 +74,9 @@ for intree in intrees:
                     break
 
             if outgroup is None:
-                exit('no outgroup found!')
+                #sys.stderr.write('ignoring tree without specified outgroup\n')
+                outgroupIgnoredCount += 1
+                continue
             else:
                 #if the tree was already rooted, this will remove that root node
                 #rooting halves the branchlength of the chosen branch
@@ -82,6 +85,8 @@ for intree in intrees:
 
 if ignoredCount > 0:
     sys.stderr.write('ignored %d trees\n' % ignoredCount)
+if outgroupIgnoredCount > 0:
+    sys.stderr.write('ignored %d trees because of missing outgroup\n' % outgroupIgnoredCount)
 if len(outtrees) > 0:
     sys.stderr.write('writing %d trees\n' % len(outtrees))
     if parsed.outputNexus:
