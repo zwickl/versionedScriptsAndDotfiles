@@ -53,6 +53,11 @@ def extract_core_filename(name):
     '''
     >>> extract_core_filename('../alignments/aligned.blink.00047.00002.8T.noDupes.954C.nex')
     '00047.00002.8T.noDupes.954C'
+    >>> extract_core_filename('../../alignments/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.nex')
+    '00000.00000.10T.noDupes.2079C.gblocks'
+    >>> extract_core_filename('../garli.gblocks.collapse/runs/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.best.tre')
+    '00000.00000.10T.noDupes.2079C.gblocks'
+
     '''
     extracted = None
     patts = [ '^.*blink[.](.*)', '^.*clique[.](.*)', '^.*MCL.*[.](.*)' ]
