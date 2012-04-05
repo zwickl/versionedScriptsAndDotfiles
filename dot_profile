@@ -230,6 +230,8 @@ alias vig='vi garli.conf'
 #alias dstat="disq_stat"
 alias dsub="disq_sub"
 alias ddel="disq_del"
+alias pull="git pull origin"
+alias push="git push origin"
 
 alias mark="pwd > $HOME/.markedDir"
 alias cdm="cd `cat $HOME/.markedDir`"
