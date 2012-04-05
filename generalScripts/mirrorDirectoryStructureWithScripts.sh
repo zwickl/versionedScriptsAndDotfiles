@@ -17,3 +17,6 @@ else
 fi
 
 rsync -av --include=*/ --include=*.source --include=*.py --include=*.sh --exclude=*  $FROM/ $TO/
+
+#find and copy symlinks too
+find $FROM -type l -exec /bin/cp -rp '{}' $TO \;

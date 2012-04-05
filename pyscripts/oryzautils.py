@@ -36,7 +36,8 @@ def parse_feature_name(feature, errorIsFatal=True):
 def rename_sativa_to_oge_standard(name):
     '''standardize the naming format'''
     newName = name.replace('LOC_Os', 'OsatjAA')
-    newName = newName.replace('BGIOSGA', 'OsatiAA03.')
+    #indica names are like this: BGIOSGA009362
+    newName = newName.replace('BGIOSGA0', 'OsatiAA03g')
     if 'ORGLA' in name:
         #glaberrima MIPS annotations are named like this: ORGLA03G0400100.1
         #want OglabAA03S_M4001
