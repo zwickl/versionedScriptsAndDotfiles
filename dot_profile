@@ -178,12 +178,13 @@ if [ $OS = "linux" ];then
     export ORYZA_ROOT=$DEV/oryza/
     export PORYZA_ROOT=$DEV/productionOryza/
 else
-    export ORYZA_ROOT=$DEV/experiments/oryza/
+    export OLD_ORYZA_ROOT=$DEV/experiments/oryza/
     export PORYZA_ROOT=$DEV/experiments/productionOryza/
+    export ORYZA_ROOT=$PORYZA_ROOT
 fi
-export G34=$ORYZA_ROOT/gramene34_omap_genes/
-export C34=$ORYZA_ROOT/gramene34_cleanedByCSHL/
-export S34=$ORYZA_ROOT/gramene34_split_cleanedByCSHL/
+export G34=$OLD_ORYZA_ROOT/gramene34_omap_genes/
+export C34=$OLD_ORYZA_ROOT/gramene34_cleanedByCSHL/
+export S34=$OLD_ORYZA_ROOT/gramene34_split_cleanedByCSHL/
 export CLUSTC34=$C34/datasetAssembly/withShortModels.withoutSativaTransposonsOrOverlap.ignoreSati.ms2006.frac0.5/paramSweep.reciprocalDag.fixedNearby/geneOrder/dag.G1.D2.C4/nearbySweep/nearby5/
 export CLUSTS34=$S34/datasetAss/noInd/wShort.woSatTransOrOverlap.frac0.5/reciprocalDag/geneOrder/dag.G1.D2.C4/nearbySweep/nearby5/
 
