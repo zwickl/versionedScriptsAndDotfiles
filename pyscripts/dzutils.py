@@ -106,6 +106,12 @@ class BlinkCluster:
     def output(self, stream=sys.stdout):
         for mem in self.cluster_members:
             stream.write('%d\t%s\n' % (self.number, mem))
+    def contains_matching_taxon(patt):
+        for m in self.cluster_members:
+            if re.search(patt, m) is not None:
+                return True
+        return False
+
 
 def parse_mcl_output(filename):
     '''read MCL output, which looks like the below, return a list of BlinkClusters
