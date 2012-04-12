@@ -175,8 +175,9 @@ export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commo
 export PYTHONPATH=$HOME/bin/pyscripts/:$PYTHONPATH
 
 if [ $OS = "linux" ];then
-    export ORYZA_ROOT=$DEV/oryza/
+    #export ORYZA_ROOT=$DEV/oryza/
     export PORYZA_ROOT=$DEV/productionOryza/
+    export ORYZA_ROOT=$PORYZA_ROOT
 else
     export OLD_ORYZA_ROOT=$DEV/experiments/oryza/
     export PORYZA_ROOT=$DEV/experiments/productionOryza/
