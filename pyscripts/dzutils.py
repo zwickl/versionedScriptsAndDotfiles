@@ -7,9 +7,10 @@ if __name__ == "__main__":
     import doctest
     doctest.testmod()
 
-#A set of chromosomal coordinates for each sequence in an alignment
-#Single copy ONLY!  Missing taxa are allowed though
 class CoordinateSet:
+    '''A set of chromosomal coordinates for each sequence in an alignment
+    Single copy ONLY!  Missing taxa are allowed though
+    '''
     def __init__(self, taxa_names):
         self.defaultCoord = -1
         self.seqCoords = {}
@@ -52,6 +53,11 @@ def extract_core_filename(name):
     '''
     >>> extract_core_filename('../alignments/aligned.blink.00047.00002.8T.noDupes.954C.nex')
     '00047.00002.8T.noDupes.954C'
+    >>> extract_core_filename('../../alignments/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.nex')
+    '00000.00000.10T.noDupes.2079C.gblocks'
+    >>> extract_core_filename('../garli.gblocks.collapse/runs/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.best.tre')
+    '00000.00000.10T.noDupes.2079C.gblocks'
+
     '''
     extracted = None
     patts = [ '^.*blink[.](.*)', '^.*clique[.](.*)', '^.*MCL.*[.](.*)' ]
@@ -61,17 +67,17 @@ def extract_core_filename(name):
             extracted = search.group(1)
             break
     if extracted is None:
-        exit("problem shortening name: %s", name)
+        exit("problem shortening name: %s" % name)
    
     extracted2 = None
-    patts = [ '(.*).nex$', '(.*).tre$', '(.*).boot$' ]
+    patts = [ '(.*).nex$', '(.*).best.tre$', '(.*).boot.tre$', '(.*).tre$', '(.*).boot$' ]
     for p in patts:
         search = re.search(p, extracted)
         if search is not None:
             extracted2 = search.group(1)
             break
     if extracted2 is None:
-        exit("problem shortening name: %s", name)
+        exit("problem shortening name: %s" % name)
     return extracted2
 
 class BlinkCluster:
@@ -84,6 +90,15 @@ class BlinkCluster:
             for member in members:
                 self.cluster_members.append(mapping[member])
 
+        self.noDupes = True
+        membDict = {}
+        for memb in self.cluster_members:
+            if memb[0:7] in membDict:
+                self.noDupes = False
+                break
+            else:
+                membDict[memb[0:7]] = True
+
     def add(self, member):
         self.cluster_members.append(member)
     def __len__(self):
@@ -91,6 +106,12 @@ class BlinkCluster:
     def output(self, stream=sys.stdout):
         for mem in self.cluster_members:
             stream.write('%d\t%s\n' % (self.number, mem))
+    def contains_matching_taxon(patt):
+        for m in self.cluster_members:
+            if re.search(patt, m) is not None:
+                return True
+        return False
+
 
 def parse_mcl_output(filename):
     '''read MCL output, which looks like the below, return a list of BlinkClusters
@@ -202,6 +223,79 @@ def blink_cluster_from_clique(thisClust, maxClique, mapping=None):
             else:
                 new_members.append(member)
 '''
+
+def get_dagline_set_for_cluster(genes, daglineDoubleDict):
+	clustHits = set()
+	for tax1 in range(0, len(genes)):
+		try:
+			sub_dict = daglineDoubleDict[genes[tax1]]
+		except:
+			continue
+		for tax2 in range(0, len(genes)):
+			if tax1 != tax2:
+				try:
+					foundLine = sub_dict[genes[tax2]]
+					clustHits.add('\t'.join(foundLine))
+				except:
+					continue
+	return clustHits
+	
+
+def get_dagline_list_for_cluster(genes, daglineDoubleDict):
+	clustHits = []
+	for tax1 in range(0, len(genes)):
+		try:
+			sub_dict = daglineDoubleDict[genes[tax1]]
+		except:
+			continue
+		for tax2 in range(0, len(genes)):
+			if tax1 != tax2:
+				try:
+					foundLine = sub_dict[genes[tax2]]
+					clustHits.append('\t'.join(foundLine))
+				except:
+					continue
+	return clustHits
+	
+
+def get_dagline_double_dict(lineList):
+	'''Create a dict with keys being query loci in dagchainer lines, and
+	values being dicts with keys being the loci hit by the higher level
+	loci.  Values of secondary dict are a list of strings for each element
+	of the dagchainer line.
+	
+	lineList can be either a list of strings for each line, or a list
+	of lists that already hold the individual fields of each line
+	
+	dagchainer lines look like:
+	rufipogon_3s    OrufiAA03S_FGT1690  1735    1735    glaberrima_3s   OglabAA03S_FGT1985  1972    1972    1e-199
+	where numbers are coords of locus (in this case gene number) and the last value is e-value
+	'''
+	my_dict = {}
+	if len(lineList) == 0:
+		exit("get_dagline_double_dict passed empty list")
+	if len(lineList[0]) == 1:
+		lineLIst = [ line.split() for line in lineList ]
+	
+	for line in lineList:
+		t1 = line[1]
+		
+		match = re.search('(.*)[.][0-9]*$', t1)
+		if match is not None:
+			t1 = match.group(1)
+		
+		t2 = line[5]
+		
+		match = re.search('(.*)[.][0-9]*$', t2)
+		if match is not None:
+			t2 = match.group(1)
+		
+		if t1 in my_dict:
+			my_dict[t1][t2] = line
+		else:
+			my_dict[t1] = {t2 : line}
+	return my_dict
+
 
 class HitList:
     def __init__(self, hits):

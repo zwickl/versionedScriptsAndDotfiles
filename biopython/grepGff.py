@@ -9,6 +9,7 @@ import string
 from BCBio import GFF
 from BCBio.GFF import GFFExaminer
 from Bio.SeqRecord import SeqRecord
+from Bio.SeqFeature import SeqFeature
 
 def sort_feature_list(recList):
     '''allow the passed object to be either a list of SeqRecords, which will be sorted based on their
@@ -19,12 +20,72 @@ def sort_feature_list(recList):
         qual = 'ID'
         if 'Alias' in recList[0].features[0].qualifiers:
             qual = 'Alias'
-        recList.sort(key=lambda rec:rec.features[0].qualifiers[qual])
+        try:
+            recList.sort(key=lambda rec:rec.features[0].qualifiers[qual])
+        except KeyError:
+            sys.stderr.write('ERROR qualifier %s not found\n' % qual)
+            for feat in recList.features:
+                if qual not in feat.qualifiers:
+                    sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+
     elif isinstance(recList, SeqRecord):
         qual = 'ID'
         if 'Alias' in recList.features[0].qualifiers:
             qual = 'Alias'
-        recList.features.sort(key=lambda feat:feat.qualifiers[qual])
+        try:
+            recList.features.sort(key=lambda feat:feat.qualifiers[qual])
+        except KeyError:
+            sys.stderr.write('ERROR qualifier %s not found\n' % qual)
+            for feat in recList.features:
+                if qual not in feat.qualifiers:
+                    sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+    else:
+        exit("what is recList?")
+
+
+def sort_feature_list_by_coordinate(recList):
+    '''allow the passed object to be either a list of SeqRecords, which will be sorted based 
+    on the start coord of their first feature, or a single SeqRecord, with a list of features that is to be sorted.
+    '''
+    #recList is a list of SeqRecords, try to sort the SeqRecords by the start coord of their first feature
+    #SeqRecords themselves don't have coords
+    if isinstance(recList, list):
+        try:
+            recList.sort(key=lambda rec:int(str(rec.features[0].location.start)))
+        except KeyError:
+            sys.stderr.write('ERROR could not sort by coordinate')
+            for feat in recList.features:
+                sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+        #for each SeqRecord in the list, want to sort its list of features too.
+        #this will hit the second isinstance here
+        for rec in recList:
+            sort_feature_list_by_coordinate(rec)
+
+    elif isinstance(recList, SeqRecord):
+        try:
+            recList.features.sort(key=lambda feat:int(str(feat.location.start)))
+        except KeyError:
+            sys.stderr.write('ERROR could not sort by coordinate')
+            for feat in recList.features:
+                sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+    #reclist is a feature, want to sort it's subfeatures
+    elif isinstance(recList, SeqFeature):
+        try:
+            print recList
+            exit()
+            recList.sub_features.sort(key=lambda feat:int(str(feat.location.start)))
+        except KeyError:
+            sys.stderr.write('ERROR could not sort by coordinate')
+            for feat in recList.sub_features:
+                sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+    else:
+        exit("what is recList?")
+
 
 parser = argparse.ArgumentParser(description='extract records from a gff file')
 
@@ -34,6 +95,9 @@ parser.add_argument('-v', '--invert-match', dest='invertMatch', action='store_tr
 
 parser.add_argument('-s', '--sort', dest='sortOutput', action='store_true', default=False,
                     help='alphanumerically sort the sequences by name (default false)')
+
+parser.add_argument('-sc', '--sort-coord', dest='sortOutputCoord', action='store_true', default=False,
+                    help='sort the sequences by start coordinatre (default false)')
 
 parser.add_argument('-f', '--patternfile', dest='patternFile', type=str, default=None, 
                     help='file from which to read patterns (you must still pass a pattern on the command line, which is ignored)')
@@ -57,6 +121,7 @@ else:
     seqPatterns = [parsed.pattern]
 gffFiles = parsed.filenames
 sortOutput = parsed.sortOutput
+sortOutputCoord = parsed.sortOutputCoord
 
 compiledPats = []
 for pat in seqPatterns:
@@ -115,9 +180,11 @@ for rec in GFF.parse(in_handle):
         newRec.features.extend(list(matchedFeats))
         sort_feature_list(newRec)
     allNewRecs.append(newRec)
-         
+
 if sortOutput:
     sort_feature_list(allNewRecs)
+elif sortOutputCoord:
+    sort_feature_list_by_coordinate(allNewRecs)
 
 #gffOutFilename = re.sub('^.*\/', '', parsed.gffFilename) + '.extracted'
 #gffOut = open(gffOutFilename, "w")
