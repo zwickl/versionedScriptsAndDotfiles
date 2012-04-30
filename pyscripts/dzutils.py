@@ -217,7 +217,7 @@ class BlinkCluster:
     def output(self, stream=sys.stdout):
         for mem in self.cluster_members:
             stream.write('%d\t%s\n' % (self.number, mem))
-    def __str__(self):
+    def __repr__(self):
         string = 'cluster %d ' % self.number
         string += '%d members\n' % len(self.cluster_members)
         for mem in self.cluster_members:
@@ -231,6 +231,12 @@ class BlinkCluster:
                     string += '\t%s\n' % line
         else:
             string += '\tdaglines not defined\n'
+        return string
+
+    def __str__(self):
+        string = ''
+        for mem in self.cluster_members:
+            string += '\t%d\t%s\n' % (self.number, mem)
         return string
 
     def contains_matching_taxon(self, patt):
@@ -276,12 +282,16 @@ class SetOfClusters():
         #for iteration
         self.index = 0
         #BlinkCluster objects
-        if isinstance(blink_clusters[0], BlinkCluster):
-            self.blink_clusters = blink_clusters
-        elif isinstance(blink_clusters[0], tuple):
-            #assuming that 
-            self.blink_clusters = [ clust[1] for clust in list(blink_clusters) ]
-        #self.blink_clusters = parse_blink_output(cluster_file)
+        #in case blink_clusters is a set   
+        blink_clusters = list(blink_clusters)
+        if len(blink_clusters) > 0:
+            if isinstance(blink_clusters[0], BlinkCluster):
+                self.blink_clusters = blink_clusters
+            else:
+                raise TypeError('what is blink_clusters?')
+        else:
+            self.blink_clusters = []
+        self.cluster_set = set(self.blink_clusters)
         #list with one tuple per cluster, containing the cluster_members
         self.cluster_member_tuples = [ tuple(sorted(clust.cluster_members)) for clust in self.blink_clusters ]
         #dictionary to find clusters indexed by their tuples
@@ -289,7 +299,7 @@ class SetOfClusters():
         for tup, clust in itertools.izip(self.cluster_member_tuples, self.blink_clusters):
             clusterDict[tup] = clust
         #a single set, with clusters (as tuples) as members 
-        self.cluster_set = set(self.cluster_member_tuples)
+        self.cluster_tuple_set = set(self.cluster_member_tuples)
     
     def get_cluster_by_member(memb):
         for clust in self.blink_clusters:
@@ -322,7 +332,13 @@ class SetOfClusters():
             raise StopIteration
         self.index += 1
         return result
- 
+    
+    def __str__(self):
+        string = ''
+        for c in sorted(self.blink_clusters, key=lambda x:x.number):
+            string += '%s' % c
+        return string
+
     '''
     def get_clusters_that_are_subsets_and_supersets(self, other):
         #first remove any identical clusters
