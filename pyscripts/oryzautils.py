@@ -17,22 +17,6 @@ class Oryza:
 
 oryza = Oryza()
 
-def parse_feature_name(feature, errorIsFatal=True):
-    '''Return what I'm treating as the name of the SeqFeature, which is 
-    stored as one of the arbitrarily named qualifiers, named differently
-    for IRGSP and OGE gff's
-    '''
-    #print feature.qualifiers
-    if 'Alias' in feature.qualifiers:
-        return feature.qualifiers['Alias'][0]
-    elif 'Name' in feature.qualifiers:
-        return feature.qualifiers['Name'][0]
-    else:
-        print 'unable to parse a name!:'
-        print feature
-        if errorIsFatal:
-            exit()
-
 def rename_sativa_to_oge_standard(name):
     '''standardize the naming format'''
     newName = name.replace('LOC_Os', 'OsatjAA')

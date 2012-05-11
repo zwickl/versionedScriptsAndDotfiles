@@ -25,7 +25,7 @@ parser.add_argument('treefiles', nargs='*', default=[], help='nexus treefile to 
 parser.add_argument('-o', '--outfile', dest='outfile', required=False, default=None, 
                     help='file to write output to (default is stdout)')
 
-parser.add_argument('-n', '--nexus', dest='outputNexus', required=False, default=False, 
+parser.add_argument('-n', '--nexus', dest='outputNexus', action='store_true', required=False, default=False, 
                     help='output treefile in nexus rather than newick format')
 
 parser.add_argument('-nb', '--no-bifurcating', dest='ignoreBif', action='store_true', required=False, default=False, 

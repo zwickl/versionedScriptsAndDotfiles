@@ -172,7 +172,7 @@ export JANSEN_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/janse
 export ROOT_JANSEN=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64/
 export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commonScripts/
 
-export PYTHONPATH=$HOME/bin/pyscripts/:$PYTHONPATH
+export PYTHONPATH=$HOME/bin/pyscripts/:$HOME/bin/biopython/:$PYTHONPATH
 
 if [ $OS = "linux" ];then
     #export ORYZA_ROOT=$DEV/oryza/
