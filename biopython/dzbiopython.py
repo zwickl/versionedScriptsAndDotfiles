@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 import sys
+import os
 import copy
 from Bio.Seq import Seq
 from Bio.SeqFeature import SeqFeature
 from Bio.SeqFeature import FeatureLocation
 from Bio.SeqRecord import SeqRecord
+from Bio import SeqIO
+from BCBio import GFF
 
 #my extensions and functions for working with biopython objects
 
