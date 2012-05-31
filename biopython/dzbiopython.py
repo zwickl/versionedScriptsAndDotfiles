@@ -15,7 +15,15 @@ class TaxonGenomicInformation:
     '''Stores correspondence between a set of sequences, a gff file referring to those 
     sequences and a corresponding toplevel assembly.  Some of these may be omitted.'''
     def __init__(self, name, seq_dict=None, seq_filename=None, toplevel_filename=None, gff_filename=None):
-
+        '''
+        print '#############'
+        print name
+        print seq_dict
+        print seq_filename
+        print toplevel_filename
+        print gff_filename
+        print '#############'
+        '''
         self.name = name
         self.short_name = name[0:7]
         
@@ -127,8 +135,14 @@ def find_cds_start_coordinate(feature):
     for sub in feature.sub_features:
         if sub.type == 'CDS':
             if feature.strand == 1:
+                #print 'SUB'
+                #print sub
+                #print "return %d" % int_feature_location(sub)[0]
                 return int_feature_location(sub)[0]
             else:
+                #print 'SUB'
+                #print sub
+                #print "return %d" % int_feature_location(sub)[1]
                 return int_feature_location(sub)[1]
         for subsub in sub.sub_features:
             if subsub.type == 'CDS':
@@ -190,9 +204,15 @@ def extract_seqrecord_between_outer_cds(rec, ifeat):
     else:
         feat.sub_features.sort(key=lambda x:x.location.start)
     
+    '''
+    print 'ORIGINAL FEAT'
+    print feat
+    print feat.location
+    print '/ORIGINAL FEAT'
+    '''
     s = find_cds_start_coordinate(feat)
     e = find_cds_end_coordinate(feat)
-    #print 'start, end', s, e
+    print 'start, end', s, e
     tempFeat = copy.deepcopy(feat)
     tempFeat.sub_features = []
     #print
@@ -202,7 +222,12 @@ def extract_seqrecord_between_outer_cds(rec, ifeat):
         tempFeat.location = FeatureLocation(s, e)
     else:
         tempFeat.location = FeatureLocation(e, s)
-
+    '''
+    print 'TEMP FEAT'
+    print tempFeat
+    print tempFeat.location
+    print '/TEMP FEAT'
+    '''
     extracted = tempFeat.extract(rec)
     extracted.name = parse_feature_name(feat)
     extracted.id = parse_feature_name(feat)
