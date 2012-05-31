@@ -1,7 +1,8 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhist_cnt =5
-let g:netrw_dirhist_1='/Users/zwickl/Desktop/GarliDEV/experiments/oryza/gramene34_split_cleanedByCSHL/datasetAss/noInd/summaries/tripleTracking/data'
-let g:netrw_dirhist_2='/Users/zwickl/.vim'
-let g:netrw_dirhist_3='/Users/zwickl/Desktop/GarliDEV/experiments/sandersonGrant/garli/trunk/src'
-let g:netrw_dirhist_4='/Users/zwickl/Desktop/GarliDEV/experiments/sandersonGrant/subtreeSolutionSummary.266Trees/raxTrees'
-let g:netrw_dirhist_5='/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza/sativaGenome.IRGSP.MSU7/origFiles'
+let g:netrw_dirhist_cnt =6
+let g:netrw_dirhist_1='/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza/gramene34_split_cleanedByCSHL/summaries/compareClusters/clusterGraphs'
+let g:netrw_dirhist_2='/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza/gramene34_split_cleanedByCSHL/summaries/compareClusters/dagTriplesOnSubsets/mafft.cds/globalIntersection'
+let g:netrw_dirhist_3='/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza/gramene34_split_cleanedByCSHL/taxonFiles'
+let g:netrw_dirhist_4='/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza/scripts/extractionScripts'
+let g:netrw_dirhist_5='/Users/zwickl/Desktop/GarliDEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/singleSite/jansen.del2Xins.betterSearches/simTree'
+let g:netrw_dirhist_6='/Users/zwickl/libbuilds/YonderGit/scripts'
