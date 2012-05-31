@@ -23,13 +23,24 @@ def rename_sativa_to_oge_standard(name):
     '''standardize the naming format'''
     newName = name.replace('LOC_Os', 'OsatjAA')
     #indica names are like this: BGIOSGA009362
-    newName = newName.replace('BGIOSGA0', 'OsatiAA03g')
+    #the -TA appears in indica gene transcript (mRNA) names. I was stripping this off because it was
+    #annoying, but that caused problems because then the gene and mRNA had the same name, and the mRNA 
+    #was its own parent.
+    if '-TA' in newName:
+        newName = newName.replace('BGIOSGA0', 'OsatiAA03gt')
+        newName = newName.replace('-TA', '')
+    else:
+        newName = newName.replace('BGIOSGA0', 'OsatiAA03g')
+    #newName = newName.replace('-TA', '')
+    #need to make the two glab short names unique
     if 'ORGLA' in name:
         #glaberrima MIPS annotations are named like this: ORGLA03G0400100.1
         #want OglabAA03S_M4001
-        newName = newName.replace('ORGLA03G0', 'OglabAA03S_M')
+        newName = newName.replace('ORGLA03G0', 'OglaMAA03S_M')
         newName = re.sub('00[.](1)', '.\\1', newName)
         newName = re.sub('00$', '', newName)
+    elif 'OglabAA' in name:
+        newName = newName.replace('OglabAA', 'OglaFAA')
     return newName.replace('BGIOSIFCE', 'OsatiAA03.')
 
 
