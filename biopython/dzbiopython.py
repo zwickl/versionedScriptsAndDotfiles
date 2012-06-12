@@ -13,7 +13,28 @@ from BCBio import GFF
 
 class TaxonGenomicInformation:
     '''Stores correspondence between a set of sequences, a gff file referring to those 
-    sequences and a corresponding toplevel assembly.  Some of these may be omitted.'''
+    sequences and a corresponding toplevel assembly.  Some of these may be omitted.
+    Important members:
+    name            - taxon name passed to __init__
+    self.short_name - first 7 characters of taxon name passed to __init__
+    toplevel_record_dict   - dictionary of toplevel SeqRecord.id to toplevel SeqRecords
+                        empty if toplevel_filename not passed to __init__
+    toplevel_record_list   - list of toplevel SeqRecords in toplevel_record_dict
+                        empty if toplevel_filename not passed to __init__
+    
+    seq_dict        - dictionary of individual SeqRecords (presumably genes or mRNA)
+                        existing dict can be passed to __init__, or generated/added to
+                        with a passed seq_filename
+                        empty if seq_dict or seq_filename not passed to __init__
+
+    if a gff_filename is passed to __init__, several things happen:
+        -gff_seqrecord_list is a list filled with SeqRecords for each feature referenced in the gff
+        -gff_feature_dict is a dict of either feature Aliases (preferably) or id to SeqFeatures
+            that are held by the SeqRecords in gff_seqrecord_list
+        -toplevel_record_list is updated to have gff features added to the SeqRecords
+        -seq_dict is updated with features from gff
+    '''
+    
     def __init__(self, name, seq_dict=None, seq_filename=None, toplevel_filename=None, gff_filename=None):
         '''
         print '#############'
@@ -30,14 +51,29 @@ class TaxonGenomicInformation:
         if toplevel_filename is not None:
             #it can be handy to have a dict of the toplevel seq(s) recs which may just be a single chrom
             toplevel_filename = os.path.expandvars(toplevel_filename)
-            self.toplevel_dict = SeqIO.to_dict(SeqIO.parse(open(toplevel_filename), "fasta"))
+            self.toplevel_record_dict = SeqIO.to_dict(SeqIO.parse(open(toplevel_filename), "fasta"))
+            #print len(self.toplevel_record_dict.items())
             #pull the toplevel reqs back out as a list of seq recs
-            self.toplevel = [it[1] for it in self.toplevel_dict.items()]
-            #print 'toplevel name', self.toplevel.name
-            #print 'toplevel features', len(self.toplevel.features)
+            self.toplevel_record_list = [it[1] for it in self.toplevel_record_dict.items()]
+            '''
+            print '1#####################'
+            for top in self.toplevel_record_list:
+                if len(top.features) > 0:
+                    print len(self.toplevel_record_list)
+                    print type(self.toplevel_record_list)
+                    print top
+                    print len(top.features)
+                    print top.features
+                    break
+            print '/1#####################'
+            '''
+            #print len(self.toplevel_record_list)
+            #print 'toplevel name', self.toplevel_record_list.name
+            #print 'toplevel features', len(self.toplevel_record_list.features)
         else:
-            self.toplevel_dict = dict()
-            self.toplevel = [SeqRecord()]
+            self.toplevel_record_dict = dict()
+            #self.toplevel_record_list = [SeqRecord()]
+            self.toplevel_record_list = []
         
         #if filenames are passed in, do the necessary reading and add them to any dicts/lists that might have been passed
         if seq_dict is None:
@@ -50,19 +86,62 @@ class TaxonGenomicInformation:
 
         if gff_filename is not None:
             gff_filename = os.path.expandvars(gff_filename)
-            #this will asign features in the gff to the toplevel seqs - the toplevel_dict will be unaltered
-            self.toplevel = [feat for feat in GFF.parse(gff_filename, base_dict=self.toplevel_dict)]
-            self.gff = [feat for feat in GFF.parse(gff_filename)]
+            #this will asign features in the gff to the toplevel seqs - the toplevel_record_dict will be unaltered
+            #print len(self.toplevel_record_dict.items())
+            self.toplevel_record_list = [feat for feat in GFF.parse(gff_filename, base_dict=self.toplevel_record_dict)]
+            #now assign back to the dict
+            self.toplevel_record_dict = dict([ (top.id, top) for top in self.toplevel_record_list ])
+            '''
+            print '2#####################'
+            for top in self.toplevel_record_list:
+                if len(top.features) > 0:
+                    print len(self.toplevel_record_list)
+                    print type(self.toplevel_record_list)
+                    print top
+                    print len(top.features)
+                    print top.features
+                    break
+            print '/2#####################'
+            '''
+            #print type(self.toplevel)
+            #print len(self.toplevel)
+            #print "SELF.TOPLEVEL"
+            #print self.toplevel[0]
+            #print "/SELF.TOPLEVEL"
+            self.gff_seqrecord_list = [rec for rec in GFF.parse(gff_filename)]
+            '''
+            print '3#####################'
+            print len(self.gff_seqrecord_list)
+            for rec in self.gff_seqrecord_list:
+                if len(rec.features) > 0:
+                    print rec
+                    print len(rec.features)
+                    print rec.features
+                    break
+            if len(self.gff_seqrecord_list) > 1:
+                print self.gff_seqrecord_list[1]
+            print '/3#####################'
+            '''
             self.seq_dict = SeqIO.to_dict([feat for feat in GFF.parse(gff_filename, base_dict=self.seq_dict)])
 
         else:
-            self.gff = []
-        #self.gff = gff
+            self.gff_seqrecord_list = []
+
+        if toplevel_filename is not None and gff_filename is not None:
+            self.feature_to_toplevel_record_dict = dict()
+            for top in self.toplevel_record_list:
+                for feat in top.features:
+                    if 'Alias' in feat.qualifiers:
+                        self.feature_to_toplevel_record_dict[feat.qualifiers['Alias'][0]] = top
+                    else:
+                        self.feature_to_toplevel_record_dict[feat.id] = top
 
         self.gff_feature_dict = {}
-        if len(self.gff) > 0:
-            for rec in self.gff:
+        if len(self.gff_seqrecord_list) > 0:
+            for rec in self.gff_seqrecord_list:
                 if rec.features[0].type in ['chromosome', 'contig', 'scaffold']:
+                    #trying to verify when this is happening
+                    exit('DEBUG: FIRST RECORD IS %s' % rec.features[0].type)
                     toIter = rec.features[1:]
                 else:
                     toIter = rec.features
@@ -72,21 +151,30 @@ class TaxonGenomicInformation:
                     else:
                         self.gff_feature_dict[g.id] = g
 
-            '''
-            if self.gff[0].features[0].type == 'chromosome':
-                toIter = self.gff[0].features[1:]
-            else:
-                toIter = self.gff[0].features
-            for g in toIter:
-                if 'Alias' in g.qualifiers:
-                    self.gff_feature_dict[g.qualifiers['Alias'][0]] = g
-                else:
-                    self.gff_feature_dict[g.id] = g
-    '''
 
     def output(self):
-        print '%s\t%d features\t%d dictFeatures\t%d sequences\t%d toplevel bases' % (self.name, 
-            len(self.gff), len(self.gff_feature_dict.keys()), len(self.seq_dict.keys()), len(self.toplevel))
+        print '%s\t%d features\t%d dictFeatures\t%d sequences\t%d toplevel records' % (self.name, 
+            len(self.gff_seqrecord_list), len(self.gff_feature_dict.keys()), len(self.seq_dict.keys()), len(self.toplevel_record_list))
+
+    def toplevel_record_for_feature(self, feat):
+        if isinstance(feat, str):
+            if feat in self.feature_to_toplevel_record_dict:
+                return self.feature_to_toplevel_record_dict[feat]
+            else:
+                exit('toplevel for feature named %s not found!' % feat)
+        else:
+            if 'Alias' in feat.qualifiers:
+                alias = feat.qualifiers['Alias'][0]
+                if alias in self.feature_to_toplevel_record_dict:
+                    return self.feature_to_toplevel_record_dict[alias]
+                else:
+                    exit('toplevel for feature named %s not found!' % alias)
+            else:
+                id = feat.id
+                if id in self.feature_to_toplevel_record_dict:
+                    return self.feature_to_toplevel_record_dict[id]
+                else:
+                    exit('toplevel for feature named %s not found!' % id)
 
 
 def parse_feature_name(feature, errorIsFatal=True):
