@@ -740,7 +740,7 @@ def make_dictionary_from_gff_arbitrary_field(string):
             exit("problem reading field, %s" % sep)
     return dict
 
-class ParsedSequenceDescription:
+class ParsedSequenceDescription(object):
     def __init__(self, description=None, gff=None):
         '''
         OGE gff lines:
@@ -872,6 +872,8 @@ class ParsedSequenceDescription:
             desc = description.replace(";", " ")
             #desc = desc.replace(":", " ")
             split_desc = desc.split()
+            if len(split_desc) < 3:
+                exit('Description malformed? %s' % desc)
             
             #get the name
             self.name = split_desc[0].replace(">", "")

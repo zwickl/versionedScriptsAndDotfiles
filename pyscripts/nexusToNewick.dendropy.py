@@ -35,12 +35,12 @@ parser.add_argument('-np', '--no-polytomies', dest='ignorePoly', action='store_t
                     help='do not include polytomous trees in output')
 
 
-parsed = parser.parse_args()
+options = parser.parse_args()
 
-#sys.stderr.write('Reading %s ...\n' % parsed.treefiles)
+#sys.stderr.write('Reading %s ...\n' % options.treefiles)
 
 intrees = dendropy.TreeList()
-for tf in parsed.treefiles:
+for tf in options.treefiles:
     intrees.append(dendropy.Tree.get_from_path(tf, "nexus"))
 sys.stderr.write('read %d trees\n' % len(intrees))
 
@@ -48,8 +48,8 @@ sys.stderr.write('read %d trees\n' % len(intrees))
 #intree = dendropy.Tree()
 #intree.read_from_string(treestr, 'newick')
 
-if parsed.outfile:
-    out = open(parsed.outfile, 'w')
+if options.outfile:
+    out = open(options.outfile, 'w')
 else:
     out = sys.stdout
 
@@ -58,18 +58,18 @@ ignoredCount = 0
 outgroupIgnoredCount = 0
 for intree in intrees:
     hasPoly = check_for_polytomies(intree)
-    if parsed.ignoreBif is True and hasPoly is False:
+    if options.ignoreBif is True and hasPoly is False:
         ignoredCount += 1
         #sys.stderr.write('ignoring bifurcating tree\n')
-    elif parsed.ignorePoly is True and hasPoly is True:
+    elif options.ignorePoly is True and hasPoly is True:
         ignoredCount += 1
         #sys.stderr.write('ignoring polytomous tree\n')
     else:
-        if parsed.patt is not None:
+        if options.patt is not None:
             outgroup = None
             leaves = intree.leaf_nodes()
             for l in leaves:
-                if re.search(parsed.patt, l.taxon.label) is not None:
+                if re.search(options.patt, l.taxon.label) is not None:
                     outgroup = l
                     break
 
@@ -89,7 +89,7 @@ if outgroupIgnoredCount > 0:
     sys.stderr.write('ignored %d trees because of missing outgroup\n' % outgroupIgnoredCount)
 if len(outtrees) > 0:
     sys.stderr.write('writing %d trees\n' % len(outtrees))
-    if parsed.outputNexus:
+    if options.outputNexus:
         outtrees.write(out, "nexus")
     else:
         outtrees.write(out, "newick")

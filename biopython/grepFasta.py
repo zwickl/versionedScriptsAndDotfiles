@@ -15,6 +15,7 @@ from Bio import AlignIO
 from Bio.Align.Applications import MuscleCommandline
 from Bio.Alphabet import IUPAC
 from Bio.Blast import NCBIStandalone
+from dzutils import *
 
 '''
 #this was just some experimentation with making my own hashes
@@ -45,7 +46,7 @@ exit()
 print s
 '''
 
-class my_SeqRecord(SeqIO.SeqRecord):
+class my_SeqRecord(SeqIO.SeqRecord, object):
     '''
     def __init__(self, other=None):
         if other is not None:
@@ -66,12 +67,17 @@ def add_hash(an_instance):
 #use argparse module to parse commandline input
 parser = argparse.ArgumentParser(description='extract sequences from a fasta file')
 
+mutExclGroup = parser.add_mutually_exclusive_group()
+
 #add possible arguments
 parser.add_argument('-v', '--invert-match', dest='invertMatch', action='store_true', default=False,
                     help='invert the sense of the match (default false)')
 
-parser.add_argument('-s', '--sort', dest='sortOutput', action='store_true', default=False,
+mutExclGroup.add_argument('-s', '--sort', dest='sortOutput', action='store_true', default=False,
                     help='alphanumerically sort the sequences by name (default false)')
+
+mutExclGroup.add_argument('-sc', '--sort-coord', dest='sortOutputByCoord', action='store_true', default=False,
+                    help='sort sequences by coordinate if embedded in description (default false)')
 
 parser.add_argument('--range', dest='baseRange', nargs=2, type=int, default=[1, -1], metavar=('startbase', 'endbase'),
                     help='range of alignment positions to output, start at 1, last position included, -1 for end')
@@ -86,20 +92,18 @@ parser.add_argument('filenames', nargs='*', default=[],
                     help='a list of filenames to search (none for stdin)')
 
 #now process the command line
-parsed = parser.parse_args()
+options = parser.parse_args()
 
-invertMatch = parsed.invertMatch
-startBase = parsed.baseRange[0] - 1
-endBase = parsed.baseRange[1]
-if parsed.patternFile is not None:
-    sys.stderr.write('reading patterns from file %s ...\n' % parsed.patternFile)
-    pf = open(parsed.patternFile, 'rb')
+startBase = options.baseRange[0] - 1
+endBase = options.baseRange[1]
+if options.patternFile is not None:
+    sys.stderr.write('reading patterns from file %s ...\n' % options.patternFile)
+    pf = open(options.patternFile, 'rb')
     seqPatterns = [ line.strip() for line in pf ]
     sys.stderr.write('patterns: %s' % str(seqPatterns))
 else:
-    seqPatterns = [parsed.pattern]
-seqFiles = parsed.filenames
-sortOutput = parsed.sortOutput
+    seqPatterns = [options.pattern]
+seqFiles = options.filenames
 
 compiledPats = []
 for pat in seqPatterns:
@@ -133,7 +137,7 @@ for oneSeqFile in seqFiles:
 
 recSet = set([ my_SeqRecord(rec.seq, description=rec.description, name=rec.name, id =rec.id) for rec in recList ])
 
-if invertMatch:
+if options.invertMatch:
     matchedRecs = set(recSet)
 else:
     matchedRecs = set()
@@ -161,8 +165,16 @@ if endBase == -1:
 else:
     preparedRecs = [ seq[startBase:endBase] for seq in matchedRecs ]
 
-if sortOutput:
+#print ParsedSequenceDescription(preparedRecs[0].description)
+
+if options.sortOutput:
+    sys.stderr.write("sorting by sequence name\n")
     preparedRecs.sort(key=lambda x:x.name)
+elif options.sortOutputByCoord:
+    sys.stderr.write("sorting by sequence start coordinate\n")
+    for rec in preparedRecs:
+        rec.coord_start  = ParsedSequenceDescription(rec.description).coord_start
+    preparedRecs.sort(key=lambda x:x.coord_start)
 
 if len(matchedRecs) > 0:
     sys.stderr.write("matched %d sequences in %s\n" % (len(preparedRecs), str(seqFiles)))

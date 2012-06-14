@@ -5,6 +5,9 @@ from argparse import ArgumentParser
 #use argparse module to parse commandline input
 parser = ArgumentParser(description='extract sequences from a fasta file')
 
+#use mutExclGroup.add_argument instead of parser.add_argument for mutually exclusive options
+#mutExclGroup = parser.add_mutually_exclusive_group()
+
 #add possible arguments
 #flag
 parser.add_argument('-v', '--invert-match', dest='invertMatch', action='store_true', default=False,
