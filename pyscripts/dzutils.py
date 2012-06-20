@@ -68,7 +68,7 @@ def extract_core_filename(name):
             extracted = search.group(1)
             break
     if extracted is None:
-        exit("problem shortening name: %s" % name)
+        exit("problem shortening name 1: %s" % name)
    
     extracted2 = None
     patts = [ '(.*).nex$', '(.*).best.tre$', '(.*).boot.tre$', '(.*).tre$', '(.*).boot$' ]
@@ -78,7 +78,7 @@ def extract_core_filename(name):
             extracted2 = search.group(1)
             break
     if extracted2 is None:
-        exit("problem shortening name: %s" % name)
+        exit("problem shortening name 2: %s" % name)
     return extracted2
 
 
