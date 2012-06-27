@@ -283,6 +283,8 @@ def extract_seqrecord_between_outer_cds(rec, ifeat):
     returned SeqRecord.
     '''
     if ifeat.sub_features[0].type == 'mRNA':
+        if len(ifeat.sub_features) > 1 and ifeat.sub_features[1].type == 'mRNA':
+            exit('Multiple mRNA features found! Pass only one.')
         feat = copy.deepcopy(ifeat.sub_features[0])
     else:
         feat = copy.deepcopy(ifeat)

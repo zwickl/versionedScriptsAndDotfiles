@@ -145,7 +145,7 @@ for cpat in compiledPats:
     for seq in recSet:
         match = cpat.search(seq.description)
         if match is not None:
-            if invertMatch:
+            if options.invertMatch:
                 if seq in matchedRecs:
                     matchedRecs.remove(seq)
             else:

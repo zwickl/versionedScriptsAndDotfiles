@@ -19,6 +19,52 @@ class Oryza:
 
 oryza = Oryza()
 
+
+def filter_out_alignments_with_borked_sativa_extractions(toFilter):
+    #these are the alignments affected by the sativa mis-extraction problems in /productionOryza2/gramene34_split/alignmentsAndTrees.glabM/ms2006.frac0.5/dag.G1.D2.C4.N5/
+    #added here to temporarily easily strip them from various uses of the alignment names
+    namesToRemove = [
+        '00034.00009.10T.noDupes',
+        '00086.00051.11T.noDupes',
+        '00146.00032.10T.noDupes',
+        '00216.00061.10T.noDupes',
+        '00434.00224.11T.noDupes',
+        '00477.00041.9T.noDupes',
+        '00531.00267.11T.noDupes',
+        '00669.00173.10T.noDupes',
+        '00675.00175.10T.noDupes',
+        '00787.00407.11T.noDupes',
+        '01013.00282.10T.noDupes',
+        '01043.00474.11T.noDupes',
+        '01123.00307.10T.noDupes',
+        '01152.00137.9T.noDupes',
+        '01261.00059.8T.noDupes',
+        '01276.00357.10T.noDupes',
+        '01602.00404.10T.noDupes',
+        '01639.00100.8T.noDupes',
+        '01740.00114.8T.noDupes',
+        '01785.00070.7T.noDupes',
+        '01835.00060.6T.noDupes'
+        ]
+    return filter_out_strings_by_pattern(toFilter, namesToRemove)
+    
+
+def filter_out_strings_by_pattern(toFilter, patterns):
+    if len(patterns) ==0:
+        return toFilter
+    filtering = []
+    OK = True
+    for name in toFilter:
+        for patt in patterns:
+            if re.search(patt, name) is not None:
+                OK = False
+                break
+        if OK is False:
+            continue
+        filtering.append(name)
+    return filtering
+
+
 def rename_sativa_to_oge_standard(name):
     '''standardize the naming format'''
     newName = name.replace('LOC_Os', 'OsatjAA')

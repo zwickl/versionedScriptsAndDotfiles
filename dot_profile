@@ -184,6 +184,7 @@ else
     export OLD_ORYZA_ROOT=$DEV/experiments/oryza/
     export PORYZA_ROOT=$DEV/experiments/productionOryza/
     export ORYZA_ROOT=$PORYZA_ROOT
+    export FULL_ANALYSES=$ORYZA_ROOT/gramene34_split_cleanedByCSHL/alignmentsAndTrees/ms2006.frac0.5/dag.G1.D4.C4.N5/
 fi
 export G34=$OLD_ORYZA_ROOT/gramene34_omap_genes/
 export C34=$OLD_ORYZA_ROOT/gramene34_cleanedByCSHL/
@@ -193,7 +194,7 @@ export CLUSTS34=$S34/datasetAss/noInd/wShort.woSatTransOrOverlap.frac0.5/recipro
 
 export SERIOUS=$ORYZA_ROOT/gramene34_omap_genes/datasetAssembly/blastP.clean/seriousRun/
 export SPLITTING=$C34/datasetAssembly/withShortModels.withoutSativaTransposonsOrOverlap.ms2006.frac0.0/paramSweep.reciprocalDag.fixedNearby/geneOrder/joined.G1.D4.C4+G1.D50.C20/nearbySweep/nearby5/
-export RELATIVE_ALIGNMENT_PATH_ORYZA=../../alignments/
+export RELATIVE_ALIGNMENT_PATH_ORYZA=../../../alignments/
 if [ ! -d "$ORYZA_ROOT" ];then
     export ORYZA_ROOT=/share/work1/zwickl/experiments/oryza/
     #ls $ORYZA_ROOT &> /dev/null

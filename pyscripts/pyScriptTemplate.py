@@ -21,10 +21,14 @@ parser.add_argument('-f', '--patternfile', dest='patternFile', type=str, default
 parser.add_argument('--range', dest='baseRange', nargs=2, type=int, default=[1, 9999999], metavar=('startbase', 'endbase'),
                     help='range of cluster sizes (number of members)')
 
+#single number value
+parser.add_argument('-mp', '--min-match-prop', dest='minMatchProportion', type=float, default=0.0,
+                    help='proportion of hit that must overlap query (default 0.0)')
+
 #variable number of arguments
 parser.add_argument('filenames', nargs='*', default=[], 
                     help='a list of filenames to search (none for stdin)')
 
 #now process the command line
-parsed = parser.parse_args()
+options = parser.parse_args()
 
