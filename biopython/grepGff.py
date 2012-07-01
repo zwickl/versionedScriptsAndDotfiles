@@ -89,14 +89,16 @@ def sort_feature_list_by_coordinate(recList):
 
 parser = argparse.ArgumentParser(description='extract records from a gff file')
 
+mutExclGroup = parser.add_mutually_exclusive_group()
+
 #add possible arguments
 parser.add_argument('-v', '--invert-match', dest='invertMatch', action='store_true', default=False,
                     help='invert the sense of the match (default false)')
 
-parser.add_argument('-s', '--sort', dest='sortOutput', action='store_true', default=False,
+mutExclGroup.add_argument('-s', '--sort', dest='sortOutput', action='store_true', default=False,
                     help='alphanumerically sort the sequences by name (default false)')
 
-parser.add_argument('-sc', '--sort-coord', dest='sortOutputCoord', action='store_true', default=False,
+mutExclGroup.add_argument('-sc', '--sort-coord', dest='sortOutputCoord', action='store_true', default=False,
                     help='sort the sequences by start coordinatre (default false)')
 
 parser.add_argument('-f', '--patternfile', dest='patternFile', type=str, default=None, 

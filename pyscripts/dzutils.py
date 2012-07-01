@@ -2,6 +2,7 @@
 
 import sys
 import re
+import itertools
 
 if __name__ == "__main__":
     import doctest
@@ -67,7 +68,7 @@ def extract_core_filename(name):
             extracted = search.group(1)
             break
     if extracted is None:
-        exit("problem shortening name: %s" % name)
+        exit("problem shortening name 1: %s" % name)
    
     extracted2 = None
     patts = [ '(.*).nex$', '(.*).best.tre$', '(.*).boot.tre$', '(.*).tre$', '(.*).boot$' ]
@@ -77,11 +78,93 @@ def extract_core_filename(name):
             extracted2 = search.group(1)
             break
     if extracted2 is None:
-        exit("problem shortening name: %s" % name)
+        exit("problem shortening name 2: %s" % name)
     return extracted2
 
+
+class DagLine:
+    '''Simple container for dagchainer formatted lines.'''
+    def __init__(self, line):
+        '''Store whole line as string, and some parsed fields.
+        
+        arguments:
+        line -- either a string or a string that was pre-split into fields (should be 9 of them)
+        
+        members:
+        string -- normalized to have fields separated by tabs
+        cut_string -- same fields, minus the last one, which is a floating point value and can
+            be represented differently.  Allows proper hashing and equality detection of lines, 
+            minus the evalue.
+        self.tax[12] -- taxon names, pulled from fields 1 and 5
+        self.evalue -- 'nuf said
+        '''
+        if isinstance(line, str):
+            self.fields = line.split()
+        else:
+            self.fields = line
+        if len(self.fields) != 9:
+            raise ValueError('Wrong number of fields in dag string')
+        self.string = '\t'.join(self.fields)
+        #this is just the line string minus the e-value, which can be represented in text multiple ways
+        self.cut_string = '\t'.join(self.fields[:-1])
+        self.tax1 = self.fields[1]
+        self.tax2 = self.fields[5]
+        self.evalue = self.fields[8]
+    def __hash__(self):
+        return hash(self.cut_string)
+    def __cmp__(self, other):
+        raise Moo
+        sys.stderr.write('CMP %s %s' % (self, other))
+        #return cmp(self.cut_string, other.cut_string)
+        return cmp((self.tax1, self.tax2), (other.tax1, other.tax2))
+    def __eq__(self, other):
+        return self.cut_string == other.cut_string
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    def __lt__(self, other):
+        if self.tax1 != other.tax1:
+            return self.tax1 < other.tax1
+        else:
+            return self.tax2 < other.tax2
+    def __str__(self):
+        return self.string
+
+
+def my_dag_sort(first, sec):
+    '''Sort by first taxon, then second.'''
+    if first[1] != sec[1]:
+        if first[1] < sec[1]:
+            return True
+        return False
+    else:
+        if first[5] != sec[5]:
+            if first[5] < sec[5]:
+                return True
+            return False
+        else:
+            return False
+
+
+def parse_daglines(file, self_hits=False):
+    if isinstance(file, str):
+        hand = open(file, 'r')
+    else:
+        hand = file
+
+    lines = [ line.split() for line in hand if not '#' in line ]
+    lines.sort()
+    if self_hits:
+        dagLines = [ DagLine(line) for line in lines ]
+    else:
+        dagLines = [ DagLine(line) for line in lines if line[1] != line[5] ]
+    return dagLines
+
+
 class BlinkCluster:
-    def __init__(self, num, members=[], mapping=None):
+    def __init__(self, num, members=[], dagLines=None, daglineDoubleDict=None, mapping=None):
+        #print members
+        #for iteration
+        self.index = 0
         self.number = num
         if mapping is None:
             self.cluster_members = members
@@ -89,15 +172,43 @@ class BlinkCluster:
             self.cluster_members = []
             for member in members:
                 self.cluster_members.append(mapping[member])
+        
+        self.cluster_members.sort()
+
+        if len(self.cluster_members) > 0:
+            self.member_set = set(tuple(sorted(self.cluster_members)))
+        else:
+            self.member_set = set()
 
         self.noDupes = True
-        membDict = {}
+        taxonDict = {}
         for memb in self.cluster_members:
-            if memb[0:7] in membDict:
+            if memb[0:7] in taxonDict:
                 self.noDupes = False
                 break
             else:
-                membDict[memb[0:7]] = True
+                taxonDict[memb[0:7]] = True
+
+        if dagLines is not None and len(dagLines) > 0:
+            #daglineDoubleDict = get_dagline_double_dict(dagLines)
+            daglineDoubleDict = get_dagline_double_dict_from_dagline_objects(dagLines)
+        else:
+            self.dag_lines = []
+            self.dag_line_set = set()
+        if daglineDoubleDict is not None:
+            self.dag_lines = get_dagline_list_for_cluster(self.cluster_members, daglineDoubleDict)
+            self.dag_line_set = get_dagline_set_for_cluster(self.cluster_members, daglineDoubleDict)
+            if len(self.dag_lines) == 0 and len(self.cluster_members) > 1:
+                print len(daglineDoubleDict)
+                print self
+                exit('no daglines %d?' % len(self.cluster_members))
+        else:
+            self.dag_lines = []
+            self.dag_line_set = set()
+
+        if self.dag_line_set is None:
+            print 'no dagline set?'
+            print self
 
     def add(self, member):
         self.cluster_members.append(member)
@@ -106,12 +217,183 @@ class BlinkCluster:
     def output(self, stream=sys.stdout):
         for mem in self.cluster_members:
             stream.write('%d\t%s\n' % (self.number, mem))
-    def contains_matching_taxon(patt):
+    def __repr__(self):
+        string = 'cluster %d ' % self.number
+        string += '%d members\n' % len(self.cluster_members)
+        for mem in self.cluster_members:
+            string += '\t%d\t%s\n' % (self.number, mem)
+        string += 'daglines\n'
+        if self.dag_lines is not None:
+            for line in self.dag_lines:
+                if isinstance(line, DagLine):
+                    string += '\t%s\n' % line.string
+                else:
+                    string += '\t%s\n' % line
+        else:
+            string += '\tdaglines not defined\n'
+        return string
+
+    def __str__(self):
+        string = ''
+        for mem in self.cluster_members:
+            string += '\t%d\t%s\n' % (self.number, mem)
+        return string
+
+    def contains_matching_taxon(self, patt):
         for m in self.cluster_members:
             if re.search(patt, m) is not None:
                 return True
         return False
+    def __contains__(self, name):
+        if name in self.cluster_members:
+            return True
+        return False
+    def __iter__(self):
+        return self
+    def next(self):
+        try:
+            result = self.cluster_members[self.index]
+        except IndexError:
+            self.index = 0
+            raise StopIteration
+        self.index += 1
+        return result
+    def is_equalset(self, other):
+        return self.member_set == other.member_set
+    def is_superset(self, other):
+        return self.member_set.issuperset(other.member_set)
+    def is_subset(self, other):
+        return self.member_set.issubset(other.member_set)
+    def member_union(self, other):
+        return BlinkCluster(-1, list(self.member_set | other.member_set), dagLines=list(self.dag_line_set | other.dag_line_set))
+    def member_intersection(self, other):
+        return BlinkCluster(-1, list(self.member_set & other.member_set), dagLines=list(self.dag_line_set & other.dag_line_set))
+    def member_difference(self, other):
+        return BlinkCluster(-1, list(self.member_set - other.member_set), dagLines=list(self.dag_line_set - other.dag_line_set))
+    def __hash__(self):
+        return hash(tuple(sorted(self.cluster_members)))
+    def __cmp__(self, other):
+        return cmp(tuple(sorted(self.cluster_members)), tuple(sorted(other.cluster_members)))
+    def is_single_copy(self):
+        return self.noDupes
 
+class SetOfClusters():
+    def __init__(self, blink_clusters=[]):
+        #for iteration
+        self.index = 0
+        #BlinkCluster objects
+        #in case blink_clusters is a set   
+        blink_clusters = list(blink_clusters)
+        if len(blink_clusters) > 0:
+            if isinstance(blink_clusters[0], BlinkCluster):
+                self.blink_clusters = blink_clusters
+            else:
+                raise TypeError('what is blink_clusters?')
+        else:
+            self.blink_clusters = []
+        self.cluster_set = set(self.blink_clusters)
+        #list with one tuple per cluster, containing the cluster_members
+        self.cluster_member_tuples = [ tuple(sorted(clust.cluster_members)) for clust in self.blink_clusters ]
+        #dictionary to find clusters indexed by their tuples
+        clusterDict = {}
+        for tup, clust in itertools.izip(self.cluster_member_tuples, self.blink_clusters):
+            clusterDict[tup] = clust
+        #a single set, with clusters (as tuples) as members 
+        self.cluster_tuple_set = set(self.cluster_member_tuples)
+    
+    def get_cluster_by_member(memb):
+        for clust in self.blink_clusters:
+            if memb in clust:
+                return clust
+        return None
+
+    def cluster_union(self, other):
+        union = self.cluster_set | other.cluster_set
+        l = list(union)
+        return list(self.cluster_set | other.cluster_set)
+
+    def cluster_intersection(self, other):
+        return self.cluster_set & other.cluster_set
+    
+    def cluster_difference(self, other):
+        return self.cluster_set - other.cluster_set
+
+    def __len__(self):
+        return len(self.blink_clusters)
+
+    def __iter__(self):
+        return self
+    
+    def next(self):
+        try:
+            result = self.blink_clusters[self.index]
+        except IndexError:
+            self.index = 0
+            raise StopIteration
+        self.index += 1
+        return result
+    
+    def __str__(self):
+        string = ''
+        for c in sorted(self.blink_clusters, key=lambda x:x.number):
+            string += '%s' % c
+        return string
+
+    '''
+    def get_clusters_that_are_subsets_and_supersets(self, other):
+        #first remove any identical clusters
+
+        intersect = SetOfClusters([BlinkCluster(-1, members=list(c)) for c in self.cluster_intersection(other)])
+        union = SetOfClusters([BlinkCluster(-1, members=list(c)) for c in self.cluster_union(other)])
+        reduced1 = SetOfClusters([BlinkCluster(-1, members=list(c)) for c in self.cluster_difference(other)])
+        reduced2 = SetOfClusters([BlinkCluster(-1, members=list(c)) for c in other.cluster_difference(self)])
+        
+        one = len(self)
+        two = len(other)
+        un = len(union)
+        inter = len(intersect)
+        only1 = len(reduced1)
+        only2 = len(reduced2)
+        print one, two, un, inter, only1, only2
+        print inter / float(one), inter / float(two)
+        exit()
+
+        #print len(reduced1)
+        #print len(reduced2)
+        n1 = 0
+        num = 0
+        for clust1 in reduced1:
+            n2 = 1
+            n1 +=1 
+            #print 'outer'
+            for clust2 in reduced2:
+                #print 'inner'
+                #print n1, n2
+                n2+=1
+                if len(clust1.member_intersection(clust2)) > 0:
+                    if clust1.noDupes or clust2.noDupes:
+                        if len(clust1.member_difference(clust2)) != 0 and len(clust2.member_difference(clust1)) != 0:
+                            print 'not sub or super'
+                        elif len(clust1) > len(clust2):
+                            print 'subset'
+                        else:
+                            print 'superset'
+                        
+                        m1 = set(clust1)
+                        m2 = set(clust2)
+                        comb = sorted(list(m1 | m2))
+                        for memb in comb:
+                            if memb in clust1:
+                                print num, memb,
+                            else:
+                                print num, '-',
+                            if memb in clust2:
+                                print memb
+                            else:
+                                print '-'
+                        num += 1
+
+        '''
 
 def parse_mcl_output(filename):
     '''read MCL output, which looks like the below, return a list of BlinkClusters
@@ -131,7 +413,7 @@ def parse_mcl_output(filename):
             exit("problem converting mcl cluster to blink format")
     return allClusters
 
-def parse_blink_output(filename):
+def parse_blink_output(filename, dagline_dict=None):
     '''read blink output, which looks like the below, return a list of BlinkClusters
     This indicates cluster 0 with one member, cluster 1 with 4, etc.
     0	ObartAA03S_FGT0005
@@ -147,7 +429,6 @@ def parse_blink_output(filename):
     lines = [ l.split() for l in blinkOut ]
     allClusters = []
  
-    #this is a much smarter way to do this than the silliness below
     clustDict = {}
     for line in lines:
         try:
@@ -168,50 +449,8 @@ def parse_blink_output(filename):
             exit(1)
  
     for c in sorted(clustDict.keys()):
-        allClusters.append(BlinkCluster(c, clustDict[c]))
+        allClusters.append(BlinkCluster(c, clustDict[c], daglineDoubleDict=dagline_dict))
     return allClusters
-
-    '''
-    thisCluster = []
-    curNum = 0
-    first = True
-    for line in lines:
-        try:
-            if len(line) != 0 and len(line) != 2:
-                raise Exception
-            if len(line) == 0:
-                thisLineNum = -1
-            else:
-                thisLineNum = int(line[0])
-                #if the number is a float
-                if str(thisLineNum) != line[0]:
-                    raise Exception
-            if first is True:
-                curNum = thisLineNum
-                first = False
-                
-            #if we haven't hit a blank line (presumably the end of the file)
-            #and this line has the same cluster number as previous ones, append it
-            if thisLineNum == curNum:
-                thisCluster.append(line[1])
-            #if we did hit a blank line, or this is the last line in the file
-            #or we found a new cluster number, store the current cluster
-            if line == lines[-1] or thisLineNum != curNum:
-                toAppend = thisCluster
-                #allClusters.append([curNum, toAppend])
-                allClusters.append(BlinkCluster(curNum, toAppend))
-                if thisLineNum >= 0 and int(line[0]) != curNum:
-                    curNum = thisLineNum
-                    thisCluster = []
-                    thisCluster.append(line[1])
-        except:
-            print "problem reading line %s of blink.out\n" % (str(line))
-            print "expecting lines with only:\ncluster# seqname\n"
-            #my_output("problem reading line %s of blink.out\n" % (str(line)), logfile)
-            #my_output("expecting lines with only:\ncluster# seqname\n", logfile)
-            exit(1)
-    return allClusters
-    '''
 
 '''
 def blink_cluster_from_clique(thisClust, maxClique, mapping=None):
@@ -223,7 +462,7 @@ def blink_cluster_from_clique(thisClust, maxClique, mapping=None):
             else:
                 new_members.append(member)
 '''
-
+'''
 def get_dagline_set_for_cluster(genes, daglineDoubleDict):
 	clustHits = set()
 	for tax1 in range(0, len(genes)):
@@ -239,62 +478,173 @@ def get_dagline_set_for_cluster(genes, daglineDoubleDict):
 				except:
 					continue
 	return clustHits
-	
+'''
+
+def get_dagline_set_for_cluster(genes, daglineDoubleDict):
+    clustHits = set()
+    for tax1 in range(0, len(genes)):
+        names1 = [genes[tax1], re.sub('[.][0-9]$', '', genes[tax1])]
+        #print 'names1', names1
+        for n1 in names1:
+            found = False
+            if n1 in daglineDoubleDict:
+                #print '\tfound n1:', n1
+                sub_dict = daglineDoubleDict[n1]
+                for tax2 in range(0, len(genes)):
+                    if tax1 != tax2:
+                        names2 = [genes[tax2], re.sub('[.][0-9]$', '', genes[tax2])]
+                        #print '\tnames1', names1
+                        for n2 in names2:
+                            if n2 in sub_dict:
+                                #print '\t\tfound n2:', n2
+                                dl = sub_dict[n2]
+                                if isinstance(dl, DagLine):
+                                    clustHits.add(dl)
+                                else:
+                                    clustHits.add('\t'.join(dl))
+                                #found = True
+                                break
+    return clustHits
+
 
 def get_dagline_list_for_cluster(genes, daglineDoubleDict):
-	clustHits = []
-	for tax1 in range(0, len(genes)):
-		try:
-			sub_dict = daglineDoubleDict[genes[tax1]]
-		except:
-			continue
-		for tax2 in range(0, len(genes)):
-			if tax1 != tax2:
-				try:
-					foundLine = sub_dict[genes[tax2]]
-					clustHits.append('\t'.join(foundLine))
-				except:
-					continue
-	return clustHits
-	
+    #print 'dictsize', len(daglineDoubleDict)
+    #print daglineDoubleDict.keys()
+    clustHits = []
+    for tax1 in range(0, len(genes)):
+        names1 = [genes[tax1], re.sub('[.][0-9]$', '', genes[tax1])]
+        #print 'names1', names1
+        for n1 in names1:
+            found = False
+            if n1 in daglineDoubleDict:
+                #print '\tfound n1:', n1
+                sub_dict = daglineDoubleDict[n1]
+                for tax2 in range(0, len(genes)):
+                    if tax1 != tax2:
+                        names2 = [genes[tax2], re.sub('[.][0-9]$', '', genes[tax2])]
+                        #print '\tnames1', names1
+                        for n2 in names2:
+                            if n2 in sub_dict:
+                                #print '\t\tfound n2:', n2
+                                dl = sub_dict[n2]
+                                #if 'glab' in n1:
+                                #    print names1, names2
+                                if isinstance(dl, DagLine):
+                                    #if 'glab' in n1:
+                                    #    print dl
+                                    clustHits.append(dl)
+                                else:
+                                    clustHits.append('\t'.join(dl))
+                                #found = True
+                                break
+    clustHits.sort()
 
-def get_dagline_double_dict(lineList):
-	'''Create a dict with keys being query loci in dagchainer lines, and
-	values being dicts with keys being the loci hit by the higher level
-	loci.  Values of secondary dict are a list of strings for each element
-	of the dagchainer line.
-	
-	lineList can be either a list of strings for each line, or a list
-	of lists that already hold the individual fields of each line
-	
-	dagchainer lines look like:
-	rufipogon_3s    OrufiAA03S_FGT1690  1735    1735    glaberrima_3s   OglabAA03S_FGT1985  1972    1972    1e-199
-	where numbers are coords of locus (in this case gene number) and the last value is e-value
-	'''
-	my_dict = {}
-	if len(lineList) == 0:
-		exit("get_dagline_double_dict passed empty list")
-	if len(lineList[0]) == 1:
-		lineLIst = [ line.split() for line in lineList ]
-	
-	for line in lineList:
-		t1 = line[1]
-		
-		match = re.search('(.*)[.][0-9]*$', t1)
-		if match is not None:
-			t1 = match.group(1)
-		
-		t2 = line[5]
-		
-		match = re.search('(.*)[.][0-9]*$', t2)
-		if match is not None:
-			t2 = match.group(1)
-		
-		if t1 in my_dict:
-			my_dict[t1][t2] = line
-		else:
-			my_dict[t1] = {t2 : line}
-	return my_dict
+    '''
+    print 'added'
+    for line in clustHits:
+        if 'glab' in line.tax1:
+            print line
+    '''
+    return clustHits
+
+
+def get_dagline_double_dict(lineList, bidirectional=False):
+    '''Create a dict with keys being query loci in dagchainer lines, and
+    values being dicts with keys being the loci hit by the higher level
+    loci.  Values of secondary dict are a list of strings for each element
+    of the dagchainer line, or DagLine objects if that is what is passed in.
+    
+    lineList can be either a list of strings for each line, or a list
+    of lists that already hold the individual fields of each line, or 
+    DagLine objects.
+    
+    bidirectional means that the dict is indexed both by the query (line[1]) and hit (line[5]) seqs 
+    - wait - bidirectional didn't make any sense here, and caused overwriting of earlier lines put
+    into the dict.  Could make this work by having the second dict hold a list of lines, but don't need it right now
+
+    dagchainer lines look like:
+    rufipogon_3s    OrufiAA03S_FGT1690  1735    1735    glaberrima_3s   OglabAA03S_FGT1985  1972    1972    1e-199
+    where numbers are coords of locus (in this case gene number) and the last value is e-value
+    '''
+    my_dict = {}
+    if len(lineList) == 0:
+        raise poo
+        exit("get_dagline_double_dict passed empty list")
+    if isinstance(lineList[0], str):
+        lineList = [ line.split() for line in lineList ]
+        print 'lineList', lineList
+        if len(lineList[0][0]) == 1:
+            exit("wtf")
+    
+    lineTups = []
+    for line in lineList:
+        if isinstance(lineList[0], DagLine):
+            lineTups.append((line.tax1, line.tax2, line))
+            if bidirectional:
+                lineTups.append((line.tax2, line.tax1, line))
+        else:
+            lineTups.append((line[1], line[5], line))
+            if bidirectional:
+                lineTups.append((line[5], line[1], line))
+
+    for tup in lineTups:
+        t1 = tup[0]
+        t2 = tup[1]
+        
+        match = re.search('(.*)[.][0-9]*$', t1)
+        if match is not None:
+             t1 = match.group(1)
+        
+        match = re.search('(.*)[.][0-9]*$', t2)
+        if match is not None:
+            t2 = match.group(1)
+        
+        if t1 in my_dict:
+            my_dict[t1][t2] = tup[2]
+        else:
+            my_dict[t1] = {t2 : tup[2]}
+    return my_dict
+
+
+def get_dagline_double_dict_from_dagline_objects(daglines):
+    '''Create a dict with keys being query loci in dagchainer lines, and
+    loci.  Values of secondary dict are a list of strings for each element
+    of the dagchainer line.
+    
+    lineList can be either a list of strings for each line, or a list
+    of lists that already hold the individual fields of each line
+    
+    dagchainer lines look like:
+    rufipogon_3s    OrufiAA03S_FGT1690  1735    1735    glaberrima_3s   OglabAA03S_FGT1985  1972    1972    1e-199
+    where numbers are coords of locus (in this case gene number) and the last value is e-value
+    '''
+    my_dict = {}
+    if len(daglines) == 0:
+        raise poo
+        exit("get_dagline_double_dict_from_dagline_objects passed empty list")
+
+    
+    
+    for line in daglines:
+        t1 = line.tax1
+        
+        match = re.search('(.*)[.][0-9]*$', t1)
+        if match is not None:
+             t1 = match.group(1)
+             #print 'matched', t1
+            
+        t2 = line.tax2
+        
+        match = re.search('(.*)[.][0-9]*$', t2)
+        if match is not None:
+            t2 = match.group(1)
+            #print 'matched', t2
+        
+        if t1 in my_dict:
+            my_dict[t1][t2] = line
+        else:
+            my_dict[t1] = {t2 : line}
+    return my_dict
 
 
 class HitList:
@@ -390,7 +740,7 @@ def make_dictionary_from_gff_arbitrary_field(string):
             exit("problem reading field, %s" % sep)
     return dict
 
-class ParsedSequenceDescription:
+class ParsedSequenceDescription(object):
     def __init__(self, description=None, gff=None):
         '''
         OGE gff lines:
@@ -522,6 +872,8 @@ class ParsedSequenceDescription:
             desc = description.replace(";", " ")
             #desc = desc.replace(":", " ")
             split_desc = desc.split()
+            if len(split_desc) < 3:
+                exit('Description malformed? %s' % desc)
             
             #get the name
             self.name = split_desc[0].replace(">", "")

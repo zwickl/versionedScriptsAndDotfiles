@@ -6,8 +6,10 @@ from dzutils import *
 
 class Oryza:
     def __init__(self):
-        self.taxon_names = [ 'O. sativaj AA', 'O. sativai AA', 'O. barthii AA', 'O. brachyantha FF', 'O. glaberrima AA', 'O. minuta BB', 'O. minuta CC', 'O. nivara AA', 'O. officinalis CC', 'O. punctata BB', 'O. rufipogon AA' ]
-        self.short_names = [ 'OsatjAA', 'OsatiAA', 'ObartAA', 'ObracFF', 'OglabAA', 'OminuBB', 'OminuCC', 'OnivaAA', 'OoffiCC', 'OpuncBB', 'OrufiAA' ]
+        #self.taxon_names = [ 'O. sativaj AA', 'O. sativai AA', 'O. barthii AA', 'O. brachyantha FF', 'O. glaberrima AA', 'O. glaberrimaF AA', 'O. glaberrimaM AA', 'O. glumaepatula AA', 'O. meridionalis AA', 'O. minuta BB', 'O. minuta CC', 'O. nivara AA', 'O. officinalis CC', 'O. punctata BB', 'O. rufipogon AA' ]
+        #self.short_names = [ 'OsatjAA', 'OsatiAA', 'ObartAA', 'ObracFF', 'OglabAA', 'OglaFAA', 'OglaMAA', 'OglumAA', 'OmeriAA', 'OminuBB', 'OminuCC', 'OnivaAA', 'OoffiCC', 'OpuncBB', 'OrufiAA' ]
+        self.taxon_names = [ 'O. barthii AA', 'O. brachyantha FF', 'O. glaberrima AA', 'O. glaberrimaF AA', 'O. glaberrimaM AA', 'O. glumaepatula AA', 'O. meridionalis AA', 'O. minuta BB', 'O. minuta CC', 'O. nivara AA', 'O. officinalis CC', 'O. punctata BB', 'O. rufipogon AA', 'O. sativai AA', 'O. sativaj AA' ]
+        self.short_names = [ 'ObartAA', 'ObracFF', 'OglabAA', 'OglaFAA', 'OglaMAA', 'OglumAA', 'OmeriAA', 'OminuBB', 'OminuCC', 'OnivaAA', 'OoffiCC', 'OpuncBB', 'OrufiAA', 'OsatiAA', 'OsatjAA' ]
         self.short_to_long = dict( [ (self.short_names[n], self.taxon_names[n]) for n in range(0, len(self.taxon_names)) ])
         self.long_to_short = dict( [ (self.taxon_names[n], self.short_names[n]) for n in range(0, len(self.taxon_names)) ])
     def short_name_to_long(self, short):
@@ -17,33 +19,74 @@ class Oryza:
 
 oryza = Oryza()
 
-def parse_feature_name(feature, errorIsFatal=True):
-    '''Return what I'm treating as the name of the SeqFeature, which is 
-    stored as one of the arbitrarily named qualifiers, named differently
-    for IRGSP and OGE gff's
-    '''
-    #print feature.qualifiers
-    if 'Alias' in feature.qualifiers:
-        return feature.qualifiers['Alias'][0]
-    elif 'Name' in feature.qualifiers:
-        return feature.qualifiers['Name'][0]
-    else:
-        print 'unable to parse a name!:'
-        print feature
-        if errorIsFatal:
-            exit()
+
+def filter_out_alignments_with_borked_sativa_extractions(toFilter):
+    #these are the alignments affected by the sativa mis-extraction problems in /productionOryza2/gramene34_split/alignmentsAndTrees.glabM/ms2006.frac0.5/dag.G1.D2.C4.N5/
+    #added here to temporarily easily strip them from various uses of the alignment names
+    namesToRemove = [
+        '00034.00009.10T.noDupes',
+        '00086.00051.11T.noDupes',
+        '00146.00032.10T.noDupes',
+        '00216.00061.10T.noDupes',
+        '00434.00224.11T.noDupes',
+        '00477.00041.9T.noDupes',
+        '00531.00267.11T.noDupes',
+        '00669.00173.10T.noDupes',
+        '00675.00175.10T.noDupes',
+        '00787.00407.11T.noDupes',
+        '01013.00282.10T.noDupes',
+        '01043.00474.11T.noDupes',
+        '01123.00307.10T.noDupes',
+        '01152.00137.9T.noDupes',
+        '01261.00059.8T.noDupes',
+        '01276.00357.10T.noDupes',
+        '01602.00404.10T.noDupes',
+        '01639.00100.8T.noDupes',
+        '01740.00114.8T.noDupes',
+        '01785.00070.7T.noDupes',
+        '01835.00060.6T.noDupes'
+        ]
+    return filter_out_strings_by_pattern(toFilter, namesToRemove)
+    
+
+def filter_out_strings_by_pattern(toFilter, patterns):
+    if len(patterns) ==0:
+        return toFilter
+    filtering = []
+    OK = True
+    for name in toFilter:
+        for patt in patterns:
+            if re.search(patt, name) is not None:
+                OK = False
+                break
+        if OK is False:
+            continue
+        filtering.append(name)
+    return filtering
+
 
 def rename_sativa_to_oge_standard(name):
     '''standardize the naming format'''
     newName = name.replace('LOC_Os', 'OsatjAA')
     #indica names are like this: BGIOSGA009362
-    newName = newName.replace('BGIOSGA0', 'OsatiAA03g')
+    #the -TA appears in indica gene transcript (mRNA) names. I was stripping this off because it was
+    #annoying, but that caused problems because then the gene and mRNA had the same name, and the mRNA 
+    #was its own parent.
+    if '-TA' in newName:
+        newName = newName.replace('BGIOSGA0', 'OsatiAA03gt')
+        newName = newName.replace('-TA', '')
+    else:
+        newName = newName.replace('BGIOSGA0', 'OsatiAA03g')
+    #newName = newName.replace('-TA', '')
+    #need to make the two glab short names unique
     if 'ORGLA' in name:
         #glaberrima MIPS annotations are named like this: ORGLA03G0400100.1
         #want OglabAA03S_M4001
-        newName = newName.replace('ORGLA03G0', 'OglabAA03S_M')
+        newName = newName.replace('ORGLA03G0', 'OglaMAA03S_M')
         newName = re.sub('00[.](1)', '.\\1', newName)
         newName = re.sub('00$', '', newName)
+    elif 'OglabAA' in name:
+        newName = newName.replace('OglabAA', 'OglaFAA')
     return newName.replace('BGIOSIFCE', 'OsatiAA03.')
 
 
