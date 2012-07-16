@@ -194,7 +194,7 @@ export CLUSTS34=$S34/datasetAss/noInd/wShort.woSatTransOrOverlap.frac0.5/recipro
 
 export SERIOUS=$ORYZA_ROOT/gramene34_omap_genes/datasetAssembly/blastP.clean/seriousRun/
 export SPLITTING=$C34/datasetAssembly/withShortModels.withoutSativaTransposonsOrOverlap.ms2006.frac0.0/paramSweep.reciprocalDag.fixedNearby/geneOrder/joined.G1.D4.C4+G1.D50.C20/nearbySweep/nearby5/
-export RELATIVE_ALIGNMENT_PATH_ORYZA=../../../alignments/
+export RELATIVE_ALIGNMENT_PATH_ORYZA=../../alignments/
 if [ ! -d "$ORYZA_ROOT" ];then
     export ORYZA_ROOT=/share/work1/zwickl/experiments/oryza/
     #ls $ORYZA_ROOT &> /dev/null
@@ -338,6 +338,17 @@ fi
 if [[ $OS == 'darwin' ]]; then
     function viewDagchainer(){
         ~/Desktop/code/DAGCHAINER/Java_XY_plotter/run_XYplot.pl $1 $2
+    }
+    function disableSpotlightIndexing(){
+        #the other lines here actually disable spotlight entirely
+        sudo mdutil -a -i off
+        #sudo launchctl unload -w /System/Library/LaunchDaemons/
+        #com.apple.metadata.mds.plist
+    }
+    function enableSpotlightIndexing(){
+        sudo mdutil -a -i on
+        #sudo launchctl load -w /System/Library/LaunchDaemons/
+        #com.apple.metadata.mds.plist
     }
 fi
 
