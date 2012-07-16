@@ -61,7 +61,7 @@ def extract_core_filename(name):
 
     '''
     extracted = None
-    patts = [ '^.*blink[.](.*)', '^.*clique[.](.*)', '^.*MCL.*[.](.*)' ]
+    patts = [ '^.*blink[.](.*)', '^.*clique[.](.*)', '^.*MCL.*[.](.*)', '^.*MCcoalSim[.](.*)' ]
     for p in patts:
         search = re.search(p, name)
         if search is not None:

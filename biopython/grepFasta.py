@@ -1,21 +1,12 @@
 #!/usr/bin/env python
-import os
 import sys
-import subprocess
-import string
-from StringIO import StringIO
 import re
-import itertools
 import argparse
 import new
-import copy
 
 from Bio import SeqIO
-from Bio import AlignIO
-from Bio.Align.Applications import MuscleCommandline
 from Bio.Alphabet import IUPAC
-from Bio.Blast import NCBIStandalone
-from dzutils import *
+from dzutils import ParsedSequenceDescription
 
 '''
 #this was just some experimentation with making my own hashes
@@ -110,7 +101,7 @@ for pat in seqPatterns:
     try:
         cpat = re.compile(pat)
         compiledPats.append(cpat)
-    except:
+    except StandardError:
         sys.stderr.write("problem compiling regex pattern %s\n" % pat)
         exit(1)
 

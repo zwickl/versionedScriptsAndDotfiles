@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
-import sys
-import re
-from dzutils import *
+from re import search, sub
+from dzutils import ParsedSequenceDescription
+from dzutils import CoordinateSet
+from dzutils import extract_core_filename
+#from dzutils import *
 
 class Oryza:
     def __init__(self):
@@ -56,7 +58,7 @@ def filter_out_strings_by_pattern(toFilter, patterns):
     OK = True
     for name in toFilter:
         for patt in patterns:
-            if re.search(patt, name) is not None:
+            if search(patt, name) is not None:
                 OK = False
                 break
         if OK is False:
@@ -83,8 +85,8 @@ def rename_sativa_to_oge_standard(name):
         #glaberrima MIPS annotations are named like this: ORGLA03G0400100.1
         #want OglabAA03S_M4001
         newName = newName.replace('ORGLA03G0', 'OglaMAA03S_M')
-        newName = re.sub('00[.](1)', '.\\1', newName)
-        newName = re.sub('00$', '', newName)
+        newName = sub('00[.](1)', '.\\1', newName)
+        newName = sub('00$', '', newName)
     elif 'OglabAA' in name:
         newName = newName.replace('OglabAA', 'OglaFAA')
     return newName.replace('BGIOSIFCE', 'OsatiAA03.')
@@ -121,21 +123,21 @@ def extract_all_information_for_seqs_in_alignments(filenames):
     #work through the files
     for filename in filenames:
         #open a nexus alignment
-        file = open(filename, 'rb')
+        alfile = open(filename, 'rb')
         #get the part of the alignment filename that will be identical to part of the treefile name, according to my convention
         coreFilename = extract_core_filename(filename)
         
         #read lines at end of nexus file that give information on sequences, including coordinate
-        seqLines = [ line for line in file if ((line[0] == 'O' or line[0:3] == 'len') and not 'LOC' in line)]
+        seqLines = [ line for line in alfile if (line[0:3] == 'len' and not 'LOC' in line )]
+        #seqLines = [ line for line in file if ((line[0] == 'O' or line[0:3] == 'len') and not 'LOC' in line )]
         try:
             seqDescs = []
             for desc in seqLines:
-                search = re.search('.*(O.*) = (.*)', desc)
+                found = search('.*(O.*) = (.*)', desc)
                 #pull out tuples for normalized taxon names and longer more informative OGE description strings
-                seqDescs.append((search.group(1).strip(), search.group(2).strip()))
+                seqDescs.append((found.group(1).strip(), found.group(2).strip()))
         except:
-            sys.stderr.write('problem parsing file %s' % filename)
-            exit()
+            raise RuntimeError('problem parsing file %s' % filename)
         #parse the description part into my ParsedSequenceDescription data structure
         parsed = [ (seq[0], ParsedSequenceDescription(seq[1])) for seq in seqDescs ]
         #make a CoordinateSet structure for this alignment file

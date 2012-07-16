@@ -1,16 +1,9 @@
 #!/usr/bin/env python
-import os
 import sys
-import subprocess
-import string
-from StringIO import StringIO
 import re
-import itertools
 import copy
-import time
 
 from Bio import AlignIO
-from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
 from Bio.Align import MultipleSeqAlignment
 
@@ -76,24 +69,24 @@ else:
 
     allNames = set()
     finalAlignSeqs = []
-    for dict in alignDicts:
-        for seq in dict[0].items():
+    for mydict in alignDicts:
+        for seq in mydict[0].items():
             if seq[0] not in allNames:
                 allNames |= set([seq[0]])
-                finalAlignSeqs.append(copy.deepcopy(dict[0][seq[0]]))
+                finalAlignSeqs.append(copy.deepcopy(mydict[0][seq[0]]))
                 finalAlignSeqs[-1]._set_seq('')
-        #allNames |= set(dict[0].keys())
+        #allNames |= set(mydict[0].keys())
 
     sys.stderr.write("%d names across all alignments\n" % len(allNames))
 
-    for dict in alignDicts:
+    for mydict in alignDicts:
         dummy = ''
-        for i in range(0,dict[1].get_alignment_length()):
+        for i in range(0, mydict[1].get_alignment_length()):
             dummy += 'N'
         for seq in finalAlignSeqs:
             name = seq.name
             try:
-                toAppend = dict[0][name].seq
+                toAppend = mydict[0][name].seq
             except KeyError:
                 toAppend = dummy
             seq._set_seq(seq.seq + toAppend)

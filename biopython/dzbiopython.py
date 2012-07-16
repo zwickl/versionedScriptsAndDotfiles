@@ -2,10 +2,8 @@
 import sys
 import os
 import copy
-from Bio.Seq import Seq
-from Bio.SeqFeature import SeqFeature
+import string
 from Bio.SeqFeature import FeatureLocation
-from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 from BCBio import GFF
 
@@ -139,7 +137,7 @@ class TaxonGenomicInformation:
         self.gff_feature_dict = {}
         if len(self.gff_seqrecord_list) > 0:
             for rec in self.gff_seqrecord_list:
-                if rec.features[0].type in ['chromosome', 'contig', 'scaffold']:
+                if string.lower(rec.features[0].type) in ['chromosome', 'contig', 'scaffold']:
                     #trying to verify when this is happening
                     exit('DEBUG: FIRST RECORD IS %s' % rec.features[0].type)
                     toIter = rec.features[1:]
@@ -161,20 +159,20 @@ class TaxonGenomicInformation:
             if feat in self.feature_to_toplevel_record_dict:
                 return self.feature_to_toplevel_record_dict[feat]
             else:
-                exit('toplevel for feature named %s not found!' % feat)
+                raise RuntimeError('toplevel for feature named %s not found!' % feat)
         else:
             if 'Alias' in feat.qualifiers:
                 alias = feat.qualifiers['Alias'][0]
                 if alias in self.feature_to_toplevel_record_dict:
                     return self.feature_to_toplevel_record_dict[alias]
                 else:
-                    exit('toplevel for feature named %s not found!' % alias)
+                    raise RuntimeError('toplevel for feature named %s not found!' % alias)
             else:
-                id = feat.id
-                if id in self.feature_to_toplevel_record_dict:
-                    return self.feature_to_toplevel_record_dict[id]
+                fid = feat.id
+                if fid in self.feature_to_toplevel_record_dict:
+                    return self.feature_to_toplevel_record_dict[fid]
                 else:
-                    exit('toplevel for feature named %s not found!' % id)
+                    raise RuntimeError('toplevel for feature named %s not found!' % fid)
 
 
 def parse_feature_name(feature, errorIsFatal=True):
@@ -188,19 +186,22 @@ def parse_feature_name(feature, errorIsFatal=True):
     elif 'Name' in feature.qualifiers:
         return feature.qualifiers['Name'][0]
     else:
-        print 'unable to parse a name!:'
         print feature
         if errorIsFatal:
-            exit()
+            raise RuntimeError('unable to parse a feature name!:')
+        else:
+            sys.stderr.write('unable to parse a name!')
 
 
 def int_feature_location(feat):
     '''Deals with the annoying fact that hoops must be jumped through to make FeatureLocations into numbers
     NOTE: returns location coords in standard biopython format, with start counting from zero, and
-    end being one PAST the last base'''
-    start = int(str(feat.location.start))
-    end = int(str(feat.location.end))
-    return (start, end)
+    end being one PAST the last base
+    edit: D'oh!  Casting isn't necessary'''
+    #start = int(str(feat.location.start))
+    #end = int(str(feat.location.end))
+    #return (start, end)
+    return (feat.location.start.position, feat.location.end.position)
 
 
 def find_cds_start_coordinate(feature):
@@ -215,13 +216,13 @@ def find_cds_start_coordinate(feature):
     and end is the index of the leftmost base.
     So, extacting [start:end] will work properly for plus strand,
     and [end:start] will work properly for minus'''
-    if feature.type == 'CDS':
+    if string.lower(feature.type) == 'cds':
         if feature.strand == 1:
             return int_feature_location(sub)[0]
         else:
             return int_feature_location(sub)[1]
     for sub in feature.sub_features:
-        if sub.type == 'CDS':
+        if string.lower(sub.type) == 'cds':
             if feature.strand == 1:
                 #print 'SUB'
                 #print sub
@@ -233,13 +234,13 @@ def find_cds_start_coordinate(feature):
                 #print "return %d" % int_feature_location(sub)[1]
                 return int_feature_location(sub)[1]
         for subsub in sub.sub_features:
-            if subsub.type == 'CDS':
+            if string.lower(subsub.type) == 'cds':
                 if feature.strand == 1:
                     return int_feature_location(subsub)[0]
                 else:
                     return int_feature_location(subsub)[1]
             for subsubsub in subsub.sub_features:
-                if subsubsub.type == 'CDS':
+                if string.lower(subsubsub.type) == 'cds':
                     if feature.strand == 1:
                         return int_feature_location(subsubsub)[0]
                     else:
@@ -250,27 +251,27 @@ def find_cds_end_coordinate(feature):
     '''see find_cds_start_coordinate notes'''
     #print 'finding cds end'
     #print feature.type, feature.location
-    if feature.type == 'CDS':
+    if string.lower(feature.type) == 'cds':
         if feature.strand == 1:
             return int_feature_location(sub)[1]
         else:
             return int_feature_location(sub)[0]
     for sub in reversed(feature.sub_features):
         #print '',sub.type, sub.location
-        if sub.type == 'CDS':
+        if string.lower(sub.type) == 'cds':
             if feature.strand == 1:
                 return int_feature_location(sub)[1]
             else:
                 return int_feature_location(sub)[0]
         for subsub in reversed(sub.sub_features):
             #print '', '', subsub.type, subsub.location
-            if subsub.type == 'CDS':
+            if string.lower(subsub.type) == 'cds':
                 if feature.strand == 1:
                     return int_feature_location(subsub)[1]
                 else:
                     return int_feature_location(subsub)[0]
             for subsubsub in reversed(subsub.sub_features):
-                if subsubsub.type == 'CDS':
+                if string.lower(subsubsub.type) == 'cds':
                     if feature.strand == 1:
                         return int_feature_location(subsubsub)[1]
                     else:
@@ -283,8 +284,8 @@ def extract_seqrecord_between_outer_cds(rec, ifeat):
     returned SeqRecord.
     '''
     if ifeat.sub_features[0].type == 'mRNA':
-        if len(ifeat.sub_features) > 1 and ifeat.sub_features[1].type == 'mRNA':
-            exit('Multiple mRNA features found! Pass only one.')
+        if len(ifeat.sub_features) > 1 and string.lower(ifeat.sub_features[1].type) == 'mrna':
+            raise RuntimeError('Multiple mRNA features found! Pass only one.')
         feat = copy.deepcopy(ifeat.sub_features[0])
     else:
         feat = copy.deepcopy(ifeat)
@@ -323,7 +324,7 @@ def extract_seqrecord_between_outer_cds(rec, ifeat):
     extracted.id = parse_feature_name(feat)
 
     #DEBUG
-    tempFeat.sub_features = collect_features_within_boundaries(feat, min([s,e]), max([s,e]))
+    tempFeat.sub_features = collect_features_within_boundaries(feat, min([s, e]), max([s, e]))
     extracted.features = [tempFeat]
 
     return extracted
@@ -357,8 +358,7 @@ def collect_features_within_boundaries(feature, start, end, relativeIndeces=Fals
             start = end
             end = temp
         else:
-            print 'start > end in collect_features_within_boundaries?'
-            exit()
+            raise RuntimeError('start > end in collect_features_within_boundaries?')
 
     if relativeIndeces:
         if feature.strand == -1:
@@ -371,10 +371,10 @@ def collect_features_within_boundaries(feature, start, end, relativeIndeces=Fals
         end += int_feature_location(feature)[0]
         print 'adjusted boundaries:', start, end
 
-    if feature.type == 'CDS':
-        exit('pass a feature above CDS to find_nearest_cds_boundaries')
+    if string.lower(feature.type) == 'cds':
+        raise RuntimeError('pass a feature above CDS to find_nearest_cds_boundaries')
 
-    if feature.sub_features[0].type == 'mRNA':
+    if string.lower(feature.sub_features[0].type) == 'mrna':
         feature = feature.sub_features[0]
 
     collectedSubfeatures = []
@@ -382,7 +382,7 @@ def collect_features_within_boundaries(feature, start, end, relativeIndeces=Fals
     cdsStart = sys.maxint
     cdsEnd = -1
     for sub in feature.sub_features:
-        if sub.type == 'CDS':
+        if string.lower(sub.type) == 'cds':
             fstart, fend = int_feature_location(sub)
             if fend > start and fstart < cdsStart:
                 cdsStart = fstart
@@ -405,19 +405,19 @@ def get_first_cds(feature):
     first CDS listed is the first in the gene, I think.  It needs to deal with the
     fact that the CDS features may be a variable number of layers down from the feature
     passed in.'''
-    if feature.type == 'CDS':
+    if string.lower(feature.type) == 'cds':
         return feature
     for sub in feature.sub_features:
-        if sub.type == 'CDS':
+        if string.lower(sub.type) == 'cds':
             return sub
         for subsub in sub.sub_features:
-            if subsub.type == 'CDS':
+            if string.lower(subsub.type) == 'cds':
                 return subsub
             for subsubsub in subsub.sub_features:
-                if subsubsub.type == 'CDS':
+                if string.lower(subsubsub.type) == 'cds':
                     return subsubsub
     print feature
-    exit('no cds found!')
+    raise RuntimeError('no cds found!')
 
 
 def sort_feature_list_by_id(recList):
@@ -426,19 +426,22 @@ def sort_feature_list_by_id(recList):
 
 def MakeGeneOrderMap(geneOrderFilename):
     '''read the indicated file, which should be a simple file with columns indicating gene number and gene name'''
-    mapFile = open(geneOrderFilename)
+    mapFile = open(geneOrderFilename, 'rb')
     splitMap = [ line.split() for line in mapFile ]
+    mapDict = dict([ (line[1], int(line[0])) for line in splitMap ])
+    '''
     mapDict = {}
     for line in splitMap:
         mapDict[line[1]] = int(line[0])
+    '''
     return mapDict
 
 
 def adjust_feature_coords(features, delta):
     '''Shift all feature and subfeature coords by delta'''
     for feature in features:
-        start = int(str(feature.location.start)) + delta 
-        end = int(str(feature.location.end)) + delta 
+        start = feature.location.start.position + delta 
+        end = feature.location.end.position + delta 
         feature.location = FeatureLocation(start, end)
         adjust_feature_coords(feature.sub_features, delta)
 
@@ -448,12 +451,29 @@ def remove_features(features, namesToRemove):
     featsToDelete = []
     for feature in features:
         for rem in namesToRemove:
-            if feature.type == rem:
+            if string.lower(feature.type) == string.lower(rem):
                 featsToDelete.append(feature)
     for f in featsToDelete:
         features.remove(f)
     #now remove sub_features from anything not alreay removed
     for feature in features:
         remove_features(feature.sub_features, namesToRemove)
+
+
+def get_features_by_name(feature, name):
+    name = string.lower(name)
+    if string.lower(feature.type) == name:
+        return [feature]
+    featsToReturn = []
+    for sub in feature.sub_features:
+        if string.lower(sub.type) == name:
+            featsToReturn.append(sub)
+        for subsub in sub.sub_features:
+            if string.lower(subsub.type) == name:
+                featsToReturn.append(subsub)
+            for subsubsub in subsub.sub_features:
+                if string.lower(subsubsub.type) == name:
+                    featsToReturn.append(subsubsub)
+    return featsToReturn
 
 

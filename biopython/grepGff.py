@@ -7,7 +7,6 @@ import copy
 import string
 
 from BCBio import GFF
-from BCBio.GFF import GFFExaminer
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
 
@@ -53,7 +52,7 @@ def sort_feature_list_by_coordinate(recList):
     #SeqRecords themselves don't have coords
     if isinstance(recList, list):
         try:
-            recList.sort(key=lambda rec:int(str(rec.features[0].location.start)))
+            recList.sort(key=lambda rec:rec.features[0].location.start.position)
         except KeyError:
             sys.stderr.write('ERROR could not sort by coordinate')
             for feat in recList.features:
@@ -66,7 +65,7 @@ def sort_feature_list_by_coordinate(recList):
 
     elif isinstance(recList, SeqRecord):
         try:
-            recList.features.sort(key=lambda feat:int(str(feat.location.start)))
+            recList.features.sort(key=lambda feat:feat.location.start.position)
         except KeyError:
             sys.stderr.write('ERROR could not sort by coordinate')
             for feat in recList.features:
@@ -77,7 +76,7 @@ def sort_feature_list_by_coordinate(recList):
         try:
             print recList
             exit()
-            recList.sub_features.sort(key=lambda feat:int(str(feat.location.start)))
+            recList.sub_features.sort(key=lambda feat:feat.location.start.position)
         except KeyError:
             sys.stderr.write('ERROR could not sort by coordinate')
             for feat in recList.sub_features:
