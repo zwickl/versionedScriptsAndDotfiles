@@ -2,7 +2,7 @@
 
 import sys
 import re
-import itertools
+from itertools import izip
 
 if __name__ == "__main__":
     import doctest
@@ -300,7 +300,7 @@ class SetOfClusters():
         self.cluster_member_tuples = [ tuple(sorted(clust.cluster_members)) for clust in self.blink_clusters ]
         #dictionary to find clusters indexed by their tuples
         clusterDict = {}
-        for tup, clust in itertools.izip(self.cluster_member_tuples, self.blink_clusters):
+        for tup, clust in izip(self.cluster_member_tuples, self.blink_clusters):
             clusterDict[tup] = clust
         #a single set, with clusters (as tuples) as members 
         self.cluster_tuple_set = set(self.cluster_member_tuples)

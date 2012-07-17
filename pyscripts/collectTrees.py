@@ -1,9 +1,6 @@
 #!/usr/bin/env python
-import os
 import sys
 import glob
-import string
-import StringIO
 
 if len(sys.argv) > 1:
     if len(sys.argv) > 2:

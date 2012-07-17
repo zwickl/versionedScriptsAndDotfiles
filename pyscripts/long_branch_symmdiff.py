@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 import sys
 import copy
-import logging
-import itertools
+from itertools import izip
 from dendropy.utility.messaging import get_logger
 from dendropy.treesplit import encode_splits
 from dendropy.treemanip import collapse_edge
 from dendropy.treecalc import symmetric_difference
-from dendropy import format_split, Edge, TaxonSet, DataSet
+from dendropy import Edge, TaxonSet, DataSet
 
 _LOG = get_logger('scripts.long_branch_symmdiff')
 verbose = False

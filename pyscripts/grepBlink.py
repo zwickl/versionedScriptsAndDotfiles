@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-from dzutils import *
+from dzutils import parse_blink_output
 import sys
-import re
-import itertools
-from math import *
+#from math import *
 import argparse
 
 #use argparse module to parse commandline input
@@ -77,7 +75,7 @@ if options.sortOutput:
     matchedRecs = sorted(list(matchedRecs), key=lambda n:n.number)
 
 for r in matchedRecs:
-     r.output()
+    r.output()
 
 '''
 

@@ -129,7 +129,7 @@ for pat in seqPatterns:
     try:
         cpat = re.compile(pat)
         compiledPats.append(cpat)
-    except:
+    except StandardError:
         sys.stderr.write("problem compiling regex pattern %s\n" % pat)
         exit(1)
 

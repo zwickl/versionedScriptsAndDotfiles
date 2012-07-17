@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-import os
 import sys
-import string
-import StringIO
 
 onlyCount = None
 if len(sys.argv) < 5:
@@ -28,8 +25,7 @@ nums = range(1, tot+1)
 toCon = []
 for c in conNums:
     if c > tot:
-        print "taxon ", c, " is greater than the total number of taxa ", tot
-        exit
+        raise RuntimeError("taxon ", c, " is greater than the total number of taxa ", tot)
     toCon.append(c)
     nums.remove(c)
 

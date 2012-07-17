@@ -1,9 +1,5 @@
 #!/usr/bin/env python
-import os
 import sys
-import string
-import StringIO
-
 
 if len(sys.argv) != 2:
     print "usage\nsitelikeTable.py <sitelike filename>"
@@ -32,18 +28,18 @@ if len(thistree) > 0:
 
 print "tree#\t",
 
-for t in range(0,len(trees)):
+for t in range(0, len(trees)):
     print "%d\t" % int(totals[t][0]) ,
 print "\nscore\t",
-for t in range(0,len(trees)):
+for t in range(0, len(trees)):
     print "%f\t" % float(totals[t][1]) , 
 print "\ntree\t",
-for t in range(0,len(trees)):
+for t in range(0, len(trees)):
     print "%s\t" % totals[t][2] , 
 print
 
-for site in range(0,len(trees[0])):
+for site in range(0, len(trees[0])):
     print "%d\t" % int(trees[t][site][0]),
-    for t in range(0,len(trees)):
+    for t in range(0, len(trees)):
         print "%f\t" % float(trees[t][site][1]),
     print
