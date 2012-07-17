@@ -1,48 +1,56 @@
 #!/usr/bin/env python
-import os
 import sys
-import string
-import StringIO
+from argparse import ArgumentParser
 
-from optparse import OptionParser
+#use argparse module to parse commandline input
+parser = ArgumentParser(description='sum or do other summaries of a column of numbers')
 
-parser = OptionParser(add_help_option=False)
+parser.add_argument("-s", "--sum", action="store_true", dest="outputSum", default=False, help="Output Sum")
+parser.add_argument("-m", "--mean", action="store_true", dest="outputAve", default=False, help="Output Mean")
+parser.add_argument("-r", "--range", action="store_true", dest="outputMinMax", default=False, help="Output Min and Max")
+parser.add_argument("-a", "--all",  action="store_true", dest="outputAll", default=False, help="Output All Statistics")
+parser.add_argument("-c", "--column", dest="columnNum", default=None, type=int, help="choose the column to output")
 
-parser.add_option("-h", "--help", dest="helpflag")
-parser.add_option("-s", "--sum", action="store_true", dest="outputSum", default=False, help="Output Sum")
-parser.add_option("-m", "--mean", action="store_true", dest="outputAve", default=False, help="Output Mean")
-parser.add_option("-r", "--range", action="store_true", dest="outputMinMax", default=False, help="Output Min and Max")
-parser.add_option("-a", "--all",  action="store_true", dest="outputAll", default=False, help="Output All Statistics")
+#variable number of arguments
+parser.add_argument('filenames', nargs='*', default=[], 
+                   help='a list of filenames to search (none for stdin)')
 
-(options, args) = parser.parse_args()
-if options.helpflag != None:
-    print_usage("")
+#now process the command line
+options = parser.parse_args()
 
 if options.outputAll is True:
-	oSum = True
-	oAve = True
-	oMinMax = True
+    oSum = True
+    oAve = True
+    oMinMax = True
 else:
-	oSum = options.outputSum
-	oAve = options.outputAve
-	oMinMax = options.outputMinMax
+    oSum = options.outputSum
+    oAve = options.outputAve
+    oMinMax = options.outputMinMax
 
-	#if no options were entered, assume sum, otherwise -s is required to output the sum
-	if oAve is False and oMinMax is False:
-		oSum = True
+    #if no options were entered, assume sum, otherwise -s is required to output the sum
+    if oAve is False and oMinMax is False:
+        oSum = True
 
-if len(args) == 1:
-	filename = args[0]
-	try:
-		file = open(filename, 'rb')
-	except:
-		sys.exit("problem opening file")
-elif len(args) > 0:
-	sys.exit("expecting only one argument, got %s" % args)
+if len(options.filenames) == 1:
+    filename = options.filenames[0]
+    try:
+        infile = open(filename, 'rb')
+    except IOError:
+        raise RuntimeError("problem opening file")
+elif len(options.filenames) > 0:
+    sys.exit("expecting only one filename, got %s" % len(options.filenames))
 else:
-	file = sys.stdin
+    infile = sys.stdin
 
-col = [float(line) for line in file]
+lines = [ line.strip().split() for line in infile ]
+
+if options.columnNum is None:
+    if len(lines[0]) > 1:
+        raise RuntimeError('must pass either a single column or use the --column flag')
+    else:
+        options.columnNum = 1
+
+col = [ float(line[options.columnNum - 1]) for line in lines ]
 
 cSum = sum(col)
 cNum = len(col)
@@ -50,11 +58,11 @@ cNum = len(col)
 out = []
 
 if oSum:
-	out.append(str(cSum))
+    out.append(str(cSum))
 if oAve:
-	out.append(str(cSum / cNum))
+    out.append(str(cSum / cNum))
 if oMinMax:
-	out.append(str(min(col)))
-	out.append(str(max(col)))
+    out.append(str(min(col)))
+    out.append(str(max(col)))
 
 print "\t".join(out)

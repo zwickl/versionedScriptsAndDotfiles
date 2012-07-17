@@ -145,11 +145,11 @@ def my_dag_sort(first, sec):
             return False
 
 
-def parse_daglines(file, self_hits=False):
-    if isinstance(file, str):
-        hand = open(file, 'r')
+def parse_daglines(infile, self_hits=False):
+    if isinstance(infile, str):
+        hand = open(infile, 'r')
     else:
-        hand = file
+        hand = infile
 
     lines = [ line.split() for line in hand if not '#' in line ]
     lines.sort()
@@ -161,7 +161,9 @@ def parse_daglines(file, self_hits=False):
 
 
 class BlinkCluster:
-    def __init__(self, num, members=[], dagLines=None, daglineDoubleDict=None, mapping=None):
+    def __init__(self, num, members=None, dagLines=None, daglineDoubleDict=None, mapping=None):
+        if members is None:
+            members = []
         #print members
         #for iteration
         self.index = 0
@@ -278,7 +280,9 @@ class BlinkCluster:
         return self.noDupes
 
 class SetOfClusters():
-    def __init__(self, blink_clusters=[]):
+    def __init__(self, blink_clusters=None):
+        if blink_clusters is None:
+            blink_clusters = []
         #for iteration
         self.index = 0
         #BlinkCluster objects
@@ -301,7 +305,7 @@ class SetOfClusters():
         #a single set, with clusters (as tuples) as members 
         self.cluster_tuple_set = set(self.cluster_member_tuples)
     
-    def get_cluster_by_member(memb):
+    def get_cluster_by_member(self, memb):
         for clust in self.blink_clusters:
             if memb in clust:
                 return clust
@@ -692,7 +696,7 @@ class HitList:
                     if not name in self.uniqueNames:
                         self.uniqueNames[name] = count
                         self.numbersToNames[count] = name
-                        count +=1
+                        count += 1
             if len(self.uniqueNames) != len(self.numbersToNames):
                 exit("problem mapping hit names to numbers")
         return self.uniqueNames.keys()
