@@ -2,16 +2,34 @@
 import sys
 import re
 import copy
+import os
+from argparse import ArgumentParser
 
 from Bio import AlignIO
 from Bio.Alphabet import IUPAC
 from Bio.Align import MultipleSeqAlignment
+from Bio.Nexus import Nexus
 
-if len(sys.argv) < 2:
-    sys.stderr.write("Enter alignment filenames to concatenate\n")
-    exit(0)
+#use argparse module to parse commandline input
+parser = ArgumentParser(description='extract sequences from a fasta file')
+
+#add possible arguments
+#flag
+parser.add_argument('-i', '--interleave', dest='interleave', action='store_true', default=False,
+                    help='interleave the nexus output matrix')
+
+#variable number of arguments
+parser.add_argument('filenames', nargs='*', default=[], 
+                    help='a list of filenames to search (none for stdin)')
+
+#now process the command line
+options = parser.parse_args()
+
+
+if len(options.filenames) == 0:
+    raise RuntimeError("Enter alignment filenames to concatenate")
 else:
-    files = sys.argv[1:]
+    files = options.filenames
 
 oldConcat = False
 
@@ -30,7 +48,7 @@ for filename in files:
     thisAlign = AlignIO.read(afile, "nexus", alphabet=IUPAC.ambiguous_dna)
     
     endbase = startbase + thisAlign.get_alignment_length() - 1
-    charsetString += "charset %s.%d = %d - %d;\n" % (re.sub('.*/', '', sys.argv[num]), num, startbase, endbase)
+    charsetString += "charset %s.%d = %d - %d;\n" % (re.sub('.*/', '', files[num-1]), num, startbase, endbase)
     startbase = endbase + 1
     num = num + 1
     
@@ -94,7 +112,16 @@ else:
             #seq.__add__(thisSeq)
 
     finalAlign = MultipleSeqAlignment(finalAlignSeqs)
-    AlignIO.write(finalAlign, sys.stdout, "nexus")
+
+    if options.interleave:
+        temp = '.temp.nex'
+        AlignIO.write(finalAlign, temp, "nexus")
+        backIn = Nexus.Nexus(temp)
+        backIn.write_nexus_data(filename=sys.stdout, interleave=True)
+        os.remove(temp)
+    else:
+        AlignIO.write(finalAlign, sys.stdout, "nexus")
+
 
 sys.stdout.write("%s\n" % charsetString)
 

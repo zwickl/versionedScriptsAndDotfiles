@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-import os
+from os.path import expandvars
 import copy
 import string
 from Bio.SeqFeature import FeatureLocation
@@ -48,7 +48,7 @@ class TaxonGenomicInformation:
         
         if toplevel_filename is not None:
             #it can be handy to have a dict of the toplevel seq(s) recs which may just be a single chrom
-            toplevel_filename = os.path.expandvars(toplevel_filename)
+            toplevel_filename = expandvars(toplevel_filename)
             self.toplevel_record_dict = SeqIO.to_dict(SeqIO.parse(open(toplevel_filename), "fasta"))
             #print len(self.toplevel_record_dict.items())
             #pull the toplevel reqs back out as a list of seq recs
@@ -77,13 +77,13 @@ class TaxonGenomicInformation:
         if seq_dict is None:
             seq_dict = dict()
         if seq_filename is not None:
-            seq_filename = os.path.expandvars(seq_filename)
+            seq_filename = expandvars(seq_filename)
             new_seq_dict = SeqIO.to_dict(SeqIO.parse(open(seq_filename), "fasta"))
             seq_dict.update(new_seq_dict)
         self.seq_dict = seq_dict
 
         if gff_filename is not None:
-            gff_filename = os.path.expandvars(gff_filename)
+            gff_filename = expandvars(gff_filename)
             #this will asign features in the gff to the toplevel seqs - the toplevel_record_dict will be unaltered
             #print len(self.toplevel_record_dict.items())
             self.toplevel_record_list = [feat for feat in GFF.parse(gff_filename, base_dict=self.toplevel_record_dict)]
