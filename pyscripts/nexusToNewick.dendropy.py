@@ -58,10 +58,10 @@ ignoredCount = 0
 outgroupIgnoredCount = 0
 for intree in intrees:
     hasPoly = check_for_polytomies(intree)
-    if options.ignoreBif is True and hasPoly is False:
+    if options.ignoreBif and not hasPoly:
         ignoredCount += 1
         #sys.stderr.write('ignoring bifurcating tree\n')
-    elif options.ignorePoly is True and hasPoly is True:
+    elif options.ignorePoly and hasPoly:
         ignoredCount += 1
         #sys.stderr.write('ignoring polytomous tree\n')
     else:
@@ -87,7 +87,7 @@ if ignoredCount > 0:
     sys.stderr.write('ignored %d trees\n' % ignoredCount)
 if outgroupIgnoredCount > 0:
     sys.stderr.write('ignored %d trees because of missing outgroup\n' % outgroupIgnoredCount)
-if len(outtrees) > 0:
+if outtrees:
     sys.stderr.write('writing %d trees\n' % len(outtrees))
     if options.outputNexus:
         outtrees.write(out, "nexus")

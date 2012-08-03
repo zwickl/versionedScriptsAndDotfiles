@@ -54,8 +54,8 @@ else:
 for cpat in taxPatterns:
     for c in clust:
         if len(c) >= options.baseRange[0] and len(c) <= options.baseRange[1]:
-            if options.onlySingleCopy is False or c.is_single_copy():
-                if options.numbers is False:
+            if not options.onlySingleCopy or c.is_single_copy():
+                if not options.numbers:
                     match = c.contains_matching_taxon(cpat)
                     if match:
                         if options.invertMatch:
@@ -82,9 +82,9 @@ for r in matchedRecs:
 for c in clust:
     found = c.contains_matching_taxon(options.pattern)
     if len(c) >= options.baseRange[0] and len(c) <= options.baseRange[1]:
-        if found and options.invertMatch is False:
+        if found and not options.invertMatch:
             c.output()
-        elif found == False and options.invertMatch:
+        elif not found and options.invertMatch:
             c.output()
 
 '''

@@ -50,7 +50,8 @@ if options.columnNum is None:
     else:
         options.columnNum = 1
 
-col = [ float(line[options.columnNum - 1]) for line in lines ]
+colIndex = options.columnNum - 1
+col = [ float(line[colIndex]) for line in lines ]
 
 cSum = sum(col)
 cNum = len(col)

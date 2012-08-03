@@ -61,7 +61,7 @@ def filter_out_strings_by_pattern(toFilter, patterns):
             if search(patt, name) is not None:
                 OK = False
                 break
-        if OK is False:
+        if not OK:
             continue
         filtering.append(name)
     return filtering
