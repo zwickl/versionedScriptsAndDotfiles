@@ -45,7 +45,7 @@ else:
 lines = [ line.strip().split() for line in infile ]
 
 if options.columnNum is None:
-    if len(lines[0]) > 1:
+    if len(lines) > 0 and len(lines[0]) > 1:
         raise RuntimeError('must pass either a single column or use the --column flag')
     else:
         options.columnNum = 1
