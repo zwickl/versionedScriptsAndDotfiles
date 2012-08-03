@@ -147,7 +147,7 @@ for rec in GFF.parse(in_handle):
     
     #loop over the features - these will usually be genes
     startFeat = 0
-    if len(rec.features) > 0:
+    if rec.features:
         #create a new top level record that can then be repopulated with features and written to a new gff
         newRec = copy.deepcopy(rec)
         newRec.features = []

@@ -18,13 +18,20 @@ parser = ArgumentParser(description='extract sequences from a fasta file')
 parser.add_argument('-i', '--interleave', dest='interleave', action='store_true', default=False,
                     help='interleave the nexus output matrix')
 
+parser.add_argument('-q', '--quiet', dest='quiet', action='store_true', default=False,
+                    help='output less crap to stderr')
+
+parser.add_argument('-n', '--num-taxa', dest='numTax', type=int, default=None,
+                    help='only consider alignments with the specified number of taxa')
+
 #variable number of arguments
 parser.add_argument('filenames', nargs='*', default=[], 
                     help='a list of filenames to search (none for stdin)')
 
+
+
 #now process the command line
 options = parser.parse_args()
-
 
 if len(options.filenames) == 0:
     raise RuntimeError("Enter alignment filenames to concatenate")
@@ -47,17 +54,18 @@ for filename in files:
         exit("could not read file %s" % filename)
     thisAlign = AlignIO.read(afile, "nexus", alphabet=IUPAC.ambiguous_dna)
     
-    endbase = startbase + thisAlign.get_alignment_length() - 1
-    charsetString += "charset %s.%d = %d - %d;\n" % (re.sub('.*/', '', files[num-1]), num, startbase, endbase)
-    startbase = endbase + 1
-    num = num + 1
-    
-    allAlignments.append(thisAlign)
+    if options.numTax is None or len(thisAlign) == options.numTax:
+        endbase = startbase + thisAlign.get_alignment_length() - 1
+        charsetString += "charset %s.%d = %d - %d;\n" % (re.sub('.*/', '', files[num-1]), num, startbase, endbase)
+        startbase = endbase + 1
+        num = num + 1
+        
+        allAlignments.append(thisAlign)
 
 charsetString += "end;\n"
 
 #the very simply old way, assuming equal # identically named seqs in all alignments
-if oldConcat is True:
+if oldConcat:
     concat = allAlignments[0]
     for align in allAlignments[1:]:
         concat += align
@@ -81,7 +89,8 @@ else:
                 sys.stderr.write("problem adding sequence %s to alignment dictionary\n" % name)
                 sys.stderr.write(align)
                 exit(1)
-        sys.stderr.write("%d sequences in alignment\n" % len(thisDict))
+        if not options.quiet:
+            sys.stderr.write("%d sequences in alignment\n" % len(thisDict))
         alignDicts.append((thisDict, align))
     sys.stderr.write("%d alignments read\n" % len(alignDicts))
 
@@ -98,18 +107,13 @@ else:
     sys.stderr.write("%d names across all alignments\n" % len(allNames))
 
     for mydict in alignDicts:
-        dummy = ''
-        for i in range(0, mydict[1].get_alignment_length()):
-            dummy += 'N'
+        dummy = 'N' * mydict[1].get_alignment_length()
         for seq in finalAlignSeqs:
-            name = seq.name
-            try:
-                toAppend = mydict[0][name].seq
-            except KeyError:
-                toAppend = dummy
-            seq._set_seq(seq.seq + toAppend)
-            
-            #seq.__add__(thisSeq)
+            if seq.name in mydict[0]:
+                seq._set_seq(seq.seq + mydict[0][seq.name].seq)
+            else:
+                #seq.__add__ seems like it should work here, but I can't get it to
+                seq._set_seq(seq.seq + dummy)
 
     finalAlign = MultipleSeqAlignment(finalAlignSeqs)
 

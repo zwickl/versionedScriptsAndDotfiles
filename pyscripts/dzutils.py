@@ -42,14 +42,14 @@ class CoordinateSet:
         self.short_filename = extract_core_filename(name)
 
     def output(self):
-        for t in self.seqCoords.keys():
+        for t in self.seqCoords.iterkeys():
             print t,
             print self.seqCoords[t]
     def row_output(self, taxon_labels=None):
         str = ''
         if taxon_labels is None:
             #this will sort the columns alphabetically by taxon name
-            for t in sorted(self.seqCoords.keys()):
+            for t in sorted(self.seqCoords.iterkeys()):
                 str += '%d\t' % int(self.seqCoords[t])
         #IMPORTANT: if taxon labels are passed in, the coord order will be the same, NOT alphabetical
         else:
@@ -187,7 +187,7 @@ class BlinkCluster:
         
         self.cluster_members.sort()
 
-        if len(self.cluster_members) > 0:
+        if self.cluster_members:
             self.member_set = set(tuple(sorted(self.cluster_members)))
         else:
             self.member_set = set()
@@ -201,13 +201,13 @@ class BlinkCluster:
             else:
                 taxonDict[memb[0:7]] = True
 
-        if dagLines is not None and len(dagLines) > 0:
+        if dagLines and len(dagLines) > 0:
             #daglineDoubleDict = get_dagline_double_dict(dagLines)
             daglineDoubleDict = get_dagline_double_dict_from_dagline_objects(dagLines)
         else:
             self.dag_lines = []
             self.dag_line_set = set()
-        if daglineDoubleDict is not None:
+        if daglineDoubleDict:
             self.dag_lines = get_dagline_list_for_cluster(self.cluster_members, daglineDoubleDict)
             self.dag_line_set = get_dagline_set_for_cluster(self.cluster_members, daglineDoubleDict)
             if len(self.dag_lines) == 0 and len(self.cluster_members) > 1:
@@ -235,7 +235,7 @@ class BlinkCluster:
         for mem in self.cluster_members:
             string += '\t%d\t%s\n' % (self.number, mem)
         string += 'daglines\n'
-        if self.dag_lines is not None:
+        if self.dag_lines:
             for line in self.dag_lines:
                 if isinstance(line, DagLine):
                     string += '\t%s\n' % line.string
@@ -298,7 +298,7 @@ class SetOfClusters():
         #BlinkCluster objects
         #in case blink_clusters is a set   
         blink_clusters = list(blink_clusters)
-        if len(blink_clusters) > 0:
+        if blink_clusters:
             if isinstance(blink_clusters[0], BlinkCluster):
                 self.blink_clusters = blink_clusters
             else:
@@ -384,7 +384,7 @@ class SetOfClusters():
                 #print 'inner'
                 #print n1, n2
                 n2+=1
-                if len(clust1.member_intersection(clust2)) > 0:
+                if len(clust1.member_intersection(clust2) > 0:
                     if clust1.noDupes or clust2.noDupes:
                         if len(clust1.member_difference(clust2)) != 0 and len(clust2.member_difference(clust1)) != 0:
                             print 'not sub or super'
@@ -462,7 +462,7 @@ def parse_blink_output(filename, dagline_dict=None):
             #my_output("expecting lines with only:\ncluster# seqname\n", logfile)
             exit(1)
  
-    for c in sorted(clustDict.keys()):
+    for c in sorted(clustDict.iterkeys()):
         allClusters.append(BlinkCluster(c, clustDict[c], daglineDoubleDict=dagline_dict))
     return allClusters
 

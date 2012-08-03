@@ -18,7 +18,7 @@ parser.add_argument('filenames', nargs='*', default=[],
 #now process the command line
 options = parser.parse_args()
 
-if options.outputAll is True:
+if options.outputAll:
     oSum = True
     oAve = True
     oMinMax = True
@@ -28,7 +28,7 @@ else:
     oMinMax = options.outputMinMax
 
     #if no options were entered, assume sum, otherwise -s is required to output the sum
-    if oAve is False and oMinMax is False:
+    if not oAve and not oMinMax:
         oSum = True
 
 if len(options.filenames) == 1:
@@ -37,7 +37,7 @@ if len(options.filenames) == 1:
         infile = open(filename, 'rb')
     except IOError:
         raise RuntimeError("problem opening file")
-elif len(options.filenames) > 0:
+elif options.filenames:
     sys.exit("expecting only one filename, got %s" % len(options.filenames))
 else:
     infile = sys.stdin
@@ -50,7 +50,8 @@ if options.columnNum is None:
     else:
         options.columnNum = 1
 
-col = [ float(line[options.columnNum - 1]) for line in lines ]
+colIndex = options.columnNum - 1
+col = [ float(line[colIndex]) for line in lines ]
 
 cSum = sum(col)
 cNum = len(col)

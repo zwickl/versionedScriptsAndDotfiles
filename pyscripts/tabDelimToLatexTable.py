@@ -58,7 +58,7 @@ numCols = len(lines[0])
 floatRows = [[ float(e) for e in l ] for l in lines]
 actualRows = [[ "%.*f" % (outprec, e) for e in l ] for l in floatRows ]
 
-if haveRows == True:
+if haveRows:
     numCols = numCols + 1
     for l in range(0, len(actualRows)):
         actualRows[l].insert(0, rowHeads[l])
@@ -66,23 +66,23 @@ if haveRows == True:
 
 print "\\begin {table}\n\\begin{center}\n\\resizebox{4in}{!}{"
 
-if vert == True:
+if vert:
     print "\\begin{tabular}{ | " + " | ".join("c" for x in range(0, numCols)) + " | }"
 else:
     print "\\begin{tabular}{ " + " ".join("c" for x in range(0, numCols)) + " }"
 
-if hor == True:
+if hor:
     print "\\hline"
-if haveCols == True:
+if haveCols:
     print " & ".join(colHeads) + "\\\\"
     print "\\hline"
-elif hor == True:
+elif hor:
     print "\\hline"
 
 outRows = []
 for l in actualRows:
     outRows.append(" & ".join(l) + "\\\\")
-    if hor == True:
+    if hor:
         outRows.append(" \\hline")
 print "\n".join(outRows)
 #for e in floatRows:

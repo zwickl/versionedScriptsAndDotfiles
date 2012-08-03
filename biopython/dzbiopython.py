@@ -52,11 +52,11 @@ class TaxonGenomicInformation:
             self.toplevel_record_dict = SeqIO.to_dict(SeqIO.parse(open(toplevel_filename), "fasta"))
             #print len(self.toplevel_record_dict.items())
             #pull the toplevel reqs back out as a list of seq recs
-            self.toplevel_record_list = [it[1] for it in self.toplevel_record_dict.items()]
+            self.toplevel_record_list = [it[1] for it in self.toplevel_record_dict.iteritems()]
             '''
             print '1#####################'
             for top in self.toplevel_record_list:
-                if len(top.features) > 0:
+                if top.features:
                     print len(self.toplevel_record_list)
                     print type(self.toplevel_record_list)
                     print top
@@ -92,7 +92,7 @@ class TaxonGenomicInformation:
             '''
             print '2#####################'
             for top in self.toplevel_record_list:
-                if len(top.features) > 0:
+                if top.features:
                     print len(self.toplevel_record_list)
                     print type(self.toplevel_record_list)
                     print top
@@ -111,7 +111,7 @@ class TaxonGenomicInformation:
             print '3#####################'
             print len(self.gff_seqrecord_list)
             for rec in self.gff_seqrecord_list:
-                if len(rec.features) > 0:
+                if rec.features:
                     print rec
                     print len(rec.features)
                     print rec.features
@@ -135,7 +135,7 @@ class TaxonGenomicInformation:
                         self.feature_to_toplevel_record_dict[feat.id] = top
 
         self.gff_feature_dict = {}
-        if len(self.gff_seqrecord_list) > 0:
+        if self.gff_seqrecord_list:
             for rec in self.gff_seqrecord_list:
                 if string.lower(rec.features[0].type) in ['chromosome', 'contig', 'scaffold']:
                     #trying to verify when this is happening
@@ -427,7 +427,7 @@ def sort_feature_list_by_id(recList):
 def MakeGeneOrderMap(geneOrderFilename):
     '''read the indicated file, which should be a simple file with columns indicating gene number and gene name'''
     mapFile = open(geneOrderFilename, 'rb')
-    splitMap = [ line.split() for line in mapFile ]
+    splitMap = [ line.strip().split() for line in mapFile ]
     mapDict = dict([ (line[1], int(line[0])) for line in splitMap ])
     '''
     mapDict = {}

@@ -123,7 +123,7 @@ for oneSeqFile in seqFiles:
         sys.stderr.write("error reading file %s!" % oneSeqFile)
         exit(1)
     
-    #if sortOutput is True:
+    #if sortOutput:
     #    allRecs.sort(key=lambda x:x.name)
 
 recSet = set([ my_SeqRecord(rec.seq, description=rec.description, name=rec.name, id =rec.id) for rec in recList ])
@@ -142,7 +142,7 @@ for cpat in compiledPats:
             else:
                 matchedRecs.add(seq)
         '''     
-        if ( match is not None and invertMatch is False ) or ( match is None and invertMatch is True ):
+        if ( match is not None and not invertMatch ) or ( match is None and invertMatch ):
             #element -1 is the last element, but slicing includes up to but not including the second
             #value.  So, leave it out to get up to the actual end
             if endBase == -1:
@@ -167,7 +167,7 @@ elif options.sortOutputByCoord:
         rec.coord_start  = ParsedSequenceDescription(rec.description).coord_start
     preparedRecs.sort(key=lambda x:x.coord_start)
 
-if len(matchedRecs) > 0:
+if matchedRecs:
     sys.stderr.write("matched %d sequences in %s\n" % (len(preparedRecs), str(seqFiles)))
     SeqIO.write(preparedRecs, sys.stdout, "fasta")
 else:
