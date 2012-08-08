@@ -80,7 +80,7 @@ parser.add_argument('pattern',
                     help='a quoted regular expression to search sequence names for')
 
 parser.add_argument('filenames', nargs='*', default=[], 
-                    help='a list of filenames to search (none for stdin)')
+                    help='a list of filenames to search')
 
 #now process the command line
 options = parser.parse_args()

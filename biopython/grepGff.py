@@ -156,10 +156,7 @@ for rec in GFF.parse(in_handle):
         if string.lower(rec.features[0].type) in [ 'chromosome', 'contig', 'scaffold' ]:
             startFeat = 1
 
-        if invertMatch:
-            matchedFeats = set(rec.features[startFeat:])
-        else:
-            matchedFeats = set()
+        matchedFeats = set(rec.features[startFeat:]) if invertMatch else set()
         for cpat in compiledPats:
             #loop over features of the rec
             for feat in rec.features[startFeat:]:

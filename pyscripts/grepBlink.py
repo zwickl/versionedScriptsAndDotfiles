@@ -46,10 +46,7 @@ else:
     taxPatterns = [options.pattern]
 seqFiles = options.filenames
 
-if options.invertMatch:
-    matchedRecs = set(clust)
-else:
-    matchedRecs = set()
+matchedRecs = set(clust) if options.invertMatch else set()
 
 for cpat in taxPatterns:
     for c in clust:

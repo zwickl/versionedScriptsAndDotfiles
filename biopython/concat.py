@@ -26,7 +26,7 @@ parser.add_argument('-n', '--num-taxa', dest='numTax', type=int, default=None,
 
 #variable number of arguments
 parser.add_argument('filenames', nargs='*', default=[], 
-                    help='a list of filenames to search (none for stdin)')
+                    help='a list of filenames to search')
 
 
 

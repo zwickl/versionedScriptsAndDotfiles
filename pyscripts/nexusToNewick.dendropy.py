@@ -48,10 +48,7 @@ sys.stderr.write('read %d trees\n' % len(intrees))
 #intree = dendropy.Tree()
 #intree.read_from_string(treestr, 'newick')
 
-if options.outfile:
-    out = open(options.outfile, 'w')
-else:
-    out = sys.stdout
+out = open(options.outfile, 'w') if options.outfile else sys.stdout
 
 outtrees = dendropy.TreeList()
 ignoredCount = 0

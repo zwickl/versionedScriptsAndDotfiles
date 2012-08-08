@@ -2,7 +2,6 @@
 import sys
 from os.path import expandvars
 import copy
-import string
 from Bio.SeqFeature import FeatureLocation
 from Bio import SeqIO
 from BCBio import GFF
@@ -137,7 +136,7 @@ class TaxonGenomicInformation:
         self.gff_feature_dict = {}
         if self.gff_seqrecord_list:
             for rec in self.gff_seqrecord_list:
-                if string.lower(rec.features[0].type) in ['chromosome', 'contig', 'scaffold']:
+                if rec.features[0].type.lower() in ['chromosome', 'contig', 'scaffold']:
                     #trying to verify when this is happening
                     exit('DEBUG: FIRST RECORD IS %s' % rec.features[0].type)
                     toIter = rec.features[1:]
@@ -216,66 +215,38 @@ def find_cds_start_coordinate(feature):
     and end is the index of the leftmost base.
     So, extacting [start:end] will work properly for plus strand,
     and [end:start] will work properly for minus'''
-    if string.lower(feature.type) == 'cds':
-        if feature.strand == 1:
-            return int_feature_location(sub)[0]
-        else:
-            return int_feature_location(sub)[1]
+
+
+    strandIndex = 0 if feature.strand == 1 else 1
+    if feature.type.lower() == 'cds':
+        return int_feature_location(feature)[strandIndex]
     for sub in feature.sub_features:
-        if string.lower(sub.type) == 'cds':
-            if feature.strand == 1:
-                #print 'SUB'
-                #print sub
-                #print "return %d" % int_feature_location(sub)[0]
-                return int_feature_location(sub)[0]
-            else:
-                #print 'SUB'
-                #print sub
-                #print "return %d" % int_feature_location(sub)[1]
-                return int_feature_location(sub)[1]
+        if sub.type.lower() == 'cds':
+            return int_feature_location(sub)[strandIndex]
         for subsub in sub.sub_features:
-            if string.lower(subsub.type) == 'cds':
-                if feature.strand == 1:
-                    return int_feature_location(subsub)[0]
-                else:
-                    return int_feature_location(subsub)[1]
+            if subsub.type.lower() == 'cds':
+                return int_feature_location(subsub)[strandIndex]
             for subsubsub in subsub.sub_features:
-                if string.lower(subsubsub.type) == 'cds':
-                    if feature.strand == 1:
-                        return int_feature_location(subsubsub)[0]
-                    else:
-                        return int_feature_location(subsubsub)[1]
+                if subsubsub.type.lower() == 'cds':
+                    return int_feature_location(subsubsub)[strandIndex]
 
 
 def find_cds_end_coordinate(feature):
     '''see find_cds_start_coordinate notes'''
     #print 'finding cds end'
     #print feature.type, feature.location
-    if string.lower(feature.type) == 'cds':
-        if feature.strand == 1:
-            return int_feature_location(sub)[1]
-        else:
-            return int_feature_location(sub)[0]
+    strandIndex = 1 if feature.strand == 1 else 0
+    if feature.type.lower() == 'cds':
+        return int_feature_location(feature)[strandIndex]
     for sub in reversed(feature.sub_features):
-        #print '',sub.type, sub.location
-        if string.lower(sub.type) == 'cds':
-            if feature.strand == 1:
-                return int_feature_location(sub)[1]
-            else:
-                return int_feature_location(sub)[0]
+        if sub.type.lower() == 'cds':
+            return int_feature_location(sub)[strandIndex]
         for subsub in reversed(sub.sub_features):
-            #print '', '', subsub.type, subsub.location
-            if string.lower(subsub.type) == 'cds':
-                if feature.strand == 1:
-                    return int_feature_location(subsub)[1]
-                else:
-                    return int_feature_location(subsub)[0]
+            if subsub.type.lower() == 'cds':
+                return int_feature_location(subsub)[strandIndex]
             for subsubsub in reversed(subsub.sub_features):
-                if string.lower(subsubsub.type) == 'cds':
-                    if feature.strand == 1:
-                        return int_feature_location(subsubsub)[1]
-                    else:
-                        return int_feature_location(subsubsub)[0]
+                if subsubsub.type.lower() == 'cds':
+                    return int_feature_location(subsubsub)[strandIndex]
 
 def extract_seqrecord_between_outer_cds(rec, ifeat):
     '''This will grab everything between the first and
@@ -283,8 +254,8 @@ def extract_seqrecord_between_outer_cds(rec, ifeat):
     UTRs.  This does NOT preperly set the features of the
     returned SeqRecord.
     '''
-    if ifeat.sub_features[0].type == 'mRNA':
-        if len(ifeat.sub_features) > 1 and string.lower(ifeat.sub_features[1].type) == 'mrna':
+    if ifeat.sub_features[0].type.lower() == 'mrna':
+        if len(ifeat.sub_features) > 1 and ifeat.sub_features[1].type.lower() == 'mrna':
             raise RuntimeError('Multiple mRNA features found! Pass only one.')
         feat = copy.deepcopy(ifeat.sub_features[0])
     else:
@@ -309,10 +280,9 @@ def extract_seqrecord_between_outer_cds(rec, ifeat):
     #print
     #print tempFeat.extract(rec)
     #sorting of the cds is necessary for the extraction to work right
-    if feat.strand == 1:
-        tempFeat.location = FeatureLocation(s, e)
-    else:
-        tempFeat.location = FeatureLocation(e, s)
+    
+    tempFeat.location = FeatureLocation(s, e) if feat.strand == 1 else FeatureLocation(e, s)
+    
     '''
     print 'TEMP FEAT'
     print tempFeat
@@ -371,10 +341,10 @@ def collect_features_within_boundaries(feature, start, end, relativeIndeces=Fals
         end += int_feature_location(feature)[0]
         print 'adjusted boundaries:', start, end
 
-    if string.lower(feature.type) == 'cds':
+    if feature.type.lower() == 'cds':
         raise RuntimeError('pass a feature above CDS to find_nearest_cds_boundaries')
 
-    if string.lower(feature.sub_features[0].type) == 'mrna':
+    if feature.sub_features[0].type.lower() == 'mrna':
         feature = feature.sub_features[0]
 
     collectedSubfeatures = []
@@ -382,7 +352,7 @@ def collect_features_within_boundaries(feature, start, end, relativeIndeces=Fals
     cdsStart = sys.maxint
     cdsEnd = -1
     for sub in feature.sub_features:
-        if string.lower(sub.type) == 'cds':
+        if sub.type.lower() == 'cds':
             fstart, fend = int_feature_location(sub)
             if fend > start and fstart < cdsStart:
                 cdsStart = fstart
@@ -405,16 +375,16 @@ def get_first_cds(feature):
     first CDS listed is the first in the gene, I think.  It needs to deal with the
     fact that the CDS features may be a variable number of layers down from the feature
     passed in.'''
-    if string.lower(feature.type) == 'cds':
+    if feature.type.lower() == 'cds':
         return feature
     for sub in feature.sub_features:
-        if string.lower(sub.type) == 'cds':
+        if sub.type.lower() == 'cds':
             return sub
         for subsub in sub.sub_features:
-            if string.lower(subsub.type) == 'cds':
+            if subsub.type.lower() == 'cds':
                 return subsub
             for subsubsub in subsub.sub_features:
-                if string.lower(subsubsub.type) == 'cds':
+                if subsubsub.type.lower() == 'cds':
                     return subsubsub
     print feature
     raise RuntimeError('no cds found!')
@@ -451,7 +421,7 @@ def remove_features(features, namesToRemove):
     featsToDelete = []
     for feature in features:
         for rem in namesToRemove:
-            if string.lower(feature.type) == string.lower(rem):
+            if feature.type.lower() == rem.lower():
                 featsToDelete.append(feature)
     for f in featsToDelete:
         features.remove(f)
@@ -461,18 +431,18 @@ def remove_features(features, namesToRemove):
 
 
 def get_features_by_name(feature, name):
-    name = string.lower(name)
-    if string.lower(feature.type) == name:
+    name = name.lower()
+    if feature.type.lower() == name:
         return [feature]
     featsToReturn = []
     for sub in feature.sub_features:
-        if string.lower(sub.type) == name:
+        if sub.type.lower() == name:
             featsToReturn.append(sub)
         for subsub in sub.sub_features:
-            if string.lower(subsub.type) == name:
+            if subsub.type.lower() == name:
                 featsToReturn.append(subsub)
             for subsubsub in subsub.sub_features:
-                if string.lower(subsubsub.type) == name:
+                if subsubsub.type.lower() == name:
                     featsToReturn.append(subsubsub)
     return featsToReturn
 

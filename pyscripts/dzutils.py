@@ -14,9 +14,10 @@ def timing(f, n, a):
     r = range(n)
     t1 = time.clock()
     for i in r:
-       f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a)
+        f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a)
     t2 = time.clock()
     print round(t2-t1, 3)
+
 
 class CoordinateSet:
     '''A set of chromosomal coordinates for each sequence in an alignment
@@ -25,26 +26,25 @@ class CoordinateSet:
     def __init__(self, taxa_names):
         self.defaultCoord = -1
         self.seqCoords = {}
-        #for tax in oryza.taxon_names:
-        if len(taxa_names) == 0:
-            exit("you must pass a list of taxon names")
-        for tax in taxa_names:
-            self.seqCoords[tax] = self.defaultCoord
+        assert taxa_names, "you must pass a list of taxon names"
+        self.seqCoords = dict([ (tax, self.defaultCoord) for tax in taxa_names ])
+    
     def set_coordinate(self, taxon, coord):
-        try:
+        if taxon in self.seqCoords:
             if self.seqCoords[taxon] is not None:
                 self.seqCoords[taxon] = int(coord)
-        except KeyError:
+        else:
             print self.seqCoords
             exit("trying to assign coordinate to unknown taxon: %s" % taxon)
+
     def set_filename(self, name):
         self.filename = name
         self.short_filename = extract_core_filename(name)
-
+    
     def output(self):
-        for t in self.seqCoords.iterkeys():
-            print t,
-            print self.seqCoords[t]
+        for name, coord in self.seqCoords.iteritems():
+            print name, coord
+    
     def row_output(self, taxon_labels=None):
         str = ''
         if taxon_labels is None:
@@ -59,6 +59,7 @@ class CoordinateSet:
             except:
                 exit('could not match taxon %s with any coordinate' % lab)
         return str
+
 
 def extract_core_filename(name):
     '''
@@ -108,10 +109,13 @@ class DagLine:
         self.tax[12] -- taxon names, pulled from fields 1 and 5
         self.evalue -- 'nuf said
         '''
+        self.fields = line.split() if isinstance(line, str) else line
+        '''
         if isinstance(line, str):
             self.fields = line.split()
         else:
             self.fields = line
+        '''
         if len(self.fields) != 9:
             raise ValueError('Wrong number of fields in dag string')
         self.string = '\t'.join(self.fields)
@@ -120,22 +124,28 @@ class DagLine:
         self.tax1 = self.fields[1]
         self.tax2 = self.fields[5]
         self.evalue = self.fields[8]
+
     def __hash__(self):
         return hash(self.cut_string)
+    
     def __cmp__(self, other):
         raise Moo
         sys.stderr.write('CMP %s %s' % (self, other))
         #return cmp(self.cut_string, other.cut_string)
         return cmp((self.tax1, self.tax2), (other.tax1, other.tax2))
+    
     def __eq__(self, other):
         return self.cut_string == other.cut_string
+    
     def __ne__(self, other):
         return not self.__eq__(other)
+    
     def __lt__(self, other):
         if self.tax1 != other.tax1:
             return self.tax1 < other.tax1
         else:
             return self.tax2 < other.tax2
+    
     def __str__(self):
         return self.string
 
@@ -186,11 +196,8 @@ class BlinkCluster:
                 self.cluster_members.append(mapping[member])
         
         self.cluster_members.sort()
-
-        if self.cluster_members:
-            self.member_set = set(tuple(sorted(self.cluster_members)))
-        else:
-            self.member_set = set()
+    
+        self.member_set = set(tuple(sorted(self.cluster_members))) if self.cluster_members else set()
 
         self.noDupes = True
         taxonDict = {}
@@ -224,11 +231,14 @@ class BlinkCluster:
 
     def add(self, member):
         self.cluster_members.append(member)
+    
     def __len__(self):
         return len(self.cluster_members)
+    
     def output(self, stream=sys.stdout):
         for mem in self.cluster_members:
             stream.write('%d\t%s\n' % (self.number, mem))
+    
     def __repr__(self):
         string = 'cluster %d ' % self.number
         string += '%d members\n' % len(self.cluster_members)
@@ -246,22 +256,25 @@ class BlinkCluster:
         return string
 
     def __str__(self):
-        string = ''
-        for mem in self.cluster_members:
-            string += '\t%d\t%s\n' % (self.number, mem)
-        return string
+        return ''.join(['\t%d\t%s\n' % (self.number, mem) for mem in self.cluster_members ])
 
     def contains_matching_taxon(self, patt):
         for m in self.cluster_members:
             if re.search(patt, m) is not None:
                 return True
         return False
+    
     def __contains__(self, name):
+        return name in self.cluster_members
+        '''
         if name in self.cluster_members:
             return True
         return False
+        '''
+    
     def __iter__(self):
         return self
+    
     def next(self):
         try:
             result = self.cluster_members[self.index]
@@ -607,7 +620,7 @@ def get_dagline_double_dict(lineList, bidirectional=False):
         
         match = re.search('(.*)[.][0-9]*$', t1)
         if match is not None:
-             t1 = match.group(1)
+            t1 = match.group(1)
         
         match = re.search('(.*)[.][0-9]*$', t2)
         if match is not None:
@@ -644,8 +657,8 @@ def get_dagline_double_dict_from_dagline_objects(daglines):
         
         match = re.search('(.*)[.][0-9]*$', t1)
         if match is not None:
-             t1 = match.group(1)
-             #print 'matched', t1
+            t1 = match.group(1)
+            #print 'matched', t1
             
         t2 = line.tax2
         

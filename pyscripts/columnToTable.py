@@ -131,10 +131,7 @@ if options.cols == None:
 
 transpose = options.transflag
 
-if options.filename == None:
-    file = sys.stdin
-else:
-    file = open(options.filename, "ri")
+infile = sys.stdin if options.filename == None else open(options.filename, "ri")
 
 nrows = options.nrows
 try:
@@ -150,7 +147,7 @@ except:
 chunks = []
 rset = rowset()
 rnum = 0
-for line in file.readlines():
+for line in infile.readlines():
     rset.append_row(line)
     rnum = rnum + 1
     if rnum == nrows:
