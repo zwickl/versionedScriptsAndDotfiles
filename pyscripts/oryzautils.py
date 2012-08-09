@@ -128,7 +128,7 @@ def extract_all_information_for_seqs_in_alignments(filenames):
         coreFilename = extract_core_filename(filename)
         
         #read lines at end of nexus file that give information on sequences, including coordinate
-        seqLines = [ line for line in alfile if (line[0:3] == 'len' and not 'LOC' in line )]
+        seqLines = [ line for line in alfile if line.startswith('len') and not 'LOC' in line ]
         #seqLines = [ line for line in file if ((line[0] == 'O' or line[0:3] == 'len') and not 'LOC' in line )]
         try:
             seqDescs = []

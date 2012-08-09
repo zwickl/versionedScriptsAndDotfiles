@@ -46,19 +46,19 @@ class CoordinateSet:
             print name, coord
     
     def row_output(self, taxon_labels=None):
-        str = ''
+        mystr = ''
         if taxon_labels is None:
             #this will sort the columns alphabetically by taxon name
             for t in sorted(self.seqCoords.iterkeys()):
-                str += '%d\t' % int(self.seqCoords[t])
+                mystr += '%d\t' % int(self.seqCoords[t])
         #IMPORTANT: if taxon labels are passed in, the coord order will be the same, NOT alphabetical
         else:
             try:
                 for lab in taxon_labels:
-                    str += '%d\t' % int(self.seqCoords[lab])
+                    mystr += '%d\t' % int(self.seqCoords[lab])
             except:
                 exit('could not match taxon %s with any coordinate' % lab)
-        return str
+        return mystr
 
 
 def extract_core_filename(name):
@@ -129,7 +129,7 @@ class DagLine:
         return hash(self.cut_string)
     
     def __cmp__(self, other):
-        raise Moo
+        raise Exception
         sys.stderr.write('CMP %s %s' % (self, other))
         #return cmp(self.cut_string, other.cut_string)
         return cmp((self.tax1, self.tax2), (other.tax1, other.tax2))
@@ -750,12 +750,14 @@ class HitList:
         for hit in self.hitlist:
             stream.write('e %s %s\n' % (self.uniqueNames[hit[0]], self.uniqueNames[hit[1]]))
 
+
 def parse_hits_file(filename):
     hitsFile = open(filename, "rb")
     lines = [ tuple(l.split()) for l in hitsFile ]
     #return HitList(lines).get_sublist_by_query_names(['LOC'])
     return HitList(lines)
-   
+
+
 def make_dictionary_from_gff_arbitrary_field(string):
     dict = {}
     fields = string.split(';')
@@ -766,6 +768,7 @@ def make_dictionary_from_gff_arbitrary_field(string):
         except:
             exit("problem reading field, %s" % sep)
     return dict
+
 
 class ParsedSequenceDescription(object):
     def __init__(self, description=None, gff=None):

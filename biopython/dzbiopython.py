@@ -158,20 +158,44 @@ class TaxonGenomicInformation:
             if feat in self.feature_to_toplevel_record_dict:
                 return self.feature_to_toplevel_record_dict[feat]
             else:
-                raise RuntimeError('toplevel for feature named %s not found!' % feat)
+                raise ValueError('toplevel for feature named %s not found!' % feat)
         else:
             if 'Alias' in feat.qualifiers:
                 alias = feat.qualifiers['Alias'][0]
                 if alias in self.feature_to_toplevel_record_dict:
                     return self.feature_to_toplevel_record_dict[alias]
                 else:
-                    raise RuntimeError('toplevel for feature named %s not found!' % alias)
+                    raise ValueError('toplevel for feature named %s not found!' % alias)
             else:
                 fid = feat.id
                 if fid in self.feature_to_toplevel_record_dict:
                     return self.feature_to_toplevel_record_dict[fid]
                 else:
-                    raise RuntimeError('toplevel for feature named %s not found!' % fid)
+                    raise ValueError('toplevel for feature named %s not found!' % fid)
+
+
+def get_taxon_genomic_information_dict(source, report=True):
+    #file with lines containing short taxon identifiers, sequence files and gff files for 
+    #each taxon
+    #like this (on one line)
+    #ObartAA	blah	/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza2/gramene34_split/gffs/bartAA.fullWithFixes.gff \
+        #/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza2/gramene34_split/toplevels/Oryza_barthii-toplevel-20110818.fa
+    if isinstance(source, list):
+        if len(source[0]) == 1:
+            masterFilenames = [ s.strip.split() for s in source ]
+        else:
+            masterFilenames = source
+    else:
+        masterFilenames = [ line.strip().split() for line in open(source, 'rb') if len(line.strip()) > 0 ]
+
+    allTaxonInfo = {}
+    for taxon in masterFilenames:
+        #ended up not using sequence files, just getting everything from toplevels
+        #allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[1], toplevel_filename=taxon[2])
+        allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2], toplevel_filename=taxon[3])
+        if report:
+            allTaxonInfo[ taxon[0] ].output()
+    return allTaxonInfo
 
 
 def parse_feature_name(feature, errorIsFatal=True):
@@ -187,7 +211,7 @@ def parse_feature_name(feature, errorIsFatal=True):
     else:
         print feature
         if errorIsFatal:
-            raise RuntimeError('unable to parse a feature name!:')
+            raise Exception('unable to parse a feature name!:')
         else:
             sys.stderr.write('unable to parse a name!')
 
@@ -215,7 +239,6 @@ def find_cds_start_coordinate(feature):
     and end is the index of the leftmost base.
     So, extacting [start:end] will work properly for plus strand,
     and [end:start] will work properly for minus'''
-
 
     strandIndex = 0 if feature.strand == 1 else 1
     if feature.type.lower() == 'cds':
@@ -256,7 +279,7 @@ def extract_seqrecord_between_outer_cds(rec, ifeat):
     '''
     if ifeat.sub_features[0].type.lower() == 'mrna':
         if len(ifeat.sub_features) > 1 and ifeat.sub_features[1].type.lower() == 'mrna':
-            raise RuntimeError('Multiple mRNA features found! Pass only one.')
+            raise ValueError('Multiple mRNA features found! Pass only one.')
         feat = copy.deepcopy(ifeat.sub_features[0])
     else:
         feat = copy.deepcopy(ifeat)
@@ -328,7 +351,7 @@ def collect_features_within_boundaries(feature, start, end, relativeIndeces=Fals
             start = end
             end = temp
         else:
-            raise RuntimeError('start > end in collect_features_within_boundaries?')
+            raise ValueError('start > end in collect_features_within_boundaries?')
 
     if relativeIndeces:
         if feature.strand == -1:
@@ -342,7 +365,7 @@ def collect_features_within_boundaries(feature, start, end, relativeIndeces=Fals
         print 'adjusted boundaries:', start, end
 
     if feature.type.lower() == 'cds':
-        raise RuntimeError('pass a feature above CDS to find_nearest_cds_boundaries')
+        raise ValueError('pass a feature above CDS to find_nearest_cds_boundaries')
 
     if feature.sub_features[0].type.lower() == 'mrna':
         feature = feature.sub_features[0]
@@ -387,7 +410,7 @@ def get_first_cds(feature):
                 if subsubsub.type.lower() == 'cds':
                     return subsubsub
     print feature
-    raise RuntimeError('no cds found!')
+    raise ValueError('no cds found!')
 
 
 def sort_feature_list_by_id(recList):
