@@ -470,3 +470,58 @@ def get_features_by_name(feature, name):
     return featsToReturn
 
 
+def remove_stop_codon_from_feature(feature):
+    '''this just chops off the last three bases of the gene, adjusting gene, mRNA, CDS and exon locations
+    it is a simpler version of adjust_for_out_of_phase_cds'''
+    assert feature.type == 'gene'
+
+    start, end = int_feature_location(feature)
+    adjust = (end, end - 3) if feature.strand == 1 else (start, start + 3)
+    #easiest thing to do here will just be to find all mention of a given coordinate and adjust it,
+    #which will work for cds, exon, mRNA, gene, etc.
+    toSearch = [ feature ]
+    for sub in feature.sub_features:
+        toSearch.append(sub)
+        for subsub in sub.sub_features:
+            toSearch.append(subsub)
+            for subsubsub in subsub.sub_features:
+                toSearch.append(subsubsub)
+
+    for s in toSearch:
+        start, end = int_feature_location(s)
+        if start == adjust[0]:
+            s.location = FeatureLocation(adjust[1], end)
+        if end == adjust[0]:
+            s.location = FeatureLocation(start, adjust[1])
+
+
+def append_string_to_feature_names(feature, appStr):
+    '''add _appStr to the contents of the following qualifiers, if they exist'''
+    for field in ['ID', 'Alias', 'Name', 'Parent']:
+        if field in feature.qualifiers:
+            feature.qualifiers[field][0] += '_%s' % str(appStr)
+
+    for sub in feature.sub_features:
+        append_string_to_feature_names(sub, appStr)
+
+
+def substitute_feature_names(feature, oldName, newName):
+    #print "#######"
+    #print feature
+    #print oldName
+    #print newName
+    #print "#######"
+    '''replace any appearances of oldName with newName, in id's, qualifiers, etc'''
+    if feature.id is not None:
+        feature.id = re.sub(oldName, newName, feature.id)
+    for field in ['ID', 'Alias', 'Name', 'Parent']:
+        if field in feature.qualifiers:
+            feature.qualifiers[field][0] = re.sub(oldName, newName, feature.qualifiers[field][0])
+
+    for sub in feature.sub_features:
+        substitute_feature_names(sub, oldName, newName)
+
+    if 'Parent' in feature.qualifiers and len(feature.qualifiers['Parent']) > 1:
+        exit('MULTIPLE PARENTS?')
+
+
