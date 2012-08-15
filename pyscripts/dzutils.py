@@ -19,6 +19,34 @@ def timing(f, n, a):
     print round(t2-t1, 3)
 
 
+def extract_sequences_and_stuff_from_nexus_file(nfile, taxToSequenceDict, beginningLinesInNexus, endLinesInNexus):
+    '''this just gets some random stuff that I extract from a nexus file that I was using in a few different scripts
+    this includes a dictionary of taxon names to sequences, the lines in the file before the matrix, and the lines
+    in the file after the matrix'''
+    foundSequences = False
+    with open(nfile, 'rb') as nexusFile:
+        for line in nexusFile:
+            #get the sequence lines in the nexus file
+            if re.search('^[\']', line):
+                foundSequences = True
+
+                #want to go from 
+                #'Oryza blah AA' ACGT... to [ 'Oryza blah AA', 'ACGT...' ]
+                #this looks like an ugly way to do this, but is much faster than using shlex as I used to
+                #stuff = shlex.split(line)
+                stuff = line.split()
+                stuff = [ re.sub('\'', '', ' '.join(stuff[:-1])), stuff[-1] ]
+
+                if len(stuff) != 2:
+                    exit("problem parsing line %s" % line)
+                taxToSequenceDict[stuff[0]] = stuff[1]
+            else:
+                if foundSequences:
+                    endLinesInNexus.append(line)
+                else:
+                    beginningLinesInNexus.append(line)
+ 
+
 class CoordinateSet:
     '''A set of chromosomal coordinates for each sequence in an alignment
     Single copy ONLY!  Missing taxa are allowed though

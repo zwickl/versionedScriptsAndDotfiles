@@ -30,7 +30,7 @@ def sort_feature_list(recList):
 
     elif isinstance(recList, SeqRecord):
         qual = 'ID'
-        if 'Alias' in recList.features[0].qualifiers:
+        if recList.features and 'Alias' in recList.features[0].qualifiers:
             qual = 'Alias'
         try:
             recList.features.sort(key=lambda feat:feat.qualifiers[qual])
@@ -151,6 +151,7 @@ for rec in GFF.parse(in_handle):
         #create a new top level record that can then be repopulated with features and written to a new gff
         newRec = copy.deepcopy(rec)
         newRec.features = []
+        newRec.annotations = {}
         
         #if rec is something above the gene/mRNA level, start downstream of it
         if string.lower(rec.features[0].type) in [ 'chromosome', 'contig', 'scaffold' ]:
@@ -177,7 +178,8 @@ for rec in GFF.parse(in_handle):
                         break
         newRec.features.extend(list(matchedFeats))
         sort_feature_list(newRec)
-    allNewRecs.append(newRec)
+    if len(newRec.features):
+        allNewRecs.append(newRec)
 
 if sortOutput:
     sort_feature_list(allNewRecs)
