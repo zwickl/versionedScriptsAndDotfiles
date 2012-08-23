@@ -55,7 +55,7 @@ class CoordinateSet:
         self.defaultCoord = -1
         self.seqCoords = {}
         assert taxa_names, "you must pass a list of taxon names"
-        self.seqCoords = dict([ (tax, self.defaultCoord) for tax in taxa_names ])
+        self.seqCoords = dict.fromkeys( taxa_names, self.defaultCoord )
     
     def set_coordinate(self, taxon, coord):
         if taxon in self.seqCoords:

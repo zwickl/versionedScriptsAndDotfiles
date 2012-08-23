@@ -85,9 +85,11 @@ class TaxonGenomicInformation:
             gff_filename = expandvars(gff_filename)
             #this will asign features in the gff to the toplevel seqs - the toplevel_record_dict will be unaltered
             #print len(self.toplevel_record_dict.items())
-            self.toplevel_record_list = [feat for feat in GFF.parse(gff_filename, base_dict=self.toplevel_record_dict)]
-            #now assign back to the dict
-            self.toplevel_record_dict = dict([ (top.id, top) for top in self.toplevel_record_list ])
+            #I think that we can avoid reading this if we don't have toplevels, but it might bork some script
+            if self.toplevel_record_dict:
+                self.toplevel_record_list = [feat for feat in GFF.parse(gff_filename, base_dict=self.toplevel_record_dict)]
+                #now assign back to the dict
+                self.toplevel_record_dict = dict([ (top.id, top) for top in self.toplevel_record_list ])
             '''
             print '2#####################'
             for top in self.toplevel_record_list:
@@ -174,7 +176,7 @@ class TaxonGenomicInformation:
                     raise ValueError('toplevel for feature named %s not found!' % fid)
 
 
-def get_taxon_genomic_information_dict(source, report=True):
+def get_taxon_genomic_information_dict(source, report=True, readToplevels=True):
     #file with lines containing short taxon identifiers, sequence files and gff files for 
     #each taxon
     #like this (on one line)
@@ -192,7 +194,10 @@ def get_taxon_genomic_information_dict(source, report=True):
     for taxon in masterFilenames:
         #ended up not using sequence files, just getting everything from toplevels
         #allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[1], toplevel_filename=taxon[2])
-        allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2], toplevel_filename=taxon[3])
+        if readToplevels is False:
+            allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2])
+        else:
+            allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2], toplevel_filename=taxon[3])
         if report:
             allTaxonInfo[ taxon[0] ].output()
     return allTaxonInfo
