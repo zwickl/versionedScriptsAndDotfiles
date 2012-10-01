@@ -42,7 +42,8 @@ oldConcat = False
 
 allAlignments = []
 
-charsetString = "begin assumptions;\n"
+charsetString = "begin sets;\n"
+charpartString = "charpartition concat = "
 num = 1
 startbase = 1
 endbase = 1
@@ -56,13 +57,16 @@ for filename in files:
     
     if options.numTax is None or len(thisAlign) == options.numTax:
         endbase = startbase + thisAlign.get_alignment_length() - 1
-        charsetString += "charset %s.%d = %d - %d;\n" % (re.sub('.*/', '', files[num-1]), num, startbase, endbase)
+        #charsetString += "charset %s.%d = %d - %d;\n" % (re.sub('.*/', '', files[num-1]), num, startbase, endbase)
+        charsetString += "charset c%d = %d - %d; [%s]\n" % (num, startbase, endbase, re.sub('.*/', '', files[num-1]))
+        charpartString += "%d:c%d, " % (num, num)
         startbase = endbase + 1
         num = num + 1
         
         allAlignments.append(thisAlign)
 
-charsetString += "end;\n"
+charsetString += charpartString 
+charsetString += ";\nend;\n"
 
 #the very simply old way, assuming equal # identically named seqs in all alignments
 if oldConcat:
