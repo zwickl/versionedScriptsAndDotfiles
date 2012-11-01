@@ -117,17 +117,18 @@ elif [ $OS = "cygwin" ];then
 	alias syncWorkDeskDown='rsync -avz --exclude-from=/home/zwickl/.syncExclude $MONTY:WIN_SYNC/Desk/ /cygdrive/f/Desk/'
     alias ls='ls --color=auto'
 elif [ $OS = "linux" ];then
-	PATH=/home/zwickl/my_usr/bin/:$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
+	PATH=/home/zwickl/my_usr/local/bin/:/home/zwickl/my_usr/bin/:$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
     PATH=$PATH:$HOME/libbuilds/lagan20/
 	export PYTHONPATH=/home/zwickl/my_usr/lib/python2.7/:/home/zwickl/my_usr/lib/python/:/share/apps/Python-2.6.4/lib/python2.6/
 	export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
 	export DEV=$HOME
 	export NCL=/home/zwickl/ncl/
 	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
+    #unset MAFFT_BINARIES
     if [ -d /share/apps/lib/mafft/ ];then
         export MAFFT_BINARIES=/share/apps/lib/mafft/
     else
-        export MAFFT_BINARIES=$HOME/my_usr/lib/mafft/
+        export MAFFT_BINARIES=$HOME/my_usr/local/libexec/mafft/
     fi
 	alias qa='qstat -u "*" | sort | grep [0-9]' 
 	alias qz='qstat | sort | grep [0-9]' 
@@ -275,7 +276,7 @@ function inEachDir(){
 }
 
 function usedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
@@ -285,7 +286,7 @@ function usedCount(){
 }
 
 function queuedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
@@ -316,7 +317,13 @@ function countFastaSeqs(){
 }
 
 function occurenceCount(){
-    grep $1 $2 | wc -l
+    PATT=$1
+    shift 1
+    grep $PATT $@ | wc -l
+}
+
+function fileCount(){
+    ls $@ | wc -l
 }
 
 if [[ $OS == 'darwin' ]]; then
@@ -409,6 +416,20 @@ function myqrsh(){
 
 function cdjob(){
     cd `qstat -j $1 | grep cwd | awk '{print $2}'`
+}
+
+function killAndResubmitJob(){
+    cd `qstat -j $1 | grep cwd | awk '{print $2}'`
+    SCRIPT=`qstat -j $1 | grep script_file | awk '{print $2}'`
+    qdel $1
+    qsub $SCRIPT
+}
+
+function killAllSGE(){
+    for JOB in `qstat | awk '{print $1}' | grep '^[0-9]'`
+    do
+        qdel $JOB
+    done
 }
 
 #mac specific

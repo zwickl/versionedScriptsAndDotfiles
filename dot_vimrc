@@ -43,7 +43,7 @@ augroup END
 
 
 set background=dark
-colorscheme ir_black
+"colorscheme ir_black
 set ls=2
 
 " Maintainer:	Lars H. Nielsen (dengmao@gmail.com)
