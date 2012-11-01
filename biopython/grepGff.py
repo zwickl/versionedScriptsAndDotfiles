@@ -9,6 +9,7 @@ import string
 from BCBio import GFF
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
+from dzutils import read_from_file_or_pickle
 
 def sort_feature_list(recList):
     '''allow the passed object to be either a list of SeqRecords, which will be sorted based on their
@@ -100,6 +101,9 @@ mutExclGroup.add_argument('-s', '--sort', dest='sortOutput', action='store_true'
 mutExclGroup.add_argument('-sc', '--sort-coord', dest='sortOutputCoord', action='store_true', default=False,
                     help='sort the sequences by start coordinatre (default false)')
 
+parser.add_argument('-p', '--pickle', dest='usePickle', action='store_true', default=False,
+                    help='read and write pickled sequence files (<gfffile>.pickle, sometimes faster, default False)')
+
 parser.add_argument('-f', '--patternfile', dest='patternFile', type=str, default=None, 
                     help='file from which to read patterns (you must still pass a pattern on the command line, which is ignored)')
 
@@ -110,19 +114,19 @@ parser.add_argument('filenames', nargs='*', default=[],
                     help='a list of filenames to search (none for stdin)')
 
 #now process the command line
-parsed = parser.parse_args()
+options = parser.parse_args()
 
-invertMatch = parsed.invertMatch
-if parsed.patternFile is not None:
-    sys.stderr.write('reading patterns from file %s ...\n' % parsed.patternFile)
-    pf = open(parsed.patternFile, 'rb')
+invertMatch = options.invertMatch
+if options.patternFile is not None:
+    sys.stderr.write('reading patterns from file %s ...\n' % options.patternFile)
+    pf = open(options.patternFile, 'rb')
     seqPatterns = [ line.strip() for line in pf ]
     sys.stderr.write('patterns: %s\n' % str(seqPatterns))
 else:
-    seqPatterns = [parsed.pattern]
-gffFiles = parsed.filenames
-sortOutput = parsed.sortOutput
-sortOutputCoord = parsed.sortOutputCoord
+    seqPatterns = [options.pattern]
+gffFiles = options.filenames
+sortOutput = options.sortOutput
+sortOutputCoord = options.sortOutputCoord
 
 compiledPats = []
 for pat in seqPatterns:
@@ -136,12 +140,19 @@ for pat in seqPatterns:
 sys.stderr.write("Parsing gff files %s ...\n" % str(gffFiles))
 
 #this is only dealing with a single gff file at the moment
-in_handle = open(gffFiles[0])
+#in_handle = open(gffFiles[0])
 
 allNewRecs = []
 #get all of the features for the records (in this case 1, the whole chrom), then we'll get what we want below
 #for rec in GFF.parse(in_handle, limit_info=limit_info, base_dict=seq_dict):
-for rec in GFF.parse(in_handle):
+#for rec in GFF.parse(in_handle):
+#for rec in GFF.parse(gffFiles[0]):
+if not options.usePickle:
+    gffRecs = GFF.parse(gffFiles[0])
+else:
+    gffRecs = read_from_file_or_pickle(gffFiles[0], gffFiles[0] + '.pickle', GFF.parse)
+
+for rec in gffRecs:
     sys.stderr.write("%s : %d toplevel features \n" % ( rec.name,  len(rec.features)))
     num = 1
     
@@ -186,7 +197,7 @@ if sortOutput:
 elif sortOutputCoord:
     sort_feature_list_by_coordinate(allNewRecs)
 
-#gffOutFilename = re.sub('^.*\/', '', parsed.gffFilename) + '.extracted'
+#gffOutFilename = re.sub('^.*\/', '', options.gffFilename) + '.extracted'
 #gffOut = open(gffOutFilename, "w")
 
 gffOut = sys.stdout

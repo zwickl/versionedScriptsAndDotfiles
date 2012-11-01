@@ -58,7 +58,7 @@ def filter_out_strings_by_pattern(toFilter, patterns):
     OK = True
     for name in toFilter:
         for patt in patterns:
-            if search(patt, name) is not None:
+            if search(patt, name):
                 OK = False
                 break
         if not OK:

@@ -6,6 +6,7 @@ import os
 from argparse import ArgumentParser
 
 from Bio import AlignIO
+from Bio import Seq
 from Bio.Alphabet import IUPAC
 from Bio.Align import MultipleSeqAlignment
 from Bio.Nexus import Nexus
@@ -29,14 +30,11 @@ parser.add_argument('filenames', nargs='*', default=[],
                     help='a list of filenames to search')
 
 
-
 #now process the command line
 options = parser.parse_args()
 
-if len(options.filenames) == 0:
+if not options.filenames:
     raise RuntimeError("Enter alignment filenames to concatenate")
-else:
-    files = options.filenames
 
 oldConcat = False
 
@@ -44,21 +42,16 @@ allAlignments = []
 
 charsetString = "begin sets;\n"
 charpartString = "charpartition concat = "
-num = 1
-startbase = 1
-endbase = 1
+num, startbase, endbase = 1, 1, 1
 
-for filename in files:
-    try:
-        afile = open(filename, "rb")
-    except IOError:
-        exit("could not read file %s" % filename)
-    thisAlign = AlignIO.read(afile, "nexus", alphabet=IUPAC.ambiguous_dna)
+for filename in options.filenames:
+    with open(filename, "rb") as afile:
+        thisAlign = AlignIO.read(afile, "nexus", alphabet=IUPAC.ambiguous_dna)
     
-    if options.numTax is None or len(thisAlign) == options.numTax:
+    if not options.numTax or len(thisAlign) == options.numTax:
         endbase = startbase + thisAlign.get_alignment_length() - 1
         #charsetString += "charset %s.%d = %d - %d;\n" % (re.sub('.*/', '', files[num-1]), num, startbase, endbase)
-        charsetString += "charset c%d = %d - %d; [%s]\n" % (num, startbase, endbase, re.sub('.*/', '', files[num-1]))
+        charsetString += "charset c%d = %d - %d; [%s]\n" % (num, startbase, endbase, re.sub('.*/', '', options.filenames[num-1]))
         charpartString += "%d:c%d, " % (num, num)
         startbase = endbase + 1
         num = num + 1
@@ -98,26 +91,47 @@ else:
         alignDicts.append((thisDict, align))
     sys.stderr.write("%d alignments read\n" % len(alignDicts))
 
+    #figure out all necessary taxa in the final alignment
     allNames = set()
+    for mydict, alignment in alignDicts:
+        allNames |= set(mydict.iterkeys())
+
+    '''
     finalAlignSeqs = []
-    for mydict in alignDicts:
-        for seq in mydict[0].items():
-            if seq[0] not in allNames:
-                allNames |= set([seq[0]])
-                finalAlignSeqs.append(copy.deepcopy(mydict[0][seq[0]]))
+    for mydict, alignment in alignDicts:
+        for name, seq in mydict.items():
+            if name not in allNames:
+                allNames.add(name)
+                finalAlignSeqs.append(copy.deepcopy(seq))
                 finalAlignSeqs[-1]._set_seq('')
-        #allNames |= set(mydict[0].keys())
+    '''
 
     sys.stderr.write("%d names across all alignments\n" % len(allNames))
 
-    for mydict in alignDicts:
-        dummy = 'N' * mydict[1].get_alignment_length()
-        for seq in finalAlignSeqs:
-            if seq.name in mydict[0]:
-                seq._set_seq(seq.seq + mydict[0][seq.name].seq)
+    #collect the sequences for each taxa for each alignment, or a dummy string of N's if they are missing from an alignment
+    #rawStrings = dict.fromkeys(allNames)
+    rawStrings = {}
+    
+    #loop over alignments
+    for mydict, alignment in alignDicts:
+        dummy = 'N' * alignment.get_alignment_length()
+        #loop over the list of sequences that we're collecting
+        for name in allNames:
+            if name in mydict:
+                rawStrings.setdefault(name, []).append(str(mydict[name].seq))
             else:
-                #seq.__add__ seems like it should work here, but I can't get it to
-                seq._set_seq(seq.seq + dummy)
+                rawStrings.setdefault(name, []).append(dummy)
+
+    #this is a little cheesy, but find the first alignment that contains each taxon and use the 
+    #corresponding SeqRecord as a template to paste the new full alignments into
+    finalAlignSeqs = []
+    for name in sorted(allNames):
+        for mydict, alignment in alignDicts:
+            if name in mydict:
+                finalSeq = copy.deepcopy(mydict[name])
+                finalSeq._set_seq(Seq.Seq(''.join(rawStrings[name]), finalSeq.seq.alphabet))
+                finalAlignSeqs.append(finalSeq)
+                break
 
     finalAlign = MultipleSeqAlignment(finalAlignSeqs)
 
@@ -129,7 +143,6 @@ else:
         os.remove(temp)
     else:
         AlignIO.write(finalAlign, sys.stdout, "nexus")
-
 
 sys.stdout.write("%s\n" % charsetString)
 

@@ -1,8 +1,2 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhist_cnt =6
-let g:netrw_dirhist_1='/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza/gramene34_split_cleanedByCSHL/summaries/compareClusters/clusterGraphs'
-let g:netrw_dirhist_2='/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza/gramene34_split_cleanedByCSHL/summaries/compareClusters/dagTriplesOnSubsets/mafft.cds/globalIntersection'
-let g:netrw_dirhist_3='/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza/gramene34_split_cleanedByCSHL/taxonFiles'
-let g:netrw_dirhist_4='/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza/scripts/extractionScripts'
-let g:netrw_dirhist_5='/Users/zwickl/Desktop/GarliDEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/singleSite/jansen.del2Xins.betterSearches/simTree'
-let g:netrw_dirhist_6='/Users/zwickl/libbuilds/YonderGit/scripts'
+let g:netrw_dirhist_cnt =0

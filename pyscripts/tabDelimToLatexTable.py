@@ -23,14 +23,14 @@ if len(args) == 1:
         infile = open(filename, 'r')
     except IOError:
         sys.exit("problem opening file")
-elif len(args) > 0:
+elif args:
     sys.exit("expecting only one argument, got %s" % args)
 else:
     infile = sys.stdin
 
 outprec = int(options.prec)
-haveRows = bool(options.rowfile is not None)
-haveCols = bool(options.colfile is not None)
+haveRows = options.rowfile is not None
+haveCols = options.colfile is not None
 hor = options.hor
 vert = options.vert
 rowFile = None

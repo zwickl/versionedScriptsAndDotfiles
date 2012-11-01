@@ -7,6 +7,7 @@ import new
 from Bio import SeqIO
 from Bio.Alphabet import IUPAC
 from dzutils import ParsedSequenceDescription
+from dzutils import read_from_file_or_pickle
 
 '''
 #this was just some experimentation with making my own hashes
@@ -70,6 +71,9 @@ mutExclGroup.add_argument('-s', '--sort', dest='sortOutput', action='store_true'
 mutExclGroup.add_argument('-sc', '--sort-coord', dest='sortOutputByCoord', action='store_true', default=False,
                     help='sort sequences by coordinate if embedded in description (default false)')
 
+parser.add_argument('-p', '--pickle', dest='usePickle', action='store_true', default=False,
+                    help='read and write pickled sequence files (<seqfile>.pickle, sometimes faster, default False)')
+
 parser.add_argument('--range', dest='baseRange', nargs=2, type=int, default=[1, -1], metavar=('startbase', 'endbase'),
                     help='range of alignment positions to output, start at 1, last position included, -1 for end')
 
@@ -116,7 +120,11 @@ for oneSeqFile in seqFiles:
         #allRecs = set([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
         #recList.extend([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
         #recList |= set([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
-        recList.extend([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
+        
+        if not options.usePickle:
+            recList.extend([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
+        else:
+            recList.extend([ rec for rec in read_from_file_or_pickle(oneSeqFile, oneSeqFile + '.pickle', SeqIO.parse, "fasta", alphabet=IUPAC.ambiguous_dna) ])
       
         #recSet |= set([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
     except IOError:

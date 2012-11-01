@@ -5,6 +5,7 @@ import copy
 from Bio.SeqFeature import FeatureLocation
 from Bio import SeqIO
 from BCBio import GFF
+from dzutils import read_from_file_or_pickle
 
 #my extensions and functions for working with biopython objects
 
@@ -32,7 +33,7 @@ class TaxonGenomicInformation:
         -seq_dict is updated with features from gff
     '''
     
-    def __init__(self, name, seq_dict=None, seq_filename=None, toplevel_filename=None, gff_filename=None):
+    def __init__(self, name, seq_dict=None, seq_filename=None, toplevel_filename=None, gff_filename=None, usePickle=False):
         '''
         print '#############'
         print name
@@ -46,12 +47,20 @@ class TaxonGenomicInformation:
         self.short_name = name[0:7]
         
         if toplevel_filename is not None:
-            #it can be handy to have a dict of the toplevel seq(s) recs which may just be a single chrom
             toplevel_filename = expandvars(toplevel_filename)
-            self.toplevel_record_dict = SeqIO.to_dict(SeqIO.parse(open(toplevel_filename), "fasta"))
-            #print len(self.toplevel_record_dict.items())
-            #pull the toplevel reqs back out as a list of seq recs
-            self.toplevel_record_list = [it[1] for it in self.toplevel_record_dict.iteritems()]
+            if not usePickle:
+                #it can be handy to have a dict of the toplevel seq(s) recs which may just be a single chrom
+                self.toplevel_record_dict = SeqIO.to_dict(SeqIO.parse(open(toplevel_filename), "fasta"))
+                #pull the toplevel reqs back out as a list of seq recs
+                self.toplevel_record_list = [it[1] for it in self.toplevel_record_dict.iteritems()]
+            else:
+                #this is slightly faster reading the pickle than re-parsing
+                self.toplevel_record_list = read_from_file_or_pickle(toplevel_filename, toplevel_filename + '.list.pickle', SeqIO.parse, "fasta")
+                if not isinstance(self.toplevel_record_list, list):
+                    #it may be an iterator or generator rather than list
+                    self.toplevel_record_list = [ it for it in self.toplevel_record_list ]
+                self.toplevel_record_dict = SeqIO.to_dict(self.toplevel_record_list)
+
             '''
             print '1#####################'
             for top in self.toplevel_record_list:
@@ -64,12 +73,8 @@ class TaxonGenomicInformation:
                     break
             print '/1#####################'
             '''
-            #print len(self.toplevel_record_list)
-            #print 'toplevel name', self.toplevel_record_list.name
-            #print 'toplevel features', len(self.toplevel_record_list.features)
         else:
             self.toplevel_record_dict = dict()
-            #self.toplevel_record_list = [SeqRecord()]
             self.toplevel_record_list = []
         
         #if filenames are passed in, do the necessary reading and add them to any dicts/lists that might have been passed
@@ -77,11 +82,17 @@ class TaxonGenomicInformation:
             seq_dict = dict()
         if seq_filename is not None:
             seq_filename = expandvars(seq_filename)
-            new_seq_dict = SeqIO.to_dict(SeqIO.parse(open(seq_filename), "fasta"))
-            seq_dict.update(new_seq_dict)
-        self.seq_dict = seq_dict
+            if not usePickle:
+                self.seq_dict = SeqIO.to_dict(SeqIO.parse(open(seq_filename), "fasta"))
+            else:
+                #haven't actually tested pickle here
+                self.seq_dict = SeqIO.to_dict(read_from_file_or_pickle(seq_filename, SeqIO.parse, "fasta"))
+        else:
+            self.seq_dict = dict()
+        self.seq_dict.update(seq_dict)
 
         if gff_filename is not None:
+            #pickling the gffs doesn't seem to help - pickle file is much larger than actual gff and slower to read
             gff_filename = expandvars(gff_filename)
             #this will asign features in the gff to the toplevel seqs - the toplevel_record_dict will be unaltered
             #print len(self.toplevel_record_dict.items())
@@ -125,6 +136,7 @@ class TaxonGenomicInformation:
 
         else:
             self.gff_seqrecord_list = []
+            self.seq_dict = dict()
 
         if toplevel_filename is not None and gff_filename is not None:
             self.feature_to_toplevel_record_dict = dict()
@@ -176,7 +188,7 @@ class TaxonGenomicInformation:
                     raise ValueError('toplevel for feature named %s not found!' % fid)
 
 
-def get_taxon_genomic_information_dict(source, report=True, readToplevels=True):
+def get_taxon_genomic_information_dict(source, report=True, readToplevels=True, usePickle=False):
     #file with lines containing short taxon identifiers, sequence files and gff files for 
     #each taxon
     #like this (on one line)
@@ -193,11 +205,10 @@ def get_taxon_genomic_information_dict(source, report=True, readToplevels=True):
     allTaxonInfo = {}
     for taxon in masterFilenames:
         #ended up not using sequence files, just getting everything from toplevels
-        #allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[1], toplevel_filename=taxon[2])
-        if readToplevels is False:
-            allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2])
+        if not readToplevels:
+            allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2], usePickle=usePickle)
         else:
-            allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2], toplevel_filename=taxon[3])
+            allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2], toplevel_filename=taxon[3], usePickle=usePickle)
         if report:
             allTaxonInfo[ taxon[0] ].output()
     return allTaxonInfo
@@ -300,8 +311,7 @@ def extract_seqrecord_between_outer_cds(rec, ifeat):
     print feat.location
     print '/ORIGINAL FEAT'
     '''
-    s = find_cds_start_coordinate(feat)
-    e = find_cds_end_coordinate(feat)
+    s, e = find_cds_start_coordinate(feat), find_cds_end_coordinate(feat)
     print 'start, end', s, e
     tempFeat = copy.deepcopy(feat)
     tempFeat.sub_features = []
@@ -318,8 +328,7 @@ def extract_seqrecord_between_outer_cds(rec, ifeat):
     print '/TEMP FEAT'
     '''
     extracted = tempFeat.extract(rec)
-    extracted.name = parse_feature_name(feat)
-    extracted.id = parse_feature_name(feat)
+    extracted.name, extracted.id = parse_feature_name(feat), parse_feature_name(feat)
 
     #DEBUG
     tempFeat.sub_features = collect_features_within_boundaries(feat, min([s, e]), max([s, e]))
@@ -352,19 +361,15 @@ def collect_features_within_boundaries(feature, start, end, relativeIndeces=Fals
         #be forgiving here, allowing for reversed coordinates
         if feature.strand == -1:
             print 'flipping start and end coords in collect_features_within_boundaries'
-            temp = start
-            start = end
-            end = temp
+            start, end = end, start
         else:
             raise ValueError('start > end in collect_features_within_boundaries?')
 
     if relativeIndeces:
         if feature.strand == -1:
             #alignment was of the sequences in sense direction, which didn't know about
-            #strand, so need to flip   
-            newstart = realFeatureLength - end
-            end = realFeatureLength - start
-            start = newstart
+            #strand, so need to flip
+            start, end = realFeatureLength - end, realFeatureLength - start
         start += int_feature_location(feature)[0]
         end += int_feature_location(feature)[0]
         print 'adjusted boundaries:', start, end
@@ -438,8 +443,7 @@ def MakeGeneOrderMap(geneOrderFilename):
 def adjust_feature_coords(features, delta):
     '''Shift all feature and subfeature coords by delta'''
     for feature in features:
-        start = feature.location.start.position + delta 
-        end = feature.location.end.position + delta 
+        start, end = feature.location.start.position + delta, feature.location.end.position + delta
         feature.location = FeatureLocation(start, end)
         adjust_feature_coords(feature.sub_features, delta)
 

@@ -17,7 +17,7 @@ def check_for_polytomies(tree):
 #use argparse module to parse commandline input
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-op', '-outgroup-pattern', dest='patt', required=False, default=None,
+parser.add_argument('-op', '-outgroup-pattern', dest='outPatt', required=False, default=None,
                     help='regex pattern matching taxon label to use as outgroup (single taxon outgroup)')
 
 parser.add_argument('treefiles', nargs='*', default=[], help='nexus treefile to convert')
@@ -34,6 +34,8 @@ parser.add_argument('-nb', '--no-bifurcating', dest='ignoreBif', action='store_t
 parser.add_argument('-np', '--no-polytomies', dest='ignorePoly', action='store_true', required=False, default=False, 
                     help='do not include polytomous trees in output')
 
+parser.add_argument('-p', '--prune-patterns', dest='prunePatts', action='append', required=False, default=None, 
+                    help='patterns for taxon names to strip from trees before output.  Single pattern per flag, but can appear multiple times')
 
 options = parser.parse_args()
 
@@ -41,7 +43,12 @@ options = parser.parse_args()
 
 intrees = dendropy.TreeList()
 for tf in options.treefiles:
-    intrees.append(dendropy.Tree.get_from_path(tf, "nexus"))
+    #intrees.append(dendropy.Tree.get_from_path(tf, "nexus"))
+    try:
+        intrees.extend(dendropy.TreeList.get_from_path(tf, "nexus"))
+    except dendropy.error.DataError:
+        intrees.extend(dendropy.TreeList.get_from_path(tf, "newick"))
+
 sys.stderr.write('read %d trees\n' % len(intrees))
 
 #treestr = '(O._barthii_AA:0.00157155,(((O._brachyantha_FF:0.10458481,(O._punctata_BB:0.00266559,O._minuta_BB:0.01210456):0.01556435):0.00268608,(O._officinalis_CC:0.10078888,O._minuta_CC:0.02347313):0.01668656):0.03394209,((O._sativaj_AA:0.01511099,O._rufipogon_AA:0.00251092):0.00401496,O._nivara_AA:0.002933):0.00296048):0.00068407,O._glaberrima_AA:1e-08);'
@@ -62,11 +69,31 @@ for intree in intrees:
         ignoredCount += 1
         #sys.stderr.write('ignoring polytomous tree\n')
     else:
-        if options.patt is not None:
+        toRemove = set()
+        #prune taxa first with patterns, THEN look for an outgroup pattern.
+        #outgroup pattern could be specified that matches something that has
+        #already been deleted
+        if options.prunePatts is not None:
+            leaves = intree.leaf_nodes()
+            for l in leaves:
+                for toPrune in options.prunePatts:
+                    if re.search(toPrune, l.taxon.label) is not None:
+                        toRemove.add(l.taxon.label)
+                        break
+            toRetain = set(l.taxon.label for l in leaves) - toRemove
+            #intree.retain_taxa_with_labels(labels=toRetain)
+            intree.prune_taxa_with_labels(labels=toRemove)
+            #print intree
+            #exit()
+            #these are called on TreeLists - not sure if applicable here
+            intree.taxon_set = intree.infer_taxa()
+            intree.reindex_subcomponent_taxa()
+
+        if options.outPatt is not None:
             outgroup = None
             leaves = intree.leaf_nodes()
             for l in leaves:
-                if re.search(options.patt, l.taxon.label) is not None:
+                if re.search(options.outPatt, l.taxon.label) is not None:
                     outgroup = l
                     break
 
@@ -77,7 +104,11 @@ for intree in intrees:
             else:
                 #if the tree was already rooted, this will remove that root node
                 #rooting halves the branchlength of the chosen branch
-                intree.reroot_at_edge(outgroup.edge, length1=outgroup.edge_length / 2.0, length2=outgroup.edge_length / 2.0, update_splits=False, delete_outdegree_one=True) 
+                if outgroup.edge_length:
+                    intree.reroot_at_edge(outgroup.edge, length1=outgroup.edge_length / 2.0, length2=outgroup.edge_length / 2.0, update_splits=False, delete_outdegree_one=True) 
+                else:
+                    intree.reroot_at_edge(outgroup.edge, update_splits=False, delete_outdegree_one=True) 
+        
         outtrees.append(intree)
 
 if ignoredCount > 0:
@@ -91,5 +122,5 @@ if outtrees:
     else:
         outtrees.write(out, "newick")
 else:
-    sys.stderr.write('no trees to output?')
+    sys.stderr.write('no trees to output?\n')
 
