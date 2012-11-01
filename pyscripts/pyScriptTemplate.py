@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 from argparse import ArgumentParser
+from dzutils import proportion_type
 
 #use argparse module to parse commandline input
 parser = ArgumentParser(description='extract sequences from a fasta file')
@@ -22,12 +23,19 @@ parser.add_argument('--range', dest='baseRange', nargs=2, type=int, default=[1, 
                     help='range of cluster sizes (number of members)')
 
 #single number value
-parser.add_argument('-mp', '--min-match-prop', dest='minMatchProportion', type=float, default=0.0,
+parser.add_argument('-mp', '--min-match-prop', dest='minMatchProportion', type=proportion_type, default=0.0,
                     help='proportion of hit that must overlap query (default 0.0)')
 
 #variable number of arguments
 parser.add_argument('filenames', nargs='*', default=[], 
                     help='a list of filenames to search (none for stdin)')
+
+parser.add_argument('-i', '--input', dest='inFile', required=True, type=str, default=None, 
+                    help='intput file (required)')
+
+parser.add_argument('-o', '--output', dest='outFile', type=str, default=None, 
+                    help='file to write output to (default stdout)')
+
 
 #now process the command line
 options = parser.parse_args()

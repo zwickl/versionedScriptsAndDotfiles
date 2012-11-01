@@ -49,9 +49,7 @@ def StringToIntOrFloat(str):
     return ret
 
 class row:
-    #I'm considering colEntries more or less a class member, but don't need to define it here
-    #because it will always be created in the "constructor"
-    #colEntries = []
+    
     def __init__(self, rowStr):
         #this saves the entries as strings
         self.colEntries = [x for x in rowStr.split()]

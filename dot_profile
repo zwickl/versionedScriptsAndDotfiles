@@ -204,6 +204,8 @@ export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/analysisScripts/
 export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/alignmentScripts/
 export GENERAL_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/generalScripts/
 export ANNOTATION_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/annotationSplittingScripts/
+export PLOT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/plottingScripts/
+export POST_PROCESS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/postProcessScripts/
 export NUMORYZA=11
 
 

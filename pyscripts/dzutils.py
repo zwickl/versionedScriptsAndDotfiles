@@ -2,21 +2,74 @@
 
 import sys
 import re
+from os import path, stat
+import cPickle
 from itertools import izip
+from argparse import ArgumentTypeError
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
 
-import time
-def timing(f, n, a):
-    print f.__name__,
-    r = range(n)
-    t1 = time.clock()
-    for i in r:
-        f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a)
-    t2 = time.clock()
-    print round(t2-t1, 3)
+#this is for used for type checking as a type= argument in argparse.add_argument
+def proportion_type(string):
+    #it would be nice to be able to pass as specific range, but the func can only take 1 arg
+    min_val, max_val = 0.0, 1.0
+    value = float(string)
+    if value < min_val or value > max_val:
+        mess = 'value %f must be between %.2f and %.2f' % (value, min_val, max_val)
+        raise ArgumentTypeError(mess)
+    return value
+
+
+def read_from_file_or_pickle(filename, pickleName, readFunc, *readFuncArgs, **readFuncKwargs):
+    '''This takes a filename, and a function that would be used to parse that file, as well as arguments for
+    that parsing function.  If there is a file with the name <filename>.pickle that is more recent than 
+    <filename>, it will be unpickled into an object and returned.  Otherwise the parsing function will be 
+    called on the file, and the result pickled and returned.
+
+    The unsatisfying thing is that some parsing functions may return a generator rather than a list, dict or
+    other object.  Generators are not pickle-able, so this causes a problem.  Currently if the object returned
+    from the parse is a generator, cast it as a list before pickling it.  For many cases this will be fine for 
+    client code, but it obviously will not be ideal if the caller doesn't want the whole list in memory.
+    This is currently the caller's responsibility, and if they want a generator, don't use this function.  
+    For many cases this will be fine for client code, but it obviously will not be ideal if the caller 
+    doesn't want the whole list in memory.
+    NOTE: This is currently the caller's responsibility, and if they want a generator, don't use this function.
+    '''
+    if path.exists(filename):
+        sourceTime = stat(filename).st_mtime
+    else:
+        raise IOError("file %s doesn't exist?" % filename)
+    
+    #pickleName = filename + ".pickle"
+    pickleOK = False
+    if path.exists(pickleName):
+        pickleTime = stat(pickleName).st_mtime
+        if sourceTime <= pickleTime:
+            pickleOK = True
+        else:
+            sys.stderr.write('pickle file %s is too old, rewriting\n')
+
+    if pickleOK:
+        with open(pickleName, 'rb') as pickleIn:
+            sys.stderr.write('reading pickle file %s... ' % pickleName)
+            parsed = cPickle.load(pickleIn)
+            sys.stderr.write('done\n')
+    else:
+        with open(filename, 'rb') as fileIn:
+            parsed = readFunc(filename, *readFuncArgs, **readFuncKwargs)
+            import inspect
+            if inspect.isgenerator(parsed):
+                parsed = list(parsed)
+        with open(pickleName, 'wb') as pickleOut:
+            sys.stderr.write('writing pickle file %s... ' % pickleName)
+            import inspect
+            if inspect.isgenerator(parsed):
+                parsed = list(parsed)
+            cPickle.dump(parsed, pickleOut, cPickle.HIGHEST_PROTOCOL)
+            sys.stderr.write('done\n')
+    return parsed
 
 
 def extract_sequences_and_stuff_from_nexus_file(nfile, taxToSequenceDict, beginningLinesInNexus, endLinesInNexus):
@@ -91,6 +144,8 @@ class CoordinateSet:
 
 def extract_core_filename(name):
     '''
+    extract the "core" portion of a filename, regardless of exactly what the original filename is
+    this includes the cluster number, number of taxa, number of characters and other stuff
     >>> extract_core_filename('../alignments/aligned.blink.00047.00002.8T.noDupes.954C.nex')
     '00047.00002.8T.noDupes.954C'
     >>> extract_core_filename('../../alignments/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.nex')
@@ -103,7 +158,7 @@ def extract_core_filename(name):
     patts = [ '^.*blink[.](.*)', '^.*clique[.](.*)', '^.*MCL.*[.](.*)', '^.*MCcoalSim[.](.*)' ]
     for p in patts:
         search = re.search(p, name)
-        if search is not None:
+        if search:
             extracted = search.group(1)
             break
     if extracted is None:
@@ -113,12 +168,29 @@ def extract_core_filename(name):
     patts = [ '(.*).nex$', '(.*).best.tre$', '(.*).boot.tre$', '(.*).tre$', '(.*).boot$' ]
     for p in patts:
         search = re.search(p, extracted)
-        if search is not None:
+        if search:
             extracted2 = search.group(1)
             break
     if extracted2 is None:
         exit("problem shortening name 2: %s" % name)
     return extracted2
+
+
+def parse_numerical_filename_details(name):
+    '''
+    >>> parse_numerical_filename_details('../alignments/aligned.blink.00047.00002.8T.noDupes.954C.nex')
+    (47, 2, 8, 954)
+    >>> parse_numerical_filename_details('../../alignments/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.nex')
+    (0, 0, 10, 2079)
+    >>> parse_numerical_filename_details('../garli.gblocks.collapse/runs/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.best.tre')
+    (0, 0, 10, 2079)
+    '''
+    core = extract_core_filename(name)
+    search = re.search('([0-9]+)[.]([0-9]+)[.]([0-9]+)T[.][a-zA-Z]+[.]([0-9]+)C.*', core)
+    if search:
+        return int(search.group(1)), int(search.group(2)), int(search.group(3)), int(search.group(4))
+    else:
+        exit("count not parse %s" % name)
 
 
 class DagLine:
@@ -149,9 +221,7 @@ class DagLine:
         self.string = '\t'.join(self.fields)
         #this is just the line string minus the e-value, which can be represented in text multiple ways
         self.cut_string = '\t'.join(self.fields[:-1])
-        self.tax1 = self.fields[1]
-        self.tax2 = self.fields[5]
-        self.evalue = self.fields[8]
+        self.tax1, self.tax2, self.evalue = self.fields[1], self.fields[5], self.fields[8]
 
     def __hash__(self):
         return hash(self.cut_string)
@@ -236,7 +306,7 @@ class BlinkCluster:
             else:
                 taxonDict[memb[0:7]] = True
 
-        if dagLines and len(dagLines) > 0:
+        if dagLines is not None and len(dagLines):
             #daglineDoubleDict = get_dagline_double_dict(dagLines)
             daglineDoubleDict = get_dagline_double_dict_from_dagline_objects(dagLines)
         else:
@@ -245,7 +315,7 @@ class BlinkCluster:
         if daglineDoubleDict:
             self.dag_lines = get_dagline_list_for_cluster(self.cluster_members, daglineDoubleDict)
             self.dag_line_set = get_dagline_set_for_cluster(self.cluster_members, daglineDoubleDict)
-            if len(self.dag_lines) == 0 and len(self.cluster_members) > 1:
+            if not self.dag_lines and len(self.cluster_members) > 1:
                 print len(daglineDoubleDict)
                 print self
                 exit('no daglines %d?' % len(self.cluster_members))
@@ -455,8 +525,7 @@ def parse_mcl_output(filename):
     output is simply one line per cluster:
     OminuCC03S_FGT1789  OminuCC03S_FGT1792  OoffiCC03S_FGT1798  OminuBB03S_FGT0728  OminuBB03S_FGT0727  OoffiCC03S_FGT1799  OminuCC03S_FGT1791  OminuCC03S_FGT1790   
     '''
-    mclOut = open(filename, "rb")
-    lines = [ l.split() for l in mclOut ]
+    lines = ( l.split() for l in open(filename, "rb") )
     allClusters = []
 
     num = 1
@@ -480,15 +549,13 @@ def parse_blink_output(filename, dagline_dict=None):
     2	OglabAA03S_FGT0266
     2	OminuCC03S_FGT0238
     '''
-    blinkOut = open(filename, "rb")
-    lines = [ l.split() for l in blinkOut ]
+    lines = ( l.split() for l in open(filename, "rb") )
     allClusters = []
  
     clustDict = {}
     for line in lines:
         try:
-            num = int(line[0])
-            name = line[1]
+            num, name = int(line[0]), line[1]
             if num in clustDict:
                 clustDict[num].append(name)
             else:
@@ -642,22 +709,20 @@ def get_dagline_double_dict(lineList, bidirectional=False):
             if bidirectional:
                 lineTups.append((line[5], line[1], line))
 
-    for tup in lineTups:
-        t1 = tup[0]
-        t2 = tup[1]
-        
+    for t1, t2, line in lineTups:
         match = re.search('(.*)[.][0-9]*$', t1)
-        if match is not None:
+        if match:
             t1 = match.group(1)
         
         match = re.search('(.*)[.][0-9]*$', t2)
-        if match is not None:
+        if match:
             t2 = match.group(1)
-        
-        if t1 in my_dict:
-            my_dict[t1][t2] = tup[2]
-        else:
-            my_dict[t1] = {t2 : tup[2]}
+      
+        my_dict[t1].setdefault(t1, {})[t2] = line
+        #if t1 in my_dict:
+        #    my_dict[t1][t2] = line
+        #else:
+        #    my_dict[t1] = {t2 : line}
     return my_dict
 
 
@@ -677,28 +742,23 @@ def get_dagline_double_dict_from_dagline_objects(daglines):
     if len(daglines) == 0:
         raise poo
         exit("get_dagline_double_dict_from_dagline_objects passed empty list")
-
-    
     
     for line in daglines:
-        t1 = line.tax1
+        t1, t2 = line.tax1, line.tax2
         
         match = re.search('(.*)[.][0-9]*$', t1)
-        if match is not None:
+        if match:
             t1 = match.group(1)
-            #print 'matched', t1
             
-        t2 = line.tax2
-        
         match = re.search('(.*)[.][0-9]*$', t2)
-        if match is not None:
+        if match:
             t2 = match.group(1)
-            #print 'matched', t2
-        
-        if t1 in my_dict:
-            my_dict[t1][t2] = line
-        else:
-            my_dict[t1] = {t2 : line}
+       
+        my_dict.setdefault(t1, {})[t2] = line
+        #if t1 in my_dict:
+        #    my_dict[t1][t2] = line
+        #else:
+        #    my_dict[t1] = {t2 : line}
     return my_dict
 
 
@@ -751,13 +811,6 @@ class HitList:
             if len(self.uniqueNames) != len(self.numbersToNames):
                 exit("problem mapping hit names to numbers")
         return self.uniqueNames.keys()
-        '''
-            self.uniqueNames = set()
-            for hit in self.hitlist:
-                self.uniqueNames.add(hit[0])
-                self.uniqueNames.add(hit[1])
-        return self.uniqueNames
-        '''
 
     def output(self, stream=sys.stdout):
         for hit in self.hitlist:
@@ -768,7 +821,8 @@ class HitList:
             self.unique_names()
         numSet = set()
         for hit in self.hitlist:
-            set.add((self.uniqueNames[hit[0]], self.uniqueNames[hit[1]]))
+            #set.add((self.uniqueNames[hit[0]], self.uniqueNames[hit[1]]))
+            numSet.add((self.uniqueNames[hit[0]], self.uniqueNames[hit[1]]))
 
     def output_for_dfmax(self, stream=sys.stdout):
         if self.uniqueNames is None:
@@ -780,22 +834,21 @@ class HitList:
 
 
 def parse_hits_file(filename):
-    hitsFile = open(filename, "rb")
-    lines = [ tuple(l.split()) for l in hitsFile ]
+    lines = [ tuple(l.split()) for l in open(filename, "rb") ]
     #return HitList(lines).get_sublist_by_query_names(['LOC'])
     return HitList(lines)
 
 
 def make_dictionary_from_gff_arbitrary_field(string):
-    dict = {}
+    mydict = {}
     fields = string.split(';')
     for f in fields:
         sep = f.split('=')
         try:
-            dict[sep[0]] = sep[1]
+            mydict[sep[0]] = sep[1]
         except:
             exit("problem reading field, %s" % sep)
-    return dict
+    return mydict
 
 
 class ParsedSequenceDescription(object):
