@@ -426,6 +426,81 @@ def get_first_cds(feature):
 def sort_feature_list_by_id(recList):
     recList.sort(key=lambda rec:rec.features[0].qualifiers['ID'])
 
+def sort_feature_list(recList):
+    '''allow the passed object to be either a list of SeqRecords, which will be sorted based on their
+    first feature name, or a single SeqRecord, with a list of features that is to be sorted.
+    Prefer the qualifier 'Alias', which is in IRGSP and properly maintains ordering there
+    '''
+    if isinstance(recList, list):
+        qual = 'ID'
+        if 'Alias' in recList[0].features[0].qualifiers:
+            qual = 'Alias'
+        try:
+            recList.sort(key=lambda rec:rec.features[0].qualifiers[qual])
+        except KeyError:
+            sys.stderr.write('ERROR qualifier %s not found\n' % qual)
+            for feat in recList.features:
+                if qual not in feat.qualifiers:
+                    sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+
+    elif isinstance(recList, SeqRecord):
+        qual = 'ID'
+        if recList.features and 'Alias' in recList.features[0].qualifiers:
+            qual = 'Alias'
+        try:
+            recList.features.sort(key=lambda feat:feat.qualifiers[qual])
+        except KeyError:
+            sys.stderr.write('ERROR qualifier %s not found\n' % qual)
+            for feat in recList.features:
+                if qual not in feat.qualifiers:
+                    sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+    else:
+        exit("what is recList?")
+
+
+def sort_feature_list_by_coordinate(recList):
+    '''allow the passed object to be either a list of SeqRecords, which will be sorted based 
+    on the start coord of their first feature, or a single SeqRecord, with a list of features that is to be sorted.
+    '''
+    #recList is a list of SeqRecords, try to sort the SeqRecords by the start coord of their first feature
+    #SeqRecords themselves don't have coords
+    if isinstance(recList, list):
+        try:
+            recList.sort(key=lambda rec:rec.features[0].location.start.position)
+        except KeyError:
+            sys.stderr.write('ERROR could not sort by coordinate')
+            for feat in recList.features:
+                sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+        #for each SeqRecord in the list, want to sort its list of features too.
+        #this will hit the second isinstance here
+        for rec in recList:
+            sort_feature_list_by_coordinate(rec)
+
+    elif isinstance(recList, SeqRecord):
+        try:
+            recList.features.sort(key=lambda feat:feat.location.start.position)
+        except KeyError:
+            sys.stderr.write('ERROR could not sort by coordinate')
+            for feat in recList.features:
+                sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+    #reclist is a feature, want to sort it's subfeatures
+    elif isinstance(recList, SeqFeature):
+        try:
+            print recList
+            exit()
+            recList.sub_features.sort(key=lambda feat:feat.location.start.position)
+        except KeyError:
+            sys.stderr.write('ERROR could not sort by coordinate')
+            for feat in recList.sub_features:
+                sys.stderr.write('feature:\n%s' % feat)
+            exit(1)
+    else:
+        exit("what is recList?")
+
 
 def MakeGeneOrderMap(geneOrderFilename):
     '''read the indicated file, which should be a simple file with columns indicating gene number and gene name'''
