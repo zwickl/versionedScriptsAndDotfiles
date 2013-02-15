@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import sys
 import re
 import argparse
@@ -10,89 +9,14 @@ from BCBio import GFF
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
 from dzutils import read_from_file_or_pickle
-
-def sort_feature_list(recList):
-    '''allow the passed object to be either a list of SeqRecords, which will be sorted based on their
-    first feature name, or a single SeqRecord, with a list of features that is to be sorted.
-    Prefer the qualifier 'Alias', which is in IRGSP and properly maintains ordering there
-    '''
-    if isinstance(recList, list):
-        qual = 'ID'
-        if 'Alias' in recList[0].features[0].qualifiers:
-            qual = 'Alias'
-        try:
-            recList.sort(key=lambda rec:rec.features[0].qualifiers[qual])
-        except KeyError:
-            sys.stderr.write('ERROR qualifier %s not found\n' % qual)
-            for feat in recList.features:
-                if qual not in feat.qualifiers:
-                    sys.stderr.write('feature:\n%s' % feat)
-            exit(1)
-
-    elif isinstance(recList, SeqRecord):
-        qual = 'ID'
-        if recList.features and 'Alias' in recList.features[0].qualifiers:
-            qual = 'Alias'
-        try:
-            recList.features.sort(key=lambda feat:feat.qualifiers[qual])
-        except KeyError:
-            sys.stderr.write('ERROR qualifier %s not found\n' % qual)
-            for feat in recList.features:
-                if qual not in feat.qualifiers:
-                    sys.stderr.write('feature:\n%s' % feat)
-            exit(1)
-    else:
-        exit("what is recList?")
-
-
-def sort_feature_list_by_coordinate(recList):
-    '''allow the passed object to be either a list of SeqRecords, which will be sorted based 
-    on the start coord of their first feature, or a single SeqRecord, with a list of features that is to be sorted.
-    '''
-    #recList is a list of SeqRecords, try to sort the SeqRecords by the start coord of their first feature
-    #SeqRecords themselves don't have coords
-    if isinstance(recList, list):
-        try:
-            recList.sort(key=lambda rec:rec.features[0].location.start.position)
-        except KeyError:
-            sys.stderr.write('ERROR could not sort by coordinate')
-            for feat in recList.features:
-                sys.stderr.write('feature:\n%s' % feat)
-            exit(1)
-        #for each SeqRecord in the list, want to sort its list of features too.
-        #this will hit the second isinstance here
-        for rec in recList:
-            sort_feature_list_by_coordinate(rec)
-
-    elif isinstance(recList, SeqRecord):
-        try:
-            recList.features.sort(key=lambda feat:feat.location.start.position)
-        except KeyError:
-            sys.stderr.write('ERROR could not sort by coordinate')
-            for feat in recList.features:
-                sys.stderr.write('feature:\n%s' % feat)
-            exit(1)
-    #reclist is a feature, want to sort it's subfeatures
-    elif isinstance(recList, SeqFeature):
-        try:
-            print recList
-            exit()
-            recList.sub_features.sort(key=lambda feat:feat.location.start.position)
-        except KeyError:
-            sys.stderr.write('ERROR could not sort by coordinate')
-            for feat in recList.sub_features:
-                sys.stderr.write('feature:\n%s' % feat)
-            exit(1)
-    else:
-        exit("what is recList?")
-
+from dzbiopython import  sort_feature_list, sort_feature_list_by_coordinate
 
 parser = argparse.ArgumentParser(description='extract records from a gff file')
 
 mutExclGroup = parser.add_mutually_exclusive_group()
 
 #add possible arguments
-parser.add_argument('-v', '--invert-match', dest='invertMatch', action='store_true', default=False,
+parser.add_argument('-v', '--invert-match', dest='options.invertMatch', action='store_true', default=False,
                     help='invert the sense of the match (default false)')
 
 mutExclGroup.add_argument('-s', '--sort', dest='sortOutput', action='store_true', default=False,
@@ -116,44 +40,40 @@ parser.add_argument('filenames', nargs='*', default=[],
 #now process the command line
 options = parser.parse_args()
 
-invertMatch = options.invertMatch
-if options.patternFile is not None:
-    sys.stderr.write('reading patterns from file %s ...\n' % options.patternFile)
-    pf = open(options.patternFile, 'rb')
-    seqPatterns = [ line.strip() for line in pf ]
-    sys.stderr.write('patterns: %s\n' % str(seqPatterns))
+log = sys.stderr
+
+if options.patternFile:
+    log.write('reading patterns from file %s ...\n' % options.patternFile)
+    seqPatterns = [ line.strip() for line in open(options.patternFile, 'rb') ]
+    log.write('patterns: %s\n' % str(seqPatterns))
 else:
     seqPatterns = [options.pattern]
-gffFiles = options.filenames
-sortOutput = options.sortOutput
-sortOutputCoord = options.sortOutputCoord
 
 compiledPats = []
 for pat in seqPatterns:
     try:
-        cpat = re.compile(pat)
-        compiledPats.append(cpat)
+        compiledPats.append(re.compile(pat))
     except StandardError:
-        sys.stderr.write("problem compiling regex pattern %s\n" % pat)
+        log.write("problem compiling regex pattern %s\n" % pat)
         exit(1)
 
-sys.stderr.write("Parsing gff files %s ...\n" % str(gffFiles))
+log.write("Parsing gff files %s ...\n" % str(options.filenames))
 
 #this is only dealing with a single gff file at the moment
-#in_handle = open(gffFiles[0])
+#in_handle = open(options.filenames[0])
 
 allNewRecs = []
 #get all of the features for the records (in this case 1, the whole chrom), then we'll get what we want below
 #for rec in GFF.parse(in_handle, limit_info=limit_info, base_dict=seq_dict):
 #for rec in GFF.parse(in_handle):
-#for rec in GFF.parse(gffFiles[0]):
+#for rec in GFF.parse(options.filenames[0]):
 if not options.usePickle:
-    gffRecs = GFF.parse(gffFiles[0])
+    gffRecs = GFF.parse(options.filenames[0])
 else:
-    gffRecs = read_from_file_or_pickle(gffFiles[0], gffFiles[0] + '.pickle', GFF.parse)
+    gffRecs = read_from_file_or_pickle(options.filenames[0], options.filenames[0] + '.pickle', GFF.parse)
 
 for rec in gffRecs:
-    sys.stderr.write("%s : %d toplevel features \n" % ( rec.name,  len(rec.features)))
+    log.write("%s : %d toplevel features \n" % ( rec.name,  len(rec.features)))
     num = 1
     
     #loop over the features - these will usually be genes
@@ -168,7 +88,7 @@ for rec in gffRecs:
         if string.lower(rec.features[0].type) in [ 'chromosome', 'contig', 'scaffold' ]:
             startFeat = 1
 
-        matchedFeats = set(rec.features[startFeat:]) if invertMatch else set()
+        matchedFeats = set(rec.features[startFeat:]) if options.invertMatch else set()
         for cpat in compiledPats:
             #loop over features of the rec
             for feat in rec.features[startFeat:]:
@@ -177,11 +97,11 @@ for rec in gffRecs:
                     #for a given qualifier the value is a list of strings
                     for it in qual[1]:
                         match = cpat.search(it)
-                        if match is not None:
+                        if match:
                             hit = True
                             break
                     if hit:
-                        if invertMatch:
+                        if options.invertMatch:
                             if feat in matchedFeats:
                                 matchedFeats.remove(feat)
                         else:
@@ -189,17 +109,17 @@ for rec in gffRecs:
                         break
         newRec.features.extend(list(matchedFeats))
         sort_feature_list(newRec)
-    if len(newRec.features):
+    if newRec.features:
         allNewRecs.append(newRec)
 
-if sortOutput:
+if options.sortOutput:
     sort_feature_list(allNewRecs)
-elif sortOutputCoord:
+elif options.sortOutputCoord:
     sort_feature_list_by_coordinate(allNewRecs)
 
 #gffOutFilename = re.sub('^.*\/', '', options.gffFilename) + '.extracted'
 #gffOut = open(gffOutFilename, "w")
 
 gffOut = sys.stdout
-GFF.write( allNewRecs , gffOut)
+GFF.write(allNewRecs, gffOut)
 
