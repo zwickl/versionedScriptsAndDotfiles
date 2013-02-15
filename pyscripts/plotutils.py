@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 #import re
-#from os import path, stat
+from os import path
 #import cPickle
 from itertools import izip, cycle
 import collections
@@ -15,7 +15,7 @@ if __name__ == "__main__":
     doctest.testmod()
 
 
-def read_files_and_split_columns_as_strings(filenames, skipRows=None, ignorePatts=None):
+def read_files_and_split_columns_as_strings(filenames, skipRows=None, ignorePatts=None, allowMissing=False):
     if skipRows and ignorePatts:
         exit('pass either skipRows or ignorePatts to\nread_and_split_columns_as_strings, not both')
     data = []
@@ -36,7 +36,10 @@ def read_files_and_split_columns_as_strings(filenames, skipRows=None, ignorePatt
                 else:
                     theseData.append(line.strip().split())
         else:
-            theseData = [l.strip().split() for l in open(f, 'rb')]
+            if not path.exists(f) and allowMissing:
+                sys.stderr.write('WARNING: skipping missing file %s\n' % f)
+            else:
+                theseData = [l.strip().split() for l in open(f, 'rb')]
         if skipRows:
             theseData = theseData[skipRows:]
         data.append(theseData)
@@ -131,6 +134,9 @@ def path_to_plot_title(filename, sep='\n'):
     else:
         plotTitle += 'UNKNOWN'
 
+    if 'ssr' in filename:
+        plotTitle += 'SSR'
+
     return plotTitle
 
 
@@ -205,6 +211,8 @@ def prepare_plot_kwargs(kwargDict, optionList, fontscaler=1.0):
         try:
             outKwargs[key] = float(val)
         except ValueError:
+            pass
+        except TypeError:
             pass
         if val == 'False':
             outKwargs[key] = False
@@ -333,7 +341,7 @@ class PlottingArgumentParser(ArgumentParser):
        
         #base constructor
         super(PlottingArgumentParser, self).__init__(self, *kwargs)
-       
+      
         if defaultSubplotKwargs is not False:
             self.add_argument('--subplot-kwargs', dest='additionalSubplotKwargs', nargs='*', type=str, default=defaultSubplotKwargs,
                                 help='kwargs to be passed on to matplotlib Figure.subplots_adjust function (default %s)' % ' '.join(defaultSubplotKwargs))
@@ -437,7 +445,7 @@ class PlottingArgumentParser(ArgumentParser):
         if defaultDrawAxesAtZero is not False:
             axisArgs.add_argument('--draw-axes-at-zero', dest='drawAxesAtZero', default=defaultDrawAxesAtZero, action='store_true', 
                                 help='whether to draw horizontal and vertical lines through 0, 0')
-        
+       
         #########
         #titles
         titleArgs = self.add_argument_group('ARGUMENTS FOR PLOT AND SUBPLOT TITLES')
@@ -553,6 +561,46 @@ class PlottingArgumentParser(ArgumentParser):
                                 help='normalilze histogram series, so that multiple series are comparable')
 
 
+def make_figure_and_subplots(nrows, ncols):
+    
+    #set up the subplots
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True)
+
+    #if only one subplot ax is a single axes object, otherwise a tuple of them
+    #rather annoying
+    axes = [axes] if not isinstance(axes, collections.Iterable) else np.ravel(axes)
+
+    #if don't do this, aspect ratio of subplots won't be same as a single plot would be, 
+    #but then need to scale fonts and points up as well (actually, not doing that anymore)
+    oldSize = fig.get_size_inches()
+    fig.set_size_inches((oldSize[0] * ncols), oldSize[1] * nrows)
+    return fig, axes
+
+
+def prepare_all_kwargs(options):
+    #allKwargDict = collections.defaultdict(lambda: {})
+    allKwargDict = {}
+    
+    allKwargDict['superTitleKwargs'] = prepare_plot_kwargs(options.additionalSuperTitleKwargs,
+        [('fontsize', options.superTitleFontsize)])
+    
+    allKwargDict['subplotKwargs'] = prepare_plot_kwargs(options.additionalSubplotKwargs, [])
+    
+    allKwargDict['xLabelKwargs'], allKwargDict['yLabelKwargs'] = [ prepare_plot_kwargs(kw,  [('size', options.axisLabelFontsize)]) for kw in [options.additionalXlabelKwargs, options.additionalYlabelKwargs ] ]
+    
+    #various kwargs
+    allKwargDict['titleKwargs'] = prepare_plot_kwargs(options.additionalTitleKwargs, 
+            [('fontsize', options.titleFontsize), ('horizontalalignment', options.titleHalign), ('verticalalignment', options.titleValign)])
+
+    allKwargDict['tickKwargs'] = prepare_plot_kwargs(options.additionalTickKwargs,
+            [('labelsize', options.axisTickFontsize)])
+    
+    #these can only be combined like this because no specific values are being passed in
+    allKwargDict['xTickKwargs'], allKwargDict['yTickKwargs'], allKwargDict['plotKwargs'], allKwargDict['histogramKwargs'] = [ prepare_plot_kwargs(kw, []) for kw in [ options.additionalXTickKwargs, options.additionalYTickKwargs, options.additionalPlotKwargs, options.additionalHistogramKwargs ] ]
+
+    return allKwargDict
+        
+
 def full_plot_routine(options, fileData):
     '''This does a whole bunch of stuff related to making subplots, plotting data, cycling through styles,
     etc.  It is directed by the options returned from the parse_args call to a PlottingArgumentParser.
@@ -586,30 +634,18 @@ def full_plot_routine(options, fileData):
     #################
     #now the plotting
 
-    #make a multiplot even if there is only one plot, to standardize below code
+    #make a multiplot (i.e., call pyplot.subplots) even if there is only one plot, to standardize below code
     multiplot = True
     nrows = int(np.ceil(numSubplots / float(options.ncols)))
     ncols = min(options.ncols, numSubplots)
-    
-    #set up the subplots
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True)
+    fig, axes = make_figure_and_subplots(nrows, ncols)
 
-    #if only one subplot ax is a single axes object, otherwise a tuple of them
-    #rather annoying
-    axes = [axes] if not isinstance(axes, collections.Iterable) else np.ravel(axes)
+    allKwargDict = prepare_all_kwargs(options)
 
-    #if don't do this, aspect ratio of subplots won't be same as a single plot would be, 
-    #but then need to scale fonts and points up as well (actually, not doing that anymore)
-    oldSize = fig.get_size_inches()
-    fig.set_size_inches((oldSize[0] * ncols), oldSize[1] * nrows)
+    fig.subplots_adjust(**allKwargDict['subplotKwargs'])
     
     if options.superTitle:
-        superTitleKwargs = prepare_plot_kwargs(options.additionalSuperTitleKwargs,
-                [('fontsize', options.superTitleFontsize)])
-        plt.suptitle(options.superTitle, **superTitleKwargs)
-
-    subplotKwargs = prepare_plot_kwargs(options.additionalSubplotKwargs, [])
-    fig.subplots_adjust(**subplotKwargs)
+        plt.suptitle(options.superTitle, **allKwargDict['superTitleKwargs'])
 
     #if this isn't explicitly set it is figured out by pyplot and applied
     #equally to all subplots
@@ -628,28 +664,14 @@ def full_plot_routine(options, fileData):
     xFontScaler = 1.0 if multiplot and options.xLabelLocation == 's' else ncols
     yFontScaler = 1.0 if multiplot and options.yLabelLocation == 's' else ncols
 
-    xLabelKwargs, yLabelKwargs = [ prepare_plot_kwargs(kw,  [('size', options.axisLabelFontsize)]) for kw in [options.additionalXlabelKwargs, options.additionalYlabelKwargs ] ]
-
     #make a single centered label spanning individual plots
-    if multiplot:
-        if options.xLabel and options.xLabelLocation == 's':
-            fig.text(xLabelKwargs.pop('x'), xLabelKwargs.pop('y'), options.xLabel, **xLabelKwargs)
-        if options.yLabel and options.yLabelLocation == 's':
-            fig.text(yLabelKwargs.pop('x'), yLabelKwargs.pop('y'), options.yLabel, **yLabelKwargs)
-
-    #various kwargs
-    titleKwargs = prepare_plot_kwargs(options.additionalTitleKwargs, 
-            [('fontsize', options.titleFontsize), ('horizontalalignment', options.titleHalign), ('verticalalignment', options.titleValign)])
-
-    tickKwargs = prepare_plot_kwargs(options.additionalTickKwargs,
-            [('labelsize', options.axisTickFontsize)])
-
-    #these can only be combined like this because no specific values are being passed in
-    xTickKwargs, yTickKwargs, plotKwargs, histogramKwargs= [ prepare_plot_kwargs(kw, []) for kw in [ options.additionalXTickKwargs, options.additionalYTickKwargs, options.additionalPlotKwargs, options.additionalHistogramKwargs ] ]
+    if options.xLabel and options.xLabelLocation == 's':
+        fig.text(allKwargDict['xLabelKwargs'].pop('x'), allKwargDict['xLabelKwargs'].pop('y'), options.xLabel, **allKwargDict['xLabelKwargs'])
+    if options.yLabel and options.yLabelLocation == 's':
+        fig.text(allKwargDict['yLabelKwargs'].pop('x'), allKwargDict['yLabelKwargs'].pop('y'), options.yLabel, **allKwargDict['yLabelKwargs'])
 
     #it will be easiest to just set up a bunch of lists of equal length, and then iterate through
     #these to get the proper association between data, functions, axes, etc.
-
     #########################
     def make_plot_iterator():
         if options.subplotPerFunction:
@@ -659,7 +681,7 @@ def full_plot_routine(options, fileData):
             axesToIterate = [ ax for _, ax in zip(range(numSeries), cycle(axes))]
         else:
             #a single axis for each datafile, which will be equivalent to the above unless there are multiple functions per file 
-            axesToIterate = np.ravel( [ [ ax for _ in options.dataColumnFunc ] for ax in axes ] )
+            axesToIterate = np.ravel( [ [ ax for _ in options.dataColumnFunc ] for num, ax in enumerate(axes) if num * len(options.dataColumnFunc) < numSeries ] )
 
         #can't use ravel here, because lowest level list of lines will also be collapsed
         dataToIterate = []
@@ -696,6 +718,7 @@ def full_plot_routine(options, fileData):
             hatchesToIterate = np.ravel( [ [ hatch for _ in options.dataColumnFunc ] for hatch, f in  zip(cycle(options.hatchString if options.hatchString else 'o'), fileData) ] )
             
         iterLen = numSeries
+
         assert(len(dataToIterate) == iterLen)
         assert(len(functionsToIterate) == iterLen)
         assert(len(markersToIterate) == iterLen)
@@ -727,17 +750,17 @@ def full_plot_routine(options, fileData):
         if options.yLabel:
             if options.yLabelLocation == 'm' or not multiplot:
                 if num % ncols == 0:
-                    subplot.set_ylabel(options.yLabel, **yLabelKwargs)
+                    subplot.set_ylabel(options.yLabel, **allKwargDict['yLabelKwargs'])
         if options.xLabel:
             if options.xLabelLocation == 'm' or not multiplot:
                 if num >= numPlots - ncols:
-                    subplot.set_xlabel(options.xLabel, **xLabelKwargs)
+                    subplot.set_xlabel(options.xLabel, **allKwargDict['xLabelKwargs'])
 
         #set the title - this could get set multiple times for a single file/plot with multiple funcs
         if options.titleFunc and options.titleFunc != 'None':
-            subplot.set_title(options.titleFunc(inFile, sep=' '), **titleKwargs)
+            subplot.set_title(options.titleFunc(inFile, sep=' '), **allKwargDict['titleKwargs'])
         elif options.titles:
-            subplot.set_title(options.titles[num], **titleKwargs)
+            subplot.set_title(options.titles[num], **allKwargDict['titleKwargs'])
      
         #this is a little goofy, as it will be re-set for each subplot, despite being shared
         if options.xTickFunction:
@@ -746,14 +769,12 @@ def full_plot_routine(options, fileData):
             plt.xticks(range(len(series)), tickFunc(series))
 
         #change tick properties
-        if tickKwargs:
-            subplot.tick_params(**tickKwargs)
-        if xTickKwargs:
-            subplot.tick_params(axis='x', **xTickKwargs)
-        if yTickKwargs:
-            subplot.tick_params(axis='x', **xTickKwargs)
-        if yTickKwargs:
-            subplot.tick_params(axis='y', **yTickKwargs)
+        if allKwargDict['tickKwargs']:
+            subplot.tick_params(**allKwargDict['tickKwargs'])
+        if allKwargDict['xTickKwargs']:
+            subplot.tick_params(axis='x', **allKwargDict['xTickKwargs'])
+        if allKwargDict['yTickKwargs']:
+            subplot.tick_params(axis='y', **allKwargDict['yTickKwargs'])
         
         #do the actual data evaluation and plotting
         dataFunc = eval(function)
@@ -775,7 +796,7 @@ def full_plot_routine(options, fileData):
                         color=color,
                         mfc=None,
                         mec=color,
-                        **plotKwargs)
+                        **allKwargDict['plotKwargs'])
             else:
                 #bins = np.linspace(0, 1.0, options.histogramBins)
                 bins = np.linspace(options.xRange[0] if options.xRange else 0.0, options.xRange[1] if options.xRange else 1.0, options.histogramBins)
@@ -783,7 +804,7 @@ def full_plot_routine(options, fileData):
                         bins=bins,
                         facecolor=color,
                         normed=options.normalizeHistogram,
-                        **histogramKwargs)
+                        **allKwargDict['histogramKwargs'])
                 for pat in patches:
                     pat.set_hatch(hatch)
 
@@ -794,7 +815,7 @@ def full_plot_routine(options, fileData):
                         markersize=markerSize, 
                         linewidth=lineWidth, 
                         color=color,
-                        **plotKwargs)
+                        **allKwargDict['plotKwargs'])
             else:
                 #bins = np.linspace(0, 1.0, options.histogramBins)
                 bins = np.linspace(options.xRange[0] if options.xRange else 0.0, options.xRange[1] if options.xRange else 1.0, options.histogramBins)
@@ -802,7 +823,7 @@ def full_plot_routine(options, fileData):
                         bins=bins,
                         facecolor=color,
                         normed=options.normalizeHistogram,
-                        **histogramKwargs)
+                        **allKwargDict['histogramKwargs'])
                 for pat in patches:
                     pat.set_hatch(hatch)
                 '''
