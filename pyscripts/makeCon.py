@@ -13,7 +13,7 @@ for a in range(3, int(len(sys.argv))):
     conNums.append(int(sys.argv[a]))
 
 pos = 0
-if sys.argv[1] != 'p' and sys.argv[1] != 'n':
+if sys.argv[1] not in  ['p', 'n']:
     print "second argument must be p or n"
 else:
     if sys.argv[1] == 'p':

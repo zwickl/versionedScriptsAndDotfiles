@@ -11,7 +11,7 @@ def check_for_polytomies(tree):
         if len(node.adjacent_nodes()) > 3:
             return True
         elif len(node.adjacent_nodes()) == 2:
-            sys.stderr.write('Warning: tree appears to be rooted')
+            sys.stderr.write('Warning: tree appears to be rooted\n')
     return False
 
 #use argparse module to parse commandline input
@@ -56,6 +56,7 @@ sys.stderr.write('read %d trees\n' % len(intrees))
 #intree.read_from_string(treestr, 'newick')
 
 out = open(options.outfile, 'w') if options.outfile else sys.stdout
+log = sys.stderr
 
 outtrees = dendropy.TreeList()
 ignoredCount = 0
@@ -64,10 +65,10 @@ for intree in intrees:
     hasPoly = check_for_polytomies(intree)
     if options.ignoreBif and not hasPoly:
         ignoredCount += 1
-        #sys.stderr.write('ignoring bifurcating tree\n')
+        #log.write('ignoring bifurcating tree\n')
     elif options.ignorePoly and hasPoly:
         ignoredCount += 1
-        #sys.stderr.write('ignoring polytomous tree\n')
+        #log.write('ignoring polytomous tree\n')
     else:
         toRemove = set()
         #prune taxa first with patterns, THEN look for an outgroup pattern.
@@ -98,7 +99,7 @@ for intree in intrees:
                     break
 
             if outgroup is None:
-                #sys.stderr.write('ignoring tree without specified outgroup\n')
+                #log.write('ignoring tree without specified outgroup\n')
                 outgroupIgnoredCount += 1
                 continue
             else:
@@ -112,15 +113,15 @@ for intree in intrees:
         outtrees.append(intree)
 
 if ignoredCount > 0:
-    sys.stderr.write('ignored %d trees\n' % ignoredCount)
+    log.write('ignored %d trees\n' % ignoredCount)
 if outgroupIgnoredCount > 0:
-    sys.stderr.write('ignored %d trees because of missing outgroup\n' % outgroupIgnoredCount)
+    log.write('ignored %d trees because of missing outgroup\n' % outgroupIgnoredCount)
 if outtrees:
-    sys.stderr.write('writing %d trees\n' % len(outtrees))
+    log.write('writing %d trees\n' % len(outtrees))
     if options.outputNexus:
         outtrees.write(out, "nexus")
     else:
         outtrees.write(out, "newick")
 else:
-    sys.stderr.write('no trees to output?\n')
+    log.write('no trees to output?\n')
 

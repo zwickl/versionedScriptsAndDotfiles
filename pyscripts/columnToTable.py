@@ -6,6 +6,7 @@ import StringIO
 import doctest
 
 from optparse import OptionParser
+from argparse import ArgumentParser
 
 #args are the name of the option, the actual flag that was used, the value, and the parser itself
 #Note that I'm not sure if assigning the split back to value is a good practice, but it works
@@ -48,7 +49,7 @@ def StringToIntOrFloat(str):
         sys.exit(1)
     return ret
 
-class row:
+class row(object):
     
     def __init__(self, rowStr):
         #this saves the entries as strings
@@ -63,7 +64,7 @@ class row:
 
     def element(self, c):
         if c >= len(self.colEntries):
-            mess = 'requested index (%d) > than length of list (%d)' % (c, len(self.colEntries))
+            mess = 'requested index (%d) > than length of list (%d)\nline was %s\n' % (c, len(self.colEntries), str(self.colEntries))
             sys.stderr.write(mess)
             raise IndexError(mess)
         return self.colEntries[c]
@@ -75,7 +76,7 @@ class row:
         for ce in self.colEntries:
             print ce,
 
-class rowset:
+class rowset(object):
     #rows = []
     def __init__(self):
         self.rows = []
@@ -83,8 +84,17 @@ class rowset:
     def append_row(self, rStr):
         self.rows.append(row(rStr))
 
-    def column_to_list(self, cnum):
-        clist = [ poo.element(cnum) for poo in self.rows ]
+    def column_to_list(self, cnum, missingString=None):
+        clist = []
+        for poo in self.rows:
+            try:
+                clist.append(poo.element(cnum))
+            except IndexError:
+                if missingString:
+                    clist.append(missingString)
+                else:
+                    raise
+        #clist = [ poo.element(cnum) for poo in self.rows ]
         return clist
 
     def columns(self):
@@ -98,10 +108,12 @@ class rowset:
             r.__print__()
             print
 
+'''
 parser = OptionParser(add_help_option=False)
 
 parser.add_option("-h", "--help", dest="helpflag")
 parser.add_option("-i", "--inputfile", dest="filename", type="string", help="input file", metavar="FILE")
+parser.add_option("-m", "--missingchar", dest="missingChar", type="string", help="input file", metavar="FILE")
 parser.add_option("-r", "--rows", dest="nrows", type="int", help="number of rows per chunk", metavar="#")
 parser.add_option("-f", "--firstcols", dest="firstCols", type="string", action="callback", callback=comma_split, help="columns to use in first row set", metavar="# # ...")
 parser.add_option("-c", "--cols", dest="cols", type="string", action="callback", callback=comma_split, help="columns to use in successive row sets", metavar="# # ...")
@@ -110,16 +122,25 @@ parser.add_option("-t", "--transpose", action="store_true", dest="transflag", de
 (options, args) = parser.parse_args()
 if options.helpflag != None:
     print_usage("")
-
+'''
 #this just runs the tests embedded in doc strings
 #if __name__ == "__main__":
 #    doctest.testmod()
 
+parser = ArgumentParser()
+
+parser.add_argument("-i", "--input-file", dest="filename", default=None, type=str, help="input file")
+parser.add_argument("-m", "--missing-string", dest="missingString", default=None, type=str, help="allow missing values, and replace with specified string")
+parser.add_argument("-r", "--rows", dest="nrows", type=int, help="number of rows per chunk")
+parser.add_argument("-f", "--first-cols", dest="firstCols", nargs="*", type=int, help="columns to use in first row set")
+parser.add_argument("-c", "--cols", dest="cols", type=int, nargs="*", help="columns to use in successive row sets")
+parser.add_argument("-t", "--transpose", action="store_true", dest="transflag", default=False, help="transpose matrix")
+
+options = parser.parse_args()
+
 if options.filename == None:
     #print_usage("you must pass the -i option")
     sys.stderr.write("No filename passed (-i), assuming stdin\n")
-if options.nrows == None:
-    print_usage("you must pass the -r option")
 '''
 if options.firstCols == None:
     print_usage("you must pass the -f option")
@@ -127,9 +148,7 @@ if options.cols == None:
     print_usage("you must pass the -c option")
 '''
 
-transpose = options.transflag
-
-infile = sys.stdin if options.filename == None else open(options.filename, "ri")
+infile = open(options.filename, "ri") if options.filename else sys.stdin
 
 nrows = options.nrows
 try:
@@ -166,16 +185,16 @@ sys.stderr.write("using columns %s from the first set\n" % ", ".join([str(f) for
 sys.stderr.write("and columns %s from later sets\n" % ", ".join([str(f) for f in cols]))
 
 #get the proper columns from the first set
-tableCols = [chunks[0].column_to_list(c - 1) for c in firstCols]
+tableCols = [chunks[0].column_to_list(c - 1, options.missingString) for c in firstCols]
 #print tableCols
 #get the rest of the columns.  this is using a list comprehension for the side effects, not the list return value
 #[ [tableCols.append(thisChunk.column_to_list(c - 1)) for c in cols] for thisChunk in chunks[1:] ]
 
 for thisChunk in chunks[1:]:
-    tableCols.extend([thisChunk.column_to_list(c - 1) for c in cols])
+    tableCols.extend(thisChunk.column_to_list(c - 1, options.missingString) for c in cols)
 #print tableCols
 
-if not transpose:
+if not options.transflag:
     #nested list comp
     print "\n".join(["\t".join([col[r] for col in tableCols]) for r in range(0,nrows)])
     
