@@ -61,8 +61,13 @@ export HAL=zwickl@hal.biosci.arizona.edu
 export WORKLAP=zwickl@128.196.193.227
 export FLOYD=zwickl@128.196.193.200
 export KSMAC=zwickl@129.237.138.142
+export MEDIA=Laura@192.168.1.113
+export GREENTULIP=Laura@192.168.1.136
+export SYNCMEDIA=Laura@192.168.1.113:/cygdrive/g/PicturesSync/
+export OPENTREE=zwickl@opentree-dev.bio.ku.edu
 
 #ssh aliases
+alias opentree='ssh $OPENTREE'
 alias lonestar='ssh $LONESTAR'
 alias dlonestar='ssh $DLONESTAR'
 alias csem='ssh zwickl@dscr-login-03.oit.duke.edu'
@@ -310,6 +315,14 @@ function mkcd(){
 	cd $@
 }
 
+function vm(){
+    if [ $# -eq 2 ];then
+        echo $2 > $HOME/.vmark$1
+    elif [ $# -eq 1 ];then
+        vi `cat $HOME/.vmark$1`
+    fi
+}
+
 function countFastaSeqs(){
     for i in $@
     do
@@ -392,11 +405,15 @@ fi
 }
 
 function startScript(){
-    echo "#!/bin/bash" > $@ 
-    echo >> $@ 
-    echo >> $@ 
-    vi +3 $@
-    chmod +x $@
+    if [ ! -e "$@" ];then
+        echo "#!/bin/bash" > $@ 
+        echo >> $@ 
+        echo >> $@ 
+        vi +3 $@
+        chmod +x $@
+    else
+        vi $@
+    fi
 }
 
 function startGnuplotScript(){

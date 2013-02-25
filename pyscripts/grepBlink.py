@@ -37,7 +37,7 @@ options = parser.parse_args()
 
 clust = parse_blink_output(options.filenames[0])
 
-if options.patternFile is not None:
+if options.patternFile:
     sys.stderr.write('reading patterns from file %s ...\n' % options.patternFile)
     pf = open(options.patternFile, 'rb')
     taxPatterns = [ line.strip() for line in pf ]

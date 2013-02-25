@@ -33,18 +33,14 @@ for f in files:
             ignored += 1
         else:
             el = re.escape(spline[column - 1])
-            #print el
-            
-            #print ' '.join(["echo", el, "|"] + ["grep"] + arguments + [ "'%s'" % patt ])
-            process = subprocess.Popen(' '.join(["echo", el, "|"] + ["grep"] + arguments + [ "'%s'" % patt ]), shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            #stdout_list = process.communicate()[0].split('\n')
+            process = subprocess.Popen(' '.join(["echo", el, "|"] + ["grep"] + arguments + [ "'%s'" % patt ]), 
+                    shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout_list, stderr_list = process.communicate()
 
             if stderr_list:
                 print 'Child process exited with error? %s' % ''.join(stderr_list)
                 exit()
 
-            #if len(stdout_list) > 1:
             if stdout_list:
                 sys.stdout.write(line)
     sys.stderr.write('ignored %d short lines\n' % ignored)

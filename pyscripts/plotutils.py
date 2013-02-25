@@ -105,6 +105,10 @@ def path_to_plot_title(filename, sep='\n'):
         plotTitle += 'CDS-BADCOLAA '
     elif 'cds.allbadalign' in filename:
         plotTitle += 'CDS-BADCOL '
+    elif 'cds.maskedbadalign.onlyaa' in filename:
+        plotTitle += 'CDS-MASKEDAA '
+    elif 'cds.maskedbadalign.nobrach' in filename:
+        plotTitle += 'CDS-MASKEDNOBRACH '
     elif 'cds.maskedbadalign' in filename:
         plotTitle += 'CDS-MASKED '
     elif 'cds.gblocks.maskedbadalign' in filename:
@@ -118,13 +122,18 @@ def path_to_plot_title(filename, sep='\n'):
     elif 'genes.gblocks' in filename:
         plotTitle += 'GENE+GBLOCKS'
     elif 'genes.intronsstripped' in filename:
-        plotTitle += 'GENE-INTRON'
+        #plotTitle += 'GENE-INTRON'
+        plotTitle += 'MASKED-INTRON'
     elif 'genes.nofullintrons' in filename:
         plotTitle += 'GENE-FULLI'
     elif 'genes.allbadalignAA' in filename:
         plotTitle += 'GENE-BADCOLAA '
     elif 'genes.allbadalign' in filename:
         plotTitle += 'GENE-BADCOL '
+    elif 'genes.maskedbadalign.onlyaa' in filename:
+        plotTitle += 'GENE-MASKEDAA '
+    elif 'genes.maskedbadalign.nobrach' in filename:
+        plotTitle += 'GENE-MASKEDNOBRACH '
     elif 'genes.maskedbadalign' in filename:
         plotTitle += 'GENE-MASKED '
     elif 'genes.stripns' in filename:
@@ -300,13 +309,15 @@ class PlottingArgumentParser(ArgumentParser):
         defaultTickKwargs = kwargs.pop('defaultTickKwargs', [])
         defaultXTickKwargs = kwargs.pop('defaultXTickKwargs', [])
         defaultYTickKwargs = kwargs.pop('defaultYTickKwargs', [])
+        defaultXTickLabelLocation = kwargs.pop('defaultXTickLabelLocation', 'm')
+        defaultYTickLabelLocation = kwargs.pop('defaultYTickLabelLocation', 'm')
         defaultDrawAxesAtZero = kwargs.pop('defaultDrawAxesAtZero', None)
         
         #axis labels
         defaultXlabel = kwargs.pop('defaultXlabel', None)
         defaultYlabel = kwargs.pop('defaultYlabel', None)
-        defaultXlabelLocation = kwargs.pop('defaultXlabel', 's')
-        defaultYlabelLocation = kwargs.pop('defaultYlabel', 's')
+        defaultXlabelLocation = kwargs.pop('defaultXlabelLocation', 's')
+        defaultYlabelLocation = kwargs.pop('defaultYlabelLocation', 's')
         defaultXlabelKwargs = kwargs.pop('defaultXlabelKwargs', [])
         defaultYlabelKwargs = kwargs.pop('defaultYlabelKwargs', [])
         
@@ -387,8 +398,8 @@ class PlottingArgumentParser(ArgumentParser):
                                 help='label for x axis (default %s)' % str(defaultXlabel))
 
             if defaultXlabelLocation is not False:
-                axisLabelArgs.add_argument('-xll', '--x-label-location', dest='xLabelLocation', type=str, default=defaultXlabelLocation, choices=['s', 'm'],
-                                    help='where xlabels should appear in multiplot: s (single centered), m (one per plot on margins)')
+                axisLabelArgs.add_argument('-xll', '--x-label-location', dest='xLabelLocation', type=str, default=defaultXlabelLocation, choices=['s', 'm', 'n'],
+                                    help='where xlabels should appear in multiplot: s (single centered), m (one per plot on margins), n (none)')
         
             if defaultXlabelKwargs is not False:
                 axisLabelArgs.add_argument('--x-label-kwargs', dest='additionalXlabelKwargs', nargs='*', type=str, default=defaultXlabelKwargs,
@@ -399,8 +410,8 @@ class PlottingArgumentParser(ArgumentParser):
                                 help='label for y axis (default %s)' % str(defaultYlabel))
 
             if defaultYlabelLocation is not False:
-                axisLabelArgs.add_argument('-yll', '--y-label-location', dest='yLabelLocation', type=str, default=defaultYlabelLocation, choices=['s', 'm'],
-                                    help='where ylabels should appear in multiplot: s (single centered), m (one per plot on margins)')
+                axisLabelArgs.add_argument('-yll', '--y-label-location', dest='yLabelLocation', type=str, default=defaultYlabelLocation, choices=['s', 'm', 'n'],
+                                    help='where ylabels should appear in multiplot: s (single centered), m (one per plot on margins), n (none)')
         
             if defaultYlabelKwargs is not False:
                 axisLabelArgs.add_argument('--y-label-kwargs', dest='additionalYlabelKwargs', nargs='*', type=str, default=defaultYlabelKwargs,
@@ -414,6 +425,15 @@ class PlottingArgumentParser(ArgumentParser):
         ##########
         #axis range and tics
         axisArgs = self.add_argument_group('ARGUMENTS FOR AXIS RANGES AND TICKS')
+        
+        if defaultYrange is not False:
+            axisArgs.add_argument('-yr', '--y-range', dest='yRange', nargs='*', type=float, default=defaultYrange,
+                                help='min and max values on y axis pass one min max pair to have it shared, or a series of min max min max for each subplot (default is auto determined by pyplot from the data)')
+
+        if defaultXrange is not False:
+            axisArgs.add_argument('-xr', '--x-range', dest='xRange', nargs='*', type=float, default=defaultXrange,
+                                help='min and max values on x axis pass one min max pair to have it shared, or a series of min max min max for each subplot (default is auto determined by pyplot from the data)')
+        '''
         if defaultYrange is not False:
             axisArgs.add_argument('-yr', '--y-range', dest='yRange', nargs=2, type=float, default=defaultYrange,
                                 help='min and max values on y axis (default is auto determined by pyplot from the data)')
@@ -421,6 +441,7 @@ class PlottingArgumentParser(ArgumentParser):
         if defaultXrange is not False:
             axisArgs.add_argument('-xr', '--x-range', dest='xRange', nargs=2, type=float, default=defaultXrange,
                                 help='min and max values on x axis (default is auto determined by pyplot from the data)')
+        '''
 
         if defaultAxisTickFontsize is not False:
             axisArgs.add_argument('-ats', '--axis-tick-fontsize', dest='axisTickFontsize', type=int, default=defaultAxisTickFontsize,
@@ -445,6 +466,14 @@ class PlottingArgumentParser(ArgumentParser):
         if defaultDrawAxesAtZero is not False:
             axisArgs.add_argument('--draw-axes-at-zero', dest='drawAxesAtZero', default=defaultDrawAxesAtZero, action='store_true', 
                                 help='whether to draw horizontal and vertical lines through 0, 0')
+       
+        if defaultXTickLabelLocation is not False:
+            axisArgs.add_argument('--x-tick-label-location', dest='xTickLabelLocation', default=defaultXTickLabelLocation, choices=['m', 'e', 'n'],
+                    help='whether to draw X tick labels only on (m)arginal plots, (n)one, or on (e)very plot. Default: %s' % defaultXTickLabelLocation)
+       
+        if defaultYTickLabelLocation is not False:
+            axisArgs.add_argument('--y-tick-label-location', dest='yTickLabelLocation', default=defaultYTickLabelLocation, choices=['m', 'e', 'n'],
+                    help='whether to draw Y tick labels only on (m)arginal plots, (n)one, or on (e)very plot. Default: %s' % defaultYTickLabelLocation)
        
         #########
         #titles
