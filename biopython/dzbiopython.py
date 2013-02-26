@@ -3,10 +3,14 @@ import sys
 import re
 from os.path import expandvars
 import copy
+import itertools
 from Bio.SeqFeature import FeatureLocation
 from Bio import SeqIO
+import Bio
+import BCBio
 from BCBio import GFF
 from dzutils import read_from_file_or_pickle
+import pp
 
 #my extensions and functions for working with biopython objects
 
@@ -51,16 +55,16 @@ class TaxonGenomicInformation:
             toplevel_filename = expandvars(toplevel_filename)
             if not usePickle:
                 #it can be handy to have a dict of the toplevel seq(s) recs which may just be a single chrom
-                self.toplevel_record_dict = SeqIO.to_dict(SeqIO.parse(open(toplevel_filename), "fasta"))
+                self.toplevel_record_dict = Bio.SeqIO.to_dict(SeqIO.parse(open(toplevel_filename), "fasta"))
                 #pull the toplevel reqs back out as a list of seq recs
                 self.toplevel_record_list = [it[1] for it in self.toplevel_record_dict.iteritems()]
             else:
                 #this is slightly faster reading the pickle than re-parsing
-                self.toplevel_record_list = read_from_file_or_pickle(toplevel_filename, toplevel_filename + '.list.pickle', SeqIO.parse, "fasta")
+                self.toplevel_record_list = read_from_file_or_pickle(toplevel_filename, toplevel_filename + '.list.pickle', Bio.SeqIO.parse, "fasta")
                 if not isinstance(self.toplevel_record_list, list):
                     #it may be an iterator or generator rather than list
                     self.toplevel_record_list = [ it for it in self.toplevel_record_list ]
-                self.toplevel_record_dict = SeqIO.to_dict(self.toplevel_record_list)
+                self.toplevel_record_dict = Bio.SeqIO.to_dict(self.toplevel_record_list)
 
             '''
             print '1#####################'
@@ -84,10 +88,10 @@ class TaxonGenomicInformation:
         if seq_filename is not None:
             seq_filename = expandvars(seq_filename)
             if not usePickle:
-                self.seq_dict = SeqIO.to_dict(SeqIO.parse(open(seq_filename), "fasta"))
+                self.seq_dict = Bio.SeqIO.to_dict(SeqIO.parse(open(seq_filename), "fasta"))
             else:
                 #haven't actually tested pickle here
-                self.seq_dict = SeqIO.to_dict(read_from_file_or_pickle(seq_filename, SeqIO.parse, "fasta"))
+                self.seq_dict = Bio.SeqIO.to_dict(read_from_file_or_pickle(seq_filename, SeqIO.parse, "fasta"))
         else:
             self.seq_dict = dict()
         self.seq_dict.update(seq_dict)
@@ -133,7 +137,7 @@ class TaxonGenomicInformation:
                 print self.gff_seqrecord_list[1]
             print '/3#####################'
             '''
-            self.seq_dict = SeqIO.to_dict([feat for feat in GFF.parse(gff_filename, base_dict=self.seq_dict)])
+            self.seq_dict = Bio.SeqIO.to_dict([feat for feat in GFF.parse(gff_filename, base_dict=self.seq_dict)])
 
         else:
             self.gff_seqrecord_list = []
@@ -175,43 +179,51 @@ class TaxonGenomicInformation:
             else:
                 raise ValueError('toplevel for feature named %s not found!' % feat)
         else:
-            if 'Alias' in feat.qualifiers:
-                alias = feat.qualifiers['Alias'][0]
-                if alias in self.feature_to_toplevel_record_dict:
-                    return self.feature_to_toplevel_record_dict[alias]
-                else:
-                    raise ValueError('toplevel for feature named %s not found!' % alias)
+            name = feat.qualifiers['Alias'][0] if 'Alias' in feat.qualifiers else feat.id
+            if name in self.feature_to_toplevel_record_dict:
+                return self.feature_to_toplevel_record_dict[name]
             else:
-                fid = feat.id
-                if fid in self.feature_to_toplevel_record_dict:
-                    return self.feature_to_toplevel_record_dict[fid]
-                else:
-                    raise ValueError('toplevel for feature named %s not found!' % fid)
+                raise ValueError('toplevel for feature named %s not found!' % name)
 
 
-def get_taxon_genomic_information_dict(source, report=True, readToplevels=True, usePickle=False):
+def instantiate_taxon_genomic_information(taxon, gff_filename, usePickle, toplevel_filename=None ):
+    return TaxonGenomicInformation(taxon, gff_filename=gff_filename, toplevel_filename=toplevel_filename, usePickle=False)
+
+def get_taxon_genomic_information_dict(source, report=True, readToplevels=True, usePickle=False, useSMP=False):
     #file with lines containing short taxon identifiers, sequence files and gff files for 
     #each taxon
     #like this (on one line)
     #ObartAA	blah	/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza2/gramene34_split/gffs/bartAA.fullWithFixes.gff \
         #/Users/zwickl/Desktop/GarliDEV/experiments/productionOryza2/gramene34_split/toplevels/Oryza_barthii-toplevel-20110818.fa
     if isinstance(source, list):
-        if len(source[0]) == 1:
-            masterFilenames = [ s.strip.split() for s in source ]
-        else:
-            masterFilenames = source
+        masterFilenames = [ s.strip.split() for s in source ] if len(source[0]) == 1 else source
     else:
         masterFilenames = [ line.strip().split() for line in open(source, 'rb') if len(line.strip()) > 0 ]
 
     allTaxonInfo = {}
-    for taxon in masterFilenames:
-        #ended up not using sequence files, just getting everything from toplevels
+    if useSMP:
+        job_server = pp.Server(2)
+        sys.stderr.write("Starting parallel python with %d workers\n" % job_server.get_ncpus())
         if not readToplevels:
-            allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2], usePickle=usePickle)
+            taxon = masterFilenames[0]
+            funcs = [ job_server.submit(instantiate_taxon_genomic_information, (taxon[0], taxon[2], usePickle), (TaxonGenomicInformation, expandvars), ("dzbiopython", "BCBio.GFF", "Bio.SeqIO")) for taxon in masterFilenames[:] ]
         else:
-            allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2], toplevel_filename=taxon[3], usePickle=usePickle)
-        if report:
-            allTaxonInfo[ taxon[0] ].output()
+            funcs = [ job_server.submit(instantiate_taxon_genomic_information(taxon[0], gff_filename=taxon[2], toplevel_filename=taxon[3], usePickle=usePickle)) for taxon in masterFilenames ]
+        exit('CHECK parallel usage in get_taxon_genomic_information_dict')
+        #can this guarantee that the funcs from the list comp is in the same order as masterFilenames?
+        job_server.wait()
+        for t, i in itertools.izip([ t[0] for t in masterFilenames ], funcs):
+            allTaxonInfo[t] = i()
+        sys.stderr.write("%d done\n" % len(allTaxonInfo))
+    else:
+        for taxon in masterFilenames:
+            #ended up not using sequence files, just getting everything from toplevels
+            if not readToplevels:
+                allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2], usePickle=usePickle)
+            else:
+                allTaxonInfo[ taxon[0] ] = TaxonGenomicInformation(taxon[0], gff_filename=taxon[2], toplevel_filename=taxon[3], usePickle=usePickle)
+            if report:
+                allTaxonInfo[ taxon[0] ].output()
     return allTaxonInfo
 
 
@@ -236,12 +248,31 @@ def parse_feature_name(feature, errorIsFatal=True):
 def int_feature_location(feat):
     '''Deals with the annoying fact that hoops must be jumped through to make FeatureLocations into numbers
     NOTE: returns location coords in standard biopython format, with start counting from zero, and
-    end being one PAST the last base
-    edit: D'oh!  Casting isn't necessary'''
-    #start = int(str(feat.location.start))
-    #end = int(str(feat.location.end))
-    #return (start, end)
+    end being one PAST the last base'''
     return (feat.location.start.position, feat.location.end.position)
+
+
+def flatten_subfeatures(feature, reverse=False):
+    '''generator to essentially get flattened series of features-subfeatures-subsubfeatures, etc.
+    in pre-order. Given
+    F   SF  SSF
+    1   A   a
+            b
+        B   c
+    2   A   a
+    etc. would give
+    1AabBc2Aa
+    '''
+    #print feature.id, feature.type
+    yield feature
+    if reverse:
+        for subfeat in feature.sub_features[::-1]:
+            for subsub in flatten_subfeatures(subfeat, reverse=True):
+                yield subsub
+    else:
+        for subfeat in feature.sub_features:
+            for subsub in flatten_subfeatures(subfeat):
+                yield subsub
 
 
 def find_cds_start_coordinate(feature):
@@ -258,35 +289,18 @@ def find_cds_start_coordinate(feature):
     and [end:start] will work properly for minus'''
 
     strandIndex = 0 if feature.strand == 1 else 1
-    if feature.type.lower() == 'cds':
-        return int_feature_location(feature)[strandIndex]
-    for sub in feature.sub_features:
-        if sub.type.lower() == 'cds':
-            return int_feature_location(sub)[strandIndex]
-        for subsub in sub.sub_features:
-            if subsub.type.lower() == 'cds':
-                return int_feature_location(subsub)[strandIndex]
-            for subsubsub in subsub.sub_features:
-                if subsubsub.type.lower() == 'cds':
-                    return int_feature_location(subsubsub)[strandIndex]
+    for feat in flatten_subfeatures(feature):
+        if feat.type.lower() == 'cds':
+            return int_feature_location(feat)[strandIndex]
 
 
 def find_cds_end_coordinate(feature):
     '''see find_cds_start_coordinate notes'''
-    #print 'finding cds end'
-    #print feature.type, feature.location
     strandIndex = 1 if feature.strand == 1 else 0
-    if feature.type.lower() == 'cds':
-        return int_feature_location(feature)[strandIndex]
-    for sub in reversed(feature.sub_features):
-        if sub.type.lower() == 'cds':
-            return int_feature_location(sub)[strandIndex]
-        for subsub in reversed(sub.sub_features):
-            if subsub.type.lower() == 'cds':
-                return int_feature_location(subsub)[strandIndex]
-            for subsubsub in reversed(subsub.sub_features):
-                if subsubsub.type.lower() == 'cds':
-                    return int_feature_location(subsubsub)[strandIndex]
+    for feat in flatten_subfeatures(feature, reverse=True):
+        if feat.type.lower() == 'cds':
+            return int_feature_location(feature)[strandIndex]
+
 
 def extract_seqrecord_between_outer_cds(rec, ifeat):
     '''This will grab everything between the first and
@@ -409,6 +423,12 @@ def get_first_cds(feature):
     first CDS listed is the first in the gene, I think.  It needs to deal with the
     fact that the CDS features may be a variable number of layers down from the feature
     passed in.'''
+
+    strandIndex = 0 if feature.strand == 1 else 1
+    for feat in flatten_subfeatures(feature):
+        if feat.type.lower() == 'cds':
+            return feat
+    '''
     if feature.type.lower() == 'cds':
         return feature
     for sub in feature.sub_features:
@@ -420,12 +440,14 @@ def get_first_cds(feature):
             for subsubsub in subsub.sub_features:
                 if subsubsub.type.lower() == 'cds':
                     return subsubsub
+    '''
     print feature
     raise ValueError('no cds found!')
 
 
 def sort_feature_list_by_id(recList):
     recList.sort(key=lambda rec:rec.features[0].qualifiers['ID'])
+
 
 def sort_feature_list(recList):
     '''allow the passed object to be either a list of SeqRecords, which will be sorted based on their
@@ -543,6 +565,11 @@ def get_features_by_name(feature, name):
     if feature.type.lower() == name:
         return [feature]
     featsToReturn = []
+    for feat in flatten_subfeatures(feature):
+        if feat.type.lower() == name :
+            featsToReturn.append(feat)
+
+    '''
     for sub in feature.sub_features:
         if sub.type.lower() == name:
             featsToReturn.append(sub)
@@ -552,6 +579,7 @@ def get_features_by_name(feature, name):
             for subsubsub in subsub.sub_features:
                 if subsubsub.type.lower() == name:
                     featsToReturn.append(subsubsub)
+    '''
     return featsToReturn
 
 

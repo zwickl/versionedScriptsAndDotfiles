@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser(description='sum or do other summaries of a column of numbers')
 
 parser.add_argument("-s", "--sum", action="store_true", dest="outputSum", default=False, help="Output Sum")
+parser.add_argument("--ignore-non-numeric", action="store_true", dest="ignoreNonNumeric", default=False, help="Ignore any column elements that can't be converted to floats")
 parser.add_argument("-m", "--mean", action="store_true", dest="outputAve", default=False, help="Output Mean")
 parser.add_argument("-r", "--range", action="store_true", dest="outputMinMax", default=False, help="Output Min and Max")
 parser.add_argument("-a", "--all",  action="store_true", dest="outputAll", default=False, help="Output All Statistics")
@@ -51,7 +52,27 @@ if options.columnNum is None:
         options.columnNum = 1
 
 colIndex = options.columnNum - 1
-col = [ float(line[colIndex]) for line in lines ]
+col = []
+for line in lines:
+    try:
+        val = float(line[colIndex])
+    except ValueError:
+        if options.ignoreNonNumeric:
+            sys.stderr.write('ignoring element \'%s\'\n' % line[colIndex])
+            val = None
+        else:
+            raise
+    except IndexError:
+        exit('could not find column %d of line\n%s' % (options.colNum, line))
+    #need to allow val to be zero here
+    if val not in [ None, '' ]:
+        col.append(val)
+
+if not col:
+    sys.stderr.write('No valid values read!\n')
+    exit()
+
+#col = [ float(line[colIndex]) for line in lines ]
 
 cSum = sum(col)
 cNum = len(col)

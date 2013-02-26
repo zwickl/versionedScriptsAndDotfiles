@@ -11,6 +11,7 @@ if __name__ == "__main__":
     import doctest
     doctest.testmod()
 
+
 #this is for used for type checking as a type= argument in argparse.add_argument
 def proportion_type(string):
     #it would be nice to be able to pass as specific range, but the func can only take 1 arg
@@ -22,155 +23,6 @@ def proportion_type(string):
     return value
 
 
-def path_to_plot_title(filename, sep='\n'):
-    '''
-    ../mafft.cds/
-    ../mafft.cds.allBadAlignAA/
-    ../mafft.cds.gblocks/
-    ../mafft.genes/
-    ../mafft.genes.gblocks/
-    ../mafft.genes.intronsStripped/
-    ../mafft.genes.noFullIntrons/
-    ../mafft.genes.stripNs/
-    
-    all
-    11T
-
-    boot
-    ml
-    '''
-
-    filename = filename.lower()
-
-    print filename
-
-    plotTitle = ''
-    if 'mafft' in filename:
-        plotTitle += 'MAFFT'
-    elif 'prank' in filename:
-        plotTitle += 'PRANK'
-    elif 'muscle' in filename:
-        plotTitle += 'MUSCLE'
-
-    plotTitle += sep
-
-    if 'cds.allbadalignaa' in filename:
-        plotTitle += 'CDS-BADCOLAA '
-    elif 'cds.allbadalign' in filename:
-        plotTitle += 'CDS-BADCOL '
-    elif 'cds.maskedbadalign' in filename:
-        plotTitle += 'CDS-MASKED '
-    elif 'cds.gblocks.maskedbadalign' in filename:
-        plotTitle += 'CDS+GBLOCKS%s-MASKED' % sep
-    elif 'cds.gblocks' in filename:
-        plotTitle += 'CDS+GBLOCKS'
-    elif 'cds' in filename:
-        plotTitle += 'CDS'
-    elif 'genes.gblocks.maskedbadalign' in filename:
-        plotTitle += 'GENE+GBLOCKS%s-MASKED' % sep
-    elif 'genes.gblocks' in filename:
-        plotTitle += 'GENE+GBLOCKS'
-    elif 'genes.intronsStripped' in filename:
-        plotTitle += 'GENE-INTRON'
-    elif 'genes.nofullintrons' in filename:
-        plotTitle += 'GENE-FULLI'
-    elif 'genes.allbadalignAA' in filename:
-        plotTitle += 'GENE-BADCOLAA '
-    elif 'genes.allbadalign' in filename:
-        plotTitle += 'GENE-BADCOL '
-    elif 'genes.maskedbadalign' in filename:
-        plotTitle += 'GENE-MASKED '
-    elif 'genes.stripNs' in filename:
-        plotTitle += 'GENE-STRIPNs '
-    elif 'genes' in filename:
-        plotTitle += 'GENE'
-    else:
-        plotTitle += 'UNKNOWN'
-
-    return plotTitle
-
-def path_to_plot_title_random_supermatrix(filename, sep='\n'):
-    plotTitle = path_to_plot_title(filename, sep)
-
-    if 'correctaanoindica' in filename:
-        plotTitle += '%scorrect AA-indica' % sep
-    elif 'correctallnoindica' in filename:
-        plotTitle += '%scorrect All-indica' % sep
-    elif 'correctaa' in filename:
-        plotTitle += '%scorrect AA' % sep
-    elif 'correctall' in filename:
-        plotTitle += '%scorrect All' % sep
-    elif 'correctBBCC' in filename:
-        plotTitle += '%scorrect AA-BB-CC' % sep
-
-    return plotTitle
-
-def prepare_plot_kwargs(kwargDict, optionList, fontscaler=1.0):
-    '''
-    parse and prepare kwargs in various formats, add new options,
-    This is mainly for use with the PlottingArgumentParser defined below
-    and would be called like this:
-        
-        superTitleKwargs = prepare_kwargs(options.additionalSuperTitleKwargs,
-                [('fontsize', options.superTitleFontsize)],
-                fontscaler=scaler)
-        plt.suptitle(options.superTitle, **superTitleKwargs)
-
-    where 
-    -the first argument is any extra arbitrary kwargs that might have been
-    massed on the command line
-    -then a list of things to set specifically.  Defaults for those should 
-    have been set when the parser was instantiated, but can be overridden
-    
-    kwargDict - can just be a list of strings, i.e. ['blah=2', 'poo=4']
-        or a list of tuples [('blah', 2), ('poo', 4)]
-        or an actual dictionary {'blah':2, 'poo':4}
-    optionList - list of (key, value) tuples, added to returned dict if
-        not already in it
-    fontscaler - value to rescale fonts by, if desired
-    returns outKwargs - dict of kwargs to pass to other functions
-    '''
-
-    outKwargs = {}
-    if kwargDict:
-        error = False
-        if isinstance(kwargDict, dict):
-            outKwargs = kwargDict
-        elif isinstance(kwargDict, list) or isinstance(kwargDict, set) or isinstance(kwargDict, tuple):
-            if isinstance(kwargDict[0], str):
-                outKwargs = dict([ kw.split('=') for kw in kwargDict ])
-            elif len(kwargDict[0]) == 2:
-                outKwargs = dict(kwargDict)
-            else:
-                error = True
-        else:
-            error = True
-        if error:
-            exit('kwargDict must be a dictionary, or a list, set or tuple containing strings, or a list, set or tuple containing strings containing 2-tuples')
-   
-    #this will extract an actual dictionary out of the text list of kwargs specified on the command line
-    #outKwargs = dict([ kw.split('=') for kw in kwargDict ])
-    #this just ensures that if a kwarg is specified at the command line for something, it trumps any actual argparse option for it
-    for arg, setting in optionList:
-        outKwargs.setdefault(arg, setting)
-
-    for key, val in outKwargs.iteritems():
-        #try to convert values to numbers where possible
-        try:
-            outKwargs[key] = float(val)
-        except ValueError:
-            pass
-        if val == 'False':
-            outKwargs[key] = False
-        elif val == 'True':
-            outKwargs[key] = True
-        
-        if 'fontsize' in key or 'labelsize' in key:
-            outKwargs[key] = outKwargs[key] * fontscaler
-
-    return outKwargs
-
-
 class BarebonesArgumentParser(ArgumentParser):
     def __init__(self, **kwargs):
         #these are the defaults which can be overwridden with keyword arguments
@@ -178,7 +30,7 @@ class BarebonesArgumentParser(ArgumentParser):
         defaultOutput = kwargs.pop('defaultOutput', sys.stdout)
         
         #base constructor
-        super(BarebonesArgumentParser, self).__init__(kwargs)
+        super(BarebonesArgumentParser, self).__init__(self, **kwargs)
         
         if defaultInput is not False:
             self.add_argument('-i', '--input', dest='inFiles', nargs='*', type=str, default=None, 
@@ -187,213 +39,6 @@ class BarebonesArgumentParser(ArgumentParser):
         if defaultOutput is not False:
             self.add_argument('-o', '--output', dest='outFile', type=str, default=defaultOutput, 
                                 help='file to write output to (default stdout)')
-
-
-class PlottingArgumentParser(ArgumentParser):
-    '''A generic argparse parser that comes prepackaged with a bunch of common arguments
-    for matplotlib/pyplot preloaded.
-    Default values for the created parser can be passed in as keyword arguments.  Pass
-    False to remove a built in option.'''
-
-    def __init__(self, **kwargs):
-        #these are the defaults which can be overwridden with keyword arguments
-        
-        defaultSubplotKwargs = kwargs.pop('defaultSuplotKwargs', [])
-        
-        #plot defaults
-        defaultGreys = kwargs.pop('defaultGreys', ['0.0'])
-        defaultColors = kwargs.pop('defaultColors', None)
-        defaultMarkerSizes = kwargs.pop('defaultMarkerSizes', [12.0])
-        defaultMarkers = kwargs.pop('defaultMarkers', 'osx*^h')
-        defaultLineWidth = kwargs.pop('defaultLineWidth', [3.0])
-        defaultPlotKwargs = kwargs.pop('defaultPlotKwargs', [])
-        
-        #axis defaults
-        defaultYrange = kwargs.pop('defaultYrange', None)
-        defaultXrange = kwargs.pop('defaultXrange', None)
-        defaultAxisTickFontsize = kwargs.pop('defaultAxisTicFontsize', 16.0)
-        defaultAxisLabelFontsize = kwargs.pop('defaultAxisLabelFontsize', 32.0)
-        defaultTickKwargs = kwargs.pop('defaultTickKwargs', [])
-        
-        #axis labels
-        defaultXlabel = kwargs.pop('defaultXlabel', None)
-        defaultYlabel = kwargs.pop('defaultYlabel', None)
-        defaultXlabelLocation = kwargs.pop('defaultXlabel', 's')
-        defaultYlabelLocation = kwargs.pop('defaultYlabel', 's')
-        defaultXlabelKwargs = kwargs.pop('defaultXlabelKwargs', [])
-        defaultYlabelKwargs = kwargs.pop('defaultYlabelKwargs', [])
-        
-        #title defaults
-        defaultTitle = kwargs.pop('defaultTitle', None)
-        defaultTitleFontsize = kwargs.pop('defaultTitleFontsize', 18.0)
-        defaultSuperTitle = kwargs.pop('defaultSuperTitle', None)
-        defaultSuperTitleFontsize = kwargs.pop('defaultSuperTitleFontsize', 32.0)
-        defaultTitleHalign = kwargs.pop('defaultTitleHAlign', 'c')
-        defaultTitleValign = kwargs.pop('defaultTitleVAlign', 't')
-        defaultTitleKwargs = kwargs.pop('defaultTitleKwargs', [])
-        defaultSuperTitleKwargs = kwargs.pop('defaultSuperTitleKwargs', [])
-        
-        defaultNcol = kwargs.pop('defaultNcol', None)
-        defaultInput = kwargs.pop('defaultInput', True)
-        defaultOutput = kwargs.pop('defaultOutput', sys.stdout)
-        #defaultInput = True
-        #defaultOutput = True
-
-        defaultMissingOk = kwargs.pop('defaultMissingOk', None)
-        defaultDataColumnFunc = kwargs.pop('defaultDataColumnFunc', None)
-
-        defaultHatches = kwargs.pop('defaultHatches', 'Xo+ ')
-        
-        #base constructor
-        super(PlottingArgumentParser, self).__init__(kwargs)
-       
-        if defaultSubplotKwargs is not False:
-            self.add_argument('--subplot-kwargs', dest='additionalSubplotKwargs', nargs='*', type=str, default=defaultSubplotKwargs,
-                                help='kwargs to be passed on to matplotlib Figure.subplots_adjust function (default %s)' % ' '.join(defaultSubplotKwargs))
-        
-        ################
-        #argument for plotting of lines/points
-        colorGroup = self.add_mutually_exclusive_group()
-        if defaultGreys is not False:
-            colorGroup.add_argument('-gv', '--grey-values', dest='greyValues', nargs='*', type=str, default=defaultGreys,
-                                help='floating point values in range 0.0 - 1.0 (black to white) indicating grey value cycle of lines (default %s)' % str(defaultGreys))
-
-        if defaultColors is not False:
-            colorGroup.add_argument('-cv', '--color-values', dest='colorValues', nargs='*', type=str, default=defaultColors,
-                                help='valid matplotlib color specs indicating color cycle of lines (default %s)' % str(defaultColors))
-        
-        if defaultMarkers is not False:
-            self.add_argument('-m', '--markers', dest='markers', type=str, default=defaultMarkers,
-                                help='single string with marker designations for 1 2 3 (default %s)' % str(defaultMarkers))
-
-        if defaultMarkerSizes is not False:
-            self.add_argument('-ms', '--marker-sizes', dest='markerSizes', nargs='*', type=int, default=defaultMarkerSizes,
-                                help='floating point values indicating size of markers in points for series 1 2 3, or a single value to apply to all (default %s)' % str(defaultMarkerSizes))
-
-        if defaultLineWidth is not False:
-            self.add_argument('-lw', '--line-width', dest='lineWidth', nargs='*', type=float, default=defaultLineWidth,
-                                help='point size of lines to cycle through (default %s)' % str(defaultLineWidth))
-
-        if defaultPlotKwargs is not False:
-            self.add_argument('--plot-kwargs', dest='additionalPlotKwargs', nargs='*', type=str, default=defaultPlotKwargs,
-                                help='kwargs to be passed on to matplotlib axes.plot function (default %s)' % ' '.join(defaultPlotKwargs))
-
-        ############
-        #axis labels
-        if defaultXlabel is not False:
-            self.add_argument('-xl', '--x-label', dest='xLabel', type=str, default=defaultXlabel,
-                                help='label for x axis (default %s)' % str(defaultXlabel))
-
-            if defaultXlabelLocation is not False:
-                self.add_argument('-xll', '--x-label-location', dest='xLabelLocation', type=str, default=defaultXlabelLocation, choices=['s', 'm'],
-                                    help='where xlabels should appear in multiplot: s (single centered), m (one per plot on margins)')
-        
-            if defaultXlabelKwargs is not False:
-                self.add_argument('--x-label-kwargs', dest='additionalXlabelKwargs', nargs='*', type=str, default=defaultXlabelKwargs,
-                                help='kwargs to be passed on to pyplot.xlabel function (default %s)' % ' '.join(defaultXlabelKwargs))
-        
-        if defaultYlabel is not False:
-            self.add_argument('-yl', '--y-label', dest='yLabel', type=str, default=defaultYlabel,
-                                help='label for y axis (default %s)' % str(defaultYlabel))
-
-            if defaultYlabelLocation is not False:
-                self.add_argument('-yll', '--y-label-location', dest='yLabelLocation', type=str, default=defaultYlabelLocation, choices=['s', 'm'],
-                                    help='where ylabels should appear in multiplot: s (single centered), m (one per plot on margins)')
-        
-            if defaultYlabelKwargs is not False:
-                self.add_argument('--y-label-kwargs', dest='additionalYlabelKwargs', nargs='*', type=str, default=defaultYlabelKwargs,
-                                help='kwargs to be passed on to pyplot.ylabel function (default %s)' % ' '.join(defaultYlabelKwargs))
-        
-        if defaultXlabel is not False or defaultYlabel is not False:
-            if defaultAxisLabelFontsize is not False:
-                self.add_argument('-als', '--axis-label-fontsize', dest='axisLabelFontsize', type=int, default=defaultAxisLabelFontsize,
-                                    help='font size of axis labels (default %d)' % defaultAxisLabelFontsize)
-
-            
-        ##########
-        #axis range and tics
-        if defaultYrange is not False:
-            self.add_argument('-yr', '--y-range', dest='yRange', nargs=2, type=float, default=defaultYrange,
-                                help='min and max values on y axis (default is auto determined by pyplot from the data)')
-
-        if defaultXrange is not False:
-            self.add_argument('-xr', '--x-range', dest='xRange', nargs=2, type=float, default=defaultXrange,
-                                help='min and max values on x axis (default is auto determined by pyplot from the data)')
-
-        if defaultAxisTickFontsize is not False:
-            self.add_argument('-ats', '--axis-tick-fontsize', dest='axisTickFontsize', type=int, default=defaultAxisTickFontsize,
-                                help='font size of cumulative graph tic labels (default %d)' % defaultAxisTickFontsize)
-
-        if defaultTickKwargs is not False:
-            self.add_argument('--tick-kwargs', dest='additionalTickKwargs', nargs='*', type=str, default=defaultTickKwargs,
-                                help='kwargs to be passed on to matplotlib axes.tick_params function (default %s)' % ' '.join(defaultTickKwargs))
-        
-        #########
-        #titles
-        if defaultTitle is not False:
-            if isinstance(defaultTitle, str):
-                self.add_argument('-t', '--title', dest='title', type=str, default=defaultTitle,
-                                    help='plot title')
-            else:
-                self.add_argument('-t', '--title-func', dest='titleFunc', type=str, default=defaultTitle,
-                                    help='function used to map arbitrary strings to plot names')
-           
-            if defaultTitleHalign is not False:
-                self.add_argument('-tha', '--title-horiz-align', dest='titleHalign', type=str, default=defaultTitleHalign, choices='lcr',
-                                    help='horizontal alignment of title (default c)')
-
-            if defaultTitleValign is not False:
-                self.add_argument('-tva', '--title-vert-align', dest='titleValign', type=str, default=defaultTitleValign, choices='tcb',
-                                    help='vertical alignment of title (default t)')
-        
-            if defaultTitleKwargs is not False:
-                self.add_argument('--title-kwargs', dest='additionalTitleKwargs', nargs='*', type=str, default=defaultTitleKwargs,
-                                    help='kwargs to be passed on to matplotlib axes.setTitle function (default %s)' % ' '.join(defaultTitleKwargs))
-
-            if defaultTitleFontsize is not False:
-                self.add_argument('-ts', '--title-fontsize', dest='titleFontsize', type=int, default=defaultTitleFontsize,
-                                    help='font size of title (default %d)' % defaultTitleFontsize)
-
-        if defaultSuperTitle is not False:
-            self.add_argument('-st', '--super-title', dest='superTitle', type=str, default=defaultSuperTitle,
-                                help='plot super title on multiplot')
-
-            if defaultSuperTitleFontsize is not False:
-                self.add_argument('-stf', '--super-title-fontsize', dest='superTitleFontsize', type=int, default=defaultSuperTitleFontsize,
-                                    help='font size of super title of multiplot (default %d)' % defaultSuperTitleFontsize)
-
-            if defaultSuperTitleKwargs is not False:
-                self.add_argument('--super-title-kwargs', dest='additionalSuperTitleKwargs', nargs='*', type=str, default=defaultSuperTitleKwargs,
-                                    help='kwargs to be passed on to pyplot.suptitle function (default %s)' % ' '.join(defaultSuperTitleKwargs))
-       
-        ##############
-        if defaultDataColumnFunc is not False:
-            self.add_argument('--data-column-func', dest='dataColumnFunc', type=str, default=defaultDataColumnFunc,
-                                help='function to convert data rows to proper [x1, x2, x3, ...], [y1, y2, y3, ...] lists for output (default \'%s\')' % defaultDataColumnFunc )
-
-        if defaultInput is not False:
-            self.add_argument('-i', '--input', dest='inFiles', nargs='*', type=str, default=None, 
-                                help='intput files')
-
-        if defaultOutput is not False:
-            self.add_argument('-o', '--output', dest='outFile', type=str, default=None, 
-                                help='file to write output to (default stdout)')
-
-        if defaultMissingOk is not False:
-            self.add_argument('--missing-ok', dest='missingOk', action='store_true', default=False, 
-                                help='allow some input files to be missing')
-
-        #won't treat this as a multiplot unless defaultNcol is passed as keyword
-        if defaultNcol is not False:        
-            self.add_argument('-c', '--columns', dest='ncols', type=int, default=defaultNcol,
-                                help='number of figures to place per row in a multiplot')
-                                #help='number of figures to place per row in a multiplot (default is to place all series in one plot)')
-
-        #this is specialized and not generally useful (but used for pies)
-        if defaultHatches is not False:
-            self.add_argument('-p', '--patterns', dest='hatchString', type=str, default=defaultHatches, 
-                                help='string with four characters representing patterns (hatching) for the four wedges (e.g., default is %s) out of \"/ \\ | - + x X o O . *\" and blank' % defaultHatches)
-
 
 
 def read_from_file_or_pickle(filename, pickleName, readFunc, *readFuncArgs, **readFuncKwargs):
@@ -539,7 +184,9 @@ def extract_core_filename(name, no_nchar=False):
         exit("problem shortening name 1: %s" % name)
    
     extracted2 = None
-    patts = [ '(.*).nex$', '(.*).best.tre$', '(.*).boot.tre$', '(.*).tre$', '(.*).boot$' ]
+    #don't think that these really need to be at the end of lines
+    #patts = [ '(.*).nex$', '(.*).best.tre$', '(.*).boot.tre$', '(.*).tre$', '(.*).boot$' ]
+    patts = [ '(.*).nex', '(.*).best.tre', '(.*).boot.tre', '(.*).tre', '(.*).boot' ]
     for p in patts:
         search = re.search(p, extracted)
         if search:
@@ -677,7 +324,6 @@ class BlinkCluster(object):
     
         self.member_set = set(tuple(sorted(self.cluster_members))) if self.cluster_members else set()
 
-        self.noDupes = True
         taxonDict = {}
         for memb in self.cluster_members:
             if memb[0:7] in taxonDict:
@@ -685,6 +331,8 @@ class BlinkCluster(object):
                 break
             else:
                 taxonDict[memb[0:7]] = True
+        else:
+            self.noDupes = True
 
         if dagLines is not None and len(dagLines):
             #daglineDoubleDict = get_dagline_double_dict(dagLines)
@@ -1013,17 +661,17 @@ def get_dagline_list_for_cluster(genes, daglineDoubleDict):
     #print 'dictsize', len(daglineDoubleDict)
     #print daglineDoubleDict.keys()
     clustHits = []
-    for tax1 in range(0, len(genes)):
-        names1 = [genes[tax1], re.sub('[.][0-9]$', '', genes[tax1])]
+    for tax1 in genes:
+        names1 = [tax1, re.sub('[.][0-9]$', '', tax1)]
         #print 'names1', names1
         for n1 in names1:
             found = False
             if n1 in daglineDoubleDict:
                 #print '\tfound n1:', n1
                 sub_dict = daglineDoubleDict[n1]
-                for tax2 in range(0, len(genes)):
+                for tax2 in genes:
                     if tax1 != tax2:
-                        names2 = [genes[tax2], re.sub('[.][0-9]$', '', genes[tax2])]
+                        names2 = [tax2, re.sub('[.][0-9]$', '', tax2)]
                         #print '\tnames1', names1
                         for n2 in names2:
                             if n2 in sub_dict:

@@ -13,7 +13,7 @@ for a in range(3, int(len(sys.argv))):
     conNums.append(int(sys.argv[a]))
 
 pos = 0
-if sys.argv[1] != 'p' and sys.argv[1] != 'n':
+if sys.argv[1] not in ['p', 'n']:
     print "second argument must be p or n"
 else:
     if sys.argv[1] == 'p':
@@ -21,20 +21,12 @@ else:
     else:
         print "-((",
     
-nums = range(1, tot+1)
-toCon = []
-for c in conNums:
-    if c > tot:
-        raise RuntimeError("taxon ", c, " is greater than the total number of taxa ", tot)
-    toCon.append(c)
-    nums.remove(c)
+allNums = set(range(1, tot+1))
+toCon = set(conNums)
+if max(toCon) > max(allNums):
+    sys.exit('numbers to constraint > than total number')
 
-print toCon[0],
-toCon.remove(toCon[0])
+allNums -= toCon
 
-for i in toCon:
-    print ", %d" % i,
-print ")",
-for i in nums:
-    print ", %d" % i,
-print ");"
+print ", ".join([str(n) for n in sorted(toCon)]) + "), " + ", ".join([str(n) for n in sorted(allNums)]) + ");"
+

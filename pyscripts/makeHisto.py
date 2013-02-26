@@ -11,12 +11,20 @@ def makeHisto(lines, width = 1.0, col = 0):
     num = float(len(lines))
     if col > len(lines[0]):
         sys.exit("col # (%d) > # col in list (%d)" % (col, len(lines[0])))
-    focalCol = [float(line[col]) for line in lines]
+    focalCol = []
+    for line in lines:
+        try:
+            val = float(line[col])
+            focalCol.append(val)
+        except ValueError:
+            sys.stderr.write('ignoring non-numeric row\n')
+    #focalCol = [float(line[col]) for line in lines]
     colMin = min(focalCol)
     colMax   = max(focalCol)
     #start is the beginning of the first bin
     start = int(colMin - 1)
-    while start + width < colMin:
+    #while start + width < colMin:
+    while (start + width - colMin) < 0.00001:
         start = start + width
     #end is the beginning of the last bin
     end = int(colMax + 1)

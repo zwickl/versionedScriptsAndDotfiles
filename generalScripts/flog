@@ -1,7 +1,9 @@
 #!/bin/bash
 
-for i in $@
+for i in $@/
 do
-	grep -H Final "$i"*.log00.log
+    if [ -e "$i"*.log00.log ];then
+        grep -H Final "$i"*.log00.log
+    fi
 done
 

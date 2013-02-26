@@ -2,44 +2,33 @@
 import sys
 
 if len(sys.argv) != 2:
-    print "usage\nsitelikeTable.py <sitelike filename>"
+    print "usage\nsitelikeTable.py <sitelike infilename>"
     exit()
 else:
-    filename = sys.argv[1]
-    file = open(filename, 'rU')
+    infile = open(sys.argv[1], 'rb')
 
-#get rid of the first header line    
-file.readline()
 trees = []
 totals = []
 thistree = []
-for line in file.readlines():
-    #depending on the fact that sitelike lines start with tabs and total tree like lines don't
-    if line[0] == '\t':
-        thistree.append(line.split())
-    else:
-        totals.append(line.split())
-        trees.append(thistree)
-        thistree = []
-#        print line
+for line in infile.readlines():
+    if not 'Tree' in line:
+        #depending on the fact that sitelike lines start with tabs and total tree like lines don't
+        if line[0] == '\t':
+            thistree.append(line.split())
+        else:
+            totals.append(line.split())
+            trees.append(thistree)
+            thistree = []
 
-if len(thistree) > 0:
+if len(thistree):
     trees.append(thistree)
 
-print "tree#\t",
+numStr = '\t'.join([ "%s" % n[0] for n in totals ])
+scoreStr = '\t'.join([ "%f" % float(s[1]) for s in totals ])
 
-for t in range(0, len(trees)):
-    print "%d\t" % int(totals[t][0]) ,
-print "\nscore\t",
-for t in range(0, len(trees)):
-    print "%f\t" % float(totals[t][1]) , 
-print "\ntree\t",
-for t in range(0, len(trees)):
-    print "%s\t" % totals[t][2] , 
-print
+print "tree#", numStr
+print "scores", scoreStr
 
-for site in range(0, len(trees[0])):
-    print "%d\t" % int(trees[t][site][0]),
-    for t in range(0, len(trees)):
-        print "%f\t" % float(trees[t][site][1]),
-    print
+for site in xrange(len(trees[0])):
+    print site, '\t'.join([tree[site][1] for tree in trees])
+
