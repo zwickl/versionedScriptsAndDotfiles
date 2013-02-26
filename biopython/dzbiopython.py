@@ -251,7 +251,7 @@ def int_feature_location(feat):
     return (feat.location.start.position, feat.location.end.position)
 
 
-def flatten_subfeatures(feature, reverse=False):
+def flattened_subfeature_iterator(feature, reverse=False):
     '''generator to essentially get flattened series of features-subfeatures-subsubfeatures, etc.
     in pre-order. Given
     F   SF  SSF
@@ -266,11 +266,11 @@ def flatten_subfeatures(feature, reverse=False):
     yield feature
     if reverse:
         for subfeat in feature.sub_features[::-1]:
-            for subsub in flatten_subfeatures(subfeat, reverse=True):
+            for subsub in flattened_subfeature_iterator(subfeat, reverse=True):
                 yield subsub
     else:
         for subfeat in feature.sub_features:
-            for subsub in flatten_subfeatures(subfeat):
+            for subsub in flattened_subfeature_iterator(subfeat):
                 yield subsub
 
 
@@ -288,7 +288,7 @@ def find_cds_start_coordinate(feature):
     and [end:start] will work properly for minus'''
 
     strandIndex = 0 if feature.strand == 1 else 1
-    for feat in flatten_subfeatures(feature):
+    for feat in flattened_subfeature_iterator(feature):
         if feat.type.lower() == 'cds':
             return int_feature_location(feat)[strandIndex]
 
@@ -296,7 +296,7 @@ def find_cds_start_coordinate(feature):
 def find_cds_end_coordinate(feature):
     '''see find_cds_start_coordinate notes'''
     strandIndex = 1 if feature.strand == 1 else 0
-    for feat in flatten_subfeatures(feature, reverse=True):
+    for feat in flattened_subfeature_iterator(feature, reverse=True):
         if feat.type.lower() == 'cds':
             return int_feature_location(feature)[strandIndex]
 
@@ -424,7 +424,7 @@ def get_first_cds(feature):
     passed in.'''
 
     strandIndex = 0 if feature.strand == 1 else 1
-    for feat in flatten_subfeatures(feature):
+    for feat in flattened_subfeature_iterator(feature):
         if feat.type.lower() == 'cds':
             return feat
     '''
@@ -564,7 +564,7 @@ def get_features_by_name(feature, name):
     if feature.type.lower() == name:
         return [feature]
     featsToReturn = []
-    for feat in flatten_subfeatures(feature):
+    for feat in flattened_subfeature_iterator(feature):
         if feat.type.lower() == name :
             featsToReturn.append(feat)
 
