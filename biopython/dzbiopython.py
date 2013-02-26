@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import re
 from os.path import expandvars
 import copy
 from Bio.SeqFeature import FeatureLocation
