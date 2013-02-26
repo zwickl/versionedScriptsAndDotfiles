@@ -278,7 +278,7 @@ function inEachDir(){
 }
 
 function usedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado scotty323
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
@@ -288,7 +288,7 @@ function usedCount(){
 }
 
 function queuedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado scotty323
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
@@ -431,6 +431,21 @@ function killAllSGE(){
     for JOB in `qstat | awk '{print $1}' | grep '^[0-9]'`
     do
         qdel $JOB
+    done
+}
+
+function killAllQueued(){
+    for JOB in `qstat | grep qw | awk '{print $1}' | grep '^[0-9]'`
+    do
+        qdel $JOB
+    done
+}
+
+function listJobDirsSGE(){
+    for JOB in `qstat | awk '{print $1}' | grep '^[0-9]'`
+    do
+        echo $JOB
+        qstat -j $JOB | grep workdir
     done
 }
 

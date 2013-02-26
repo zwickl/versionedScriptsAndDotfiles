@@ -516,7 +516,7 @@ class CoordinateSet(object):
         return mystr
 
 
-def extract_core_filename(name):
+def extract_core_filename(name, no_nchar=False):
     '''
     extract the "core" portion of a filename, regardless of exactly what the original filename is
     this includes the cluster number, number of taxa, number of characters and other stuff
@@ -547,6 +547,12 @@ def extract_core_filename(name):
             break
     if extracted2 is None:
         exit("problem shortening name 2: %s" % name)
+
+    if no_nchar:
+        search = re.search('(.*)[.].*C$', extracted2)
+        if search:
+            extracted2 = search.group(1)
+
     return extracted2
 
 
