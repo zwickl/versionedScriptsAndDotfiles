@@ -39,12 +39,10 @@ clust = parse_blink_output(options.filenames[0])
 
 if options.patternFile:
     sys.stderr.write('reading patterns from file %s ...\n' % options.patternFile)
-    pf = open(options.patternFile, 'rb')
-    taxPatterns = [ line.strip() for line in pf ]
+    taxPatterns = [ line.strip() for line in open(options.patternFile, 'rb') ]
     sys.stderr.write('patterns: %s\n' % str(taxPatterns))
 else:
     taxPatterns = [options.pattern]
-seqFiles = options.filenames
 
 matchedRecs = set(clust) if options.invertMatch else set()
 

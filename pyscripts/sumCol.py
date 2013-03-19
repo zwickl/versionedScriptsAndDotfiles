@@ -6,10 +6,15 @@ from argparse import ArgumentParser
 parser = ArgumentParser(description='sum or do other summaries of a column of numbers')
 
 parser.add_argument("-s", "--sum", action="store_true", dest="outputSum", default=False, help="Output Sum")
+
 parser.add_argument("--ignore-non-numeric", action="store_true", dest="ignoreNonNumeric", default=False, help="Ignore any column elements that can't be converted to floats")
+
 parser.add_argument("-m", "--mean", action="store_true", dest="outputAve", default=False, help="Output Mean")
+
 parser.add_argument("-r", "--range", action="store_true", dest="outputMinMax", default=False, help="Output Min and Max")
+
 parser.add_argument("-a", "--all",  action="store_true", dest="outputAll", default=False, help="Output All Statistics")
+
 parser.add_argument("-c", "--column", dest="columnNum", default=None, type=int, help="choose the column to output")
 
 #variable number of arguments
@@ -71,8 +76,6 @@ for line in lines:
 if not col:
     sys.stderr.write('No valid values read!\n')
     exit()
-
-#col = [ float(line[colIndex]) for line in lines ]
 
 cSum = sum(col)
 cNum = len(col)

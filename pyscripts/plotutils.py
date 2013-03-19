@@ -332,6 +332,8 @@ class PlottingArgumentParser(ArgumentParser):
         defaultTitleKwargs = kwargs.pop('defaultTitleKwargs', [])
         defaultSuperTitleKwargs = kwargs.pop('defaultSuperTitleKwargs', [])
         
+        defaultDZaxKwargs = kwargs.pop('defaultSuperTitleKwargs', ['leftw=4', 'lefts=solid', 'rightw=4', 'rights=solid', 'topw=4', 'tops=solid', 'bottomw=4', 'bottoms=solid'])
+
         defaultNcol = kwargs.pop('defaultNcol', 2)
         defaultOnePlot = kwargs.pop('defaultOnePlot', None)
         defaultSubplotPerFunction = kwargs.pop('defaultSubplotPerFunction', None)
@@ -357,6 +359,9 @@ class PlottingArgumentParser(ArgumentParser):
             self.add_argument('--subplot-kwargs', dest='additionalSubplotKwargs', nargs='*', type=str, default=defaultSubplotKwargs,
                                 help='kwargs to be passed on to matplotlib Figure.subplots_adjust function (default %s)' % ' '.join(defaultSubplotKwargs))
         
+        if defaultDZaxKwargs is not False:
+            self.add_argument('--dz-axis-kwargs', dest='dzAxisKwargs', nargs='*', type=str, default=defaultDZaxKwargs,
+                    help='settings for axis appearance - interpreted by ME not MPL. w=weight, s=style, examples: rights=bold topw=5. Default: %s' % ' '.join(defaultDZaxKwargs))
         ################
         #argument for plotting of lines/points
         styleArgs = self.add_argument_group('ARGUMENTS FOR POINT AND LINE STYLES')
@@ -389,7 +394,9 @@ class PlottingArgumentParser(ArgumentParser):
         if defaultPlotKwargs is not False:
             self.add_argument('--plot-kwargs', dest='additionalPlotKwargs', nargs='*', type=str, default=defaultPlotKwargs,
                                 help='kwargs to be passed on to matplotlib axes.plot function (default %s)' % ' '.join(defaultPlotKwargs))
-           
+        
+
+
         ############
         #axis labels
         axisLabelArgs = self.add_argument_group('ARGUMENTS FOR AXIS LABELING')
