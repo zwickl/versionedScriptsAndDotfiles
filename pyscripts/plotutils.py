@@ -2,13 +2,12 @@
 import sys
 #import re
 from os import path
-#import cPickle
 from itertools import izip, cycle
 import collections
 from argparse import ArgumentParser
 import numpy as np
 import matplotlib.pyplot as plt
-#import matplotlib as mpl
+from matplotlib import font_manager
 
 if __name__ == "__main__":
     import doctest
@@ -149,6 +148,154 @@ def path_to_plot_title(filename, sep='\n'):
     return plotTitle
 
 
+def simpler_path_to_plot_title(filename, sep='\n'):
+    '''
+    This just simplies the names a bit.  maskedBadAlign.noBrach is just ALMASK
+    and other almasks are unknown.  Also, is +GBLOCKS and +ALMASK
+    ../mafft.cds/
+    ../mafft.cds.allBadAlignAA/
+    ../mafft.cds.gblocks/
+    ../mafft.genes/
+    ../mafft.genes.gblocks/
+    ../mafft.genes.intronsStripped/
+    ../mafft.genes.noFullIntrons/
+    ../mafft.genes.stripNs/
+    
+    all
+    11T
+
+    boot
+    ml
+    '''
+
+    filename = filename.lower()
+
+    plotTitle = ''
+    if 'mafft' in filename:
+        plotTitle += 'MAFFT'
+    elif 'prank' in filename:
+        plotTitle += 'PRANK'
+    elif 'muscle' in filename:
+        plotTitle += 'MUSCLE'
+
+    plotTitle += sep
+
+    if 'cds.allbadalignaa' in filename:
+        plotTitle += 'CDS-BADCOLAA '
+    elif 'cds.allbadalign' in filename:
+        plotTitle += 'CDS-BADCOL '
+    elif 'cds.gblocks.maskedbadalign' in filename:
+        plotTitle += 'CDS+GBLOCKS%s+ALMASK' % sep
+    elif 'cds.maskedbadalign.nobrach' in filename:
+        plotTitle += 'CDS+ALMASK '
+    elif 'cds.maskedbadalign ' in filename:
+        plotTitle += 'CDS+UNKNOWN '
+    elif 'cds.gblocks' in filename:
+        plotTitle += 'CDS+GBLOCKS'
+    elif 'cds' in filename:
+        plotTitle += 'CDS'
+    elif 'genes.gblocks.maskedbadalign' in filename:
+        plotTitle += 'GENE+GBLOCKS%s+ALMASK' % sep
+    elif 'genes.gblocks' in filename:
+        plotTitle += 'GENE+GBLOCKS'
+    elif 'genes.intronsstripped' in filename:
+        #plotTitle += 'GENE-INTRON'
+        plotTitle += 'MASKED-INTRON'
+    elif 'genes.nofullintrons' in filename:
+        plotTitle += 'GENE-FULLI'
+    elif 'genes.allbadalignAA' in filename:
+        plotTitle += 'GENE-BADCOLAA '
+    elif 'genes.allbadalign' in filename:
+        plotTitle += 'GENE-BADCOL '
+    elif 'genes.maskedbadalign.nobrach' in filename:
+        plotTitle += 'GENE+ALMASK '
+    elif 'genes.maskedbadalign' in filename:
+        plotTitle += 'GENE+UNKNOWN '
+    elif 'genes.stripns' in filename:
+        plotTitle += 'GENE-STRIPNs '
+    elif 'genes' in filename:
+        plotTitle += 'GENE'
+    else:
+        plotTitle += 'UNKNOWN'
+
+    return plotTitle
+
+
+def simpler_path_to_plot_title_nuc_default_cds(filename, sep='\n'):
+    '''
+    As simpler_path_to_plot_title, but makes the nucleotide level CDS
+    alignment the default (i.e., MAFFT CDS), while the protein level is
+    distinguished (MAFFT CDS-P)
+
+    This just simplies the names a bit.  maskedBadAlign.noBrach is just ALMASK
+    and other almasks are unknown.  Also, is +GBLOCKS and +ALMASK
+
+    ../mafft.cds                            ../mafft.cds.maskedBadAlign             ../mafft.genes                          ../mafft.genes.maskedBadAlign
+    ../mafft.cds.allBadAlignAA              ../mafft.cds.maskedBadAlign.noBrach     ../mafft.genes.allBadAlign              ../mafft.genes.maskedBadAlign.noBrach
+    ../mafft.cds.gblocks                    ../mafft.cds.maskedBadAlign.onlyAA      ../mafft.genes.gblocks                  ../mafft.genes.maskedBadAlign.onlyAA
+    ../mafft.cds.gblocks.maskedBadAlign     ../mafft.cds.nuc                        ../mafft.genes.gblocks.maskedBadAlign   ../mafft.genes.noFullIntrons
+    ../mafft.cds.gblocks.nuc                ../mafft.cds.nuc.maskedBadAlign.noBrach ../mafft.genes.intronsStripped          ../mafft.genes.stripNs
+    
+    '''
+
+    filename = filename.lower()
+
+    plotTitle = ''
+    if 'mafft' in filename:
+        plotTitle += 'MAFFT'
+    elif 'prank' in filename:
+        plotTitle += 'PRANK'
+    elif 'muscle' in filename:
+        plotTitle += 'MUSCLE'
+
+    plotTitle += sep
+
+    if 'cds.allbadalignaa' in filename:
+        plotTitle += 'CDS-P-BADCOLAA '
+    elif 'cds.allbadalign' in filename:
+        plotTitle += 'CDS-P-BADCOL '
+    elif 'cds.gblocks.maskedbadalign' in filename:
+        plotTitle += 'CDS-P+GBLOCKS%s+ALMASK' % sep
+    elif 'cds.nuc.maskedbadalign.nobrach' in filename:
+        plotTitle += 'CDS+ALMASK '
+    elif 'cds.maskedbadalign.nobrach' in filename:
+        plotTitle += 'CDS-P+ALMASK '
+    elif 'cds.maskedbadalign ' in filename:
+        plotTitle += 'CDS-P+UNKNOWN '
+    elif 'cds.gblocks.nuc' in filename:
+        plotTitle += 'CDS+GBLOCKS'
+    elif 'cds.gblocks' in filename:
+        plotTitle += 'CDS-P+GBLOCKS'
+    elif 'cds.nuc' in filename:
+        plotTitle += 'CDS'
+    elif 'cds' in filename:
+        plotTitle += 'CDS-P'
+    elif 'genes.gblocks.maskedbadalign' in filename:
+        plotTitle += 'GENE+GBLOCKS%s+ALMASK' % sep
+    elif 'genes.gblocks' in filename:
+        plotTitle += 'GENE+GBLOCKS'
+    elif 'genes.intronsstripped' in filename:
+        plotTitle += 'MASKED-INTRON'
+    elif 'genes.nofullintrons' in filename:
+        plotTitle += 'GENE-FULLI'
+    elif 'genes.allbadalignAA' in filename:
+        plotTitle += 'GENE-BADCOLAA '
+    elif 'genes.allbadalign' in filename:
+        plotTitle += 'GENE-BADCOL '
+    elif 'genes.maskedbadalign.nobrach' in filename:
+        plotTitle += 'GENE+ALMASK '
+    elif 'genes.maskedbadalign' in filename:
+        plotTitle += 'GENE+UNKNOWN '
+    elif 'genes.stripns' in filename:
+        plotTitle += 'GENE-STRIPNs '
+    elif 'genes' in filename:
+        plotTitle += 'GENE'
+    else:
+        plotTitle += 'UNKNOWN'
+
+    return plotTitle
+
+
 def path_to_plot_title_random_supermatrix(filename, sep='\n'):
     plotTitle = path_to_plot_title(filename, sep)
 
@@ -179,16 +326,17 @@ def prepare_plot_kwargs(kwargDict, optionList, fontscaler=1.0):
 
     where 
     -the first argument is any extra arbitrary kwargs that might have been
-    massed on the command line
+        passed on the command line
     -then a list of things to set specifically.  Defaults for those should 
-    have been set when the parser was instantiated, but can be overridden
+        have been set when the parser was instantiated, but can be overridden
     
     kwargDict - can just be a list of strings, i.e. ['blah=2', 'poo=4']
         or a list of tuples [('blah', 2), ('poo', 4)]
         or an actual dictionary {'blah':2, 'poo':4}
     optionList - list of (key, value) tuples, added to returned dict if
         not already in it
-    fontscaler - value to rescale fonts by, if desired
+    fontscaler - value to rescale fonts by, if desired - deprecated and may not work
+    
     returns outKwargs - dict of kwargs to pass to other functions
     '''
 
@@ -196,7 +344,7 @@ def prepare_plot_kwargs(kwargDict, optionList, fontscaler=1.0):
     if kwargDict:
         error = False
         if isinstance(kwargDict, dict):
-            outKwargs = kwargDict
+            outKwargs = dict(kwargDict)
         elif isinstance(kwargDict, list) or isinstance(kwargDict, set) or isinstance(kwargDict, tuple):
             if isinstance(kwargDict[0], str):
                 outKwargs = dict([ kw.split('=') for kw in kwargDict ])
@@ -209,8 +357,6 @@ def prepare_plot_kwargs(kwargDict, optionList, fontscaler=1.0):
         if error:
             exit('kwargDict must be a dictionary, or a list, set or tuple containing strings, or a list, set or tuple containing strings containing 2-tuples')
    
-    #this will extract an actual dictionary out of the text list of kwargs specified on the command line
-    #outKwargs = dict([ kw.split('=') for kw in kwargDict ])
     #this just ensures that if a kwarg is specified at the command line for something, it trumps any actual argparse option for it
     for arg, setting in optionList:
         outKwargs.setdefault(arg, setting)
@@ -231,12 +377,8 @@ def prepare_plot_kwargs(kwargDict, optionList, fontscaler=1.0):
         if 'fontsize' in key or 'labelsize' in key:
             outKwargs[key] = outKwargs[key] * fontscaler
 
-    #print 'reading kwargs'
-    #print kwargDict
-    #print optionList
-    #print outKwargs
-
     return outKwargs
+
 
 class PlottingStyleArgumentParser(ArgumentParser):
     '''abandoned this for the moment'''
@@ -249,11 +391,6 @@ class PlottingStyleArgumentParser(ArgumentParser):
         #argGroup.add_argument('-p', '--poo', dest='poop',type=str, default=None, 
         #                    help='test')
 
-
-'''
-class ArgparseAction_AppendToSpecifiedList(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-'''
 
 class PlottingHistogramArgumentParser(ArgumentParser):
     '''A generic argparse parser that comes prepackaged with a bunch of common arguments
@@ -280,10 +417,21 @@ class PlottingHistogramArgumentParser(ArgumentParser):
 
  
 class PlottingArgumentParser(ArgumentParser):
-    '''A generic argparse parser that comes prepackaged with a bunch of common arguments
+    '''
+    A generic argparse parser that comes prepackaged with a bunch of common arguments
     for matplotlib/pyplot preloaded.
+    
     Default values for the created parser can be passed in as keyword arguments.  Pass
-    False to remove a built in option.'''
+    a values of False to remove a built in option.
+
+    e.g.
+    
+    my_parser = PlottingArgumentParser(defaultColors=False, defaultMarkers='o*x')
+    
+    creates a parser with the defaults as defined below, except the default for
+    the markers is set to 'o*x' and colors is completely removed as a command line
+    option.
+    '''
 
     def __init__(self, **kwargs):
         '''These are the defaults which can be overwridden with keyword arguments passed
@@ -297,6 +445,7 @@ class PlottingArgumentParser(ArgumentParser):
         defaultMarkerSizes = kwargs.pop('defaultMarkerSizes', [12.0])
         defaultMarkers = kwargs.pop('defaultMarkers', 'osx*^h')
         defaultLineWidth = kwargs.pop('defaultLineWidth', [3.0])
+        defaultLineStyle = kwargs.pop('defaultLineStyle', ['-'])
         defaultCycleStylesWithinFiles = kwargs.pop('defaultCycleStylesWithinFiles', True)
         defaultPlotKwargs = kwargs.pop('defaultPlotKwargs', [])
         
@@ -305,10 +454,14 @@ class PlottingArgumentParser(ArgumentParser):
         defaultXrange = kwargs.pop('defaultXrange', None)
         defaultAxisTickFontsize = kwargs.pop('defaultAxisTicFontsize', 16.0)
         defaultAxisLabelFontsize = kwargs.pop('defaultAxisLabelFontsize', 32.0)
+        
         defaultXTickFunction = kwargs.pop('defaultXTickFunction', None)
         defaultTickKwargs = kwargs.pop('defaultTickKwargs', [])
         defaultXTickKwargs = kwargs.pop('defaultXTickKwargs', [])
         defaultYTickKwargs = kwargs.pop('defaultYTickKwargs', [])
+        
+        defaultXTickLabelKwargs = kwargs.pop('defaultXTickLabelKwargs', ['weight=bold'])
+        defaultYTickLabelKwargs = kwargs.pop('defaultYTickLabelKwargs', ['weight=bold'])
         defaultXTickLabelLocation = kwargs.pop('defaultXTickLabelLocation', 'm')
         defaultYTickLabelLocation = kwargs.pop('defaultYTickLabelLocation', 'm')
         defaultDrawAxesAtZero = kwargs.pop('defaultDrawAxesAtZero', None)
@@ -327,12 +480,12 @@ class PlottingArgumentParser(ArgumentParser):
         defaultTitleFontsize = kwargs.pop('defaultTitleFontsize', 18.0)
         defaultSuperTitle = kwargs.pop('defaultSuperTitle', None)
         defaultSuperTitleFontsize = kwargs.pop('defaultSuperTitleFontsize', 32.0)
-        defaultTitleHalign = kwargs.pop('defaultTitleHAlign', 'center')
-        defaultTitleValign = kwargs.pop('defaultTitleVAlign', 'top')
+        defaultTitleHalign = kwargs.pop('defaultTitleHAlign', 'c')
+        defaultTitleValign = kwargs.pop('defaultTitleVAlign', 't')
         defaultTitleKwargs = kwargs.pop('defaultTitleKwargs', [])
         defaultSuperTitleKwargs = kwargs.pop('defaultSuperTitleKwargs', [])
         
-        defaultDZaxKwargs = kwargs.pop('defaultSuperTitleKwargs', ['leftw=4', 'lefts=solid', 'rightw=4', 'rights=solid', 'topw=4', 'tops=solid', 'bottomw=4', 'bottoms=solid'])
+        defaultDZaxKwargs = kwargs.pop('defaultDZaxKwargs', ['leftw=4', 'lefts=solid', 'rightw=4', 'rights=solid', 'topw=4', 'tops=solid', 'bottomw=4', 'bottoms=solid'])
 
         defaultNcol = kwargs.pop('defaultNcol', 2)
         defaultOnePlot = kwargs.pop('defaultOnePlot', None)
@@ -343,15 +496,21 @@ class PlottingArgumentParser(ArgumentParser):
         defaultMissingOk = kwargs.pop('defaultMissingOk', None)
         defaultDataColumnFunc = kwargs.pop('defaultDataColumnFunc', None)
 
-        defaultHatches = kwargs.pop('defaultHatches', 'Xo+ ')
+        #defaultHatches = kwargs.pop('defaultHatches', 'Xo+ ')
+        defaultHatches = kwargs.pop('defaultHatches', None)
 
         defaultSkipRows = kwargs.pop('defaultSkipRows', 0)
         defaultRowIgnorePatterns = kwargs.pop('defaultRowIgnorePatterns', [])
-        
+
+        defaultSeriesNames = kwargs.pop('defaultSeriesNames', None)
+
         defaultHistogram = kwargs.pop('defaultHistogram', None)
         defaultHistogramKwargs = kwargs.pop('defaultHistogramKwargs', [])
         defaultHistogramBins = kwargs.pop('defaultHistogramBinsBins', 20)
        
+        defaultLegendTextKwargs = kwargs.pop('defaultLegendTextKwargs', [])
+        
+        defaultBarGraph = kwargs.pop('defaultBarGraph', None)
         #base constructor
         super(PlottingArgumentParser, self).__init__(self, *kwargs)
       
@@ -379,12 +538,16 @@ class PlottingArgumentParser(ArgumentParser):
                                 help='single string with marker designations for 1 2 3 (default %s)' % str(defaultMarkers))
 
         if defaultMarkerSizes is not False:
-            styleArgs.add_argument('-ms', '--marker-sizes', dest='markerSizes', nargs='*', type=int, default=defaultMarkerSizes,
+            styleArgs.add_argument('-ms', '--marker-sizes', dest='markerSizes', nargs='*', type=float, default=defaultMarkerSizes,
                                 help='floating point values indicating size of markers in points for series 1 2 3, or a single value to apply to all (default %s)' % str(defaultMarkerSizes))
 
         if defaultLineWidth is not False:
             styleArgs.add_argument('-lw', '--line-width', dest='lineWidth', nargs='*', type=float, default=defaultLineWidth,
                                 help='point size of lines to cycle through (default %s)' % str(defaultLineWidth))
+ 
+        if defaultLineStyle is not False:
+            styleArgs.add_argument('-ls', '--line-style', dest='lineStyle', nargs='*', type=str, default=defaultLineStyle,
+                                help='styles of lines to cycle through (default %s)' % str(defaultLineStyle))
  
         if defaultCycleStylesWithinFiles is not False:
             self.add_argument('--styles-per-file', dest='cycleStylesWithinFiles', default=defaultCycleStylesWithinFiles, action='store_false',
@@ -395,8 +558,6 @@ class PlottingArgumentParser(ArgumentParser):
             self.add_argument('--plot-kwargs', dest='additionalPlotKwargs', nargs='*', type=str, default=defaultPlotKwargs,
                                 help='kwargs to be passed on to matplotlib axes.plot function (default %s)' % ' '.join(defaultPlotKwargs))
         
-
-
         ############
         #axis labels
         axisLabelArgs = self.add_argument_group('ARGUMENTS FOR AXIS LABELING')
@@ -426,7 +587,7 @@ class PlottingArgumentParser(ArgumentParser):
         
         if defaultXlabel is not False or defaultYlabel is not False:
             if defaultAxisLabelFontsize is not False:
-                axisLabelArgs.add_argument('-als', '--axis-label-fontsize', dest='axisLabelFontsize', type=int, default=defaultAxisLabelFontsize,
+                axisLabelArgs.add_argument('-als', '--axis-label-fontsize', dest='axisLabelFontsize', type=float, default=defaultAxisLabelFontsize,
                                     help='font size of axis labels (default %d)' % defaultAxisLabelFontsize)
             
         ##########
@@ -451,8 +612,8 @@ class PlottingArgumentParser(ArgumentParser):
         '''
 
         if defaultAxisTickFontsize is not False:
-            axisArgs.add_argument('-ats', '--axis-tick-fontsize', dest='axisTickFontsize', type=int, default=defaultAxisTickFontsize,
-                                help='font size of cumulative graph tic labels (default %d)' % defaultAxisTickFontsize)
+            axisArgs.add_argument('-ats', '--axis-tick-fontsize', dest='axisTickFontsize', type=float, default=defaultAxisTickFontsize,
+                                help='font size of cumulative graph tick labels (default %d)' % defaultAxisTickFontsize)
 
         if defaultXTickFunction is not False:
             axisArgs.add_argument('--x-tick-function', dest='xTickFunction', type=str, default=defaultXTickFunction,
@@ -470,6 +631,14 @@ class PlottingArgumentParser(ArgumentParser):
             axisArgs.add_argument('--y-tick-kwargs', dest='additionalYTickKwargs', nargs='*', type=str, default=defaultYTickKwargs,
                                 help='kwargs to be passed on to matplotlib axes.tick_params function, applied to only y axis (default %s)' % ' '.join(defaultYTickKwargs))
         
+        if defaultXTickLabelKwargs is not False:
+            axisArgs.add_argument('--x-tick-label-kwargs', dest='additionalXTickLabelKwargs', nargs='*', type=str, default=defaultXTickLabelKwargs,
+                                help='kwargs to be passed on to pyplot.xticks (default %s)' % ' '.join(defaultXTickLabelKwargs))
+
+        if defaultYTickLabelKwargs is not False:
+            axisArgs.add_argument('--y-tick-label-kwargs', dest='additionalYTickLabelKwargs', nargs='*', type=str, default=defaultYTickLabelKwargs,
+                                help='kwargs to be passed on to pyplot.yticks (default %s)' % ' '.join(defaultYTickLabelKwargs))
+
         if defaultDrawAxesAtZero is not False:
             axisArgs.add_argument('--draw-axes-at-zero', dest='drawAxesAtZero', default=defaultDrawAxesAtZero, action='store_true', 
                                 help='whether to draw horizontal and vertical lines through 0, 0')
@@ -493,15 +662,6 @@ class PlottingArgumentParser(ArgumentParser):
             titleType.add_argument('--title-func', dest='titleFunc', type=str, default=defaultTitleFunc,
                                 help='function used to map arbitrary strings (datafile path names) to plot names')
             
-            '''
-            if isinstance(defaultTitle, str):
-                titleArgs.add_argument('-t', '--title', dest='title', type=str, default=defaultTitle,
-                                    help='plot title')
-            else:
-                titleArgs.add_argument('-t', '--title-func', dest='titleFunc', type=str, default=defaultTitle,
-                                    help='function used to map arbitrary strings to plot names')
-            '''
-
             if defaultTitleHalign is not False:
                 titleArgs.add_argument('-tha', '--title-horiz-align', dest='titleHalign', type=str, default=defaultTitleHalign, choices='lcr',
                                     help='horizontal alignment of title (default c)')
@@ -515,7 +675,7 @@ class PlottingArgumentParser(ArgumentParser):
                                     help='kwargs to be passed on to matplotlib axes.setTitle function (default %s)' % ' '.join(defaultTitleKwargs))
 
             if defaultTitleFontsize is not False:
-                titleArgs.add_argument('-ts', '--title-fontsize', dest='titleFontsize', type=int, default=defaultTitleFontsize,
+                titleArgs.add_argument('-ts', '--title-fontsize', dest='titleFontsize', type=float, default=defaultTitleFontsize,
                                     help='font size of title (default %d)' % defaultTitleFontsize)
 
         if defaultSuperTitle is not False:
@@ -523,7 +683,7 @@ class PlottingArgumentParser(ArgumentParser):
                                 help='plot super title on multiplot')
 
             if defaultSuperTitleFontsize is not False:
-                titleArgs.add_argument('-stf', '--super-title-fontsize', dest='superTitleFontsize', type=int, default=defaultSuperTitleFontsize,
+                titleArgs.add_argument('-stf', '--super-title-fontsize', dest='superTitleFontsize', type=float, default=defaultSuperTitleFontsize,
                                     help='font size of super title of multiplot (default %d)' % defaultSuperTitleFontsize)
 
             if defaultSuperTitleKwargs is not False:
@@ -534,6 +694,8 @@ class PlottingArgumentParser(ArgumentParser):
         dataArgs = self.add_argument_group('ARGUMENTS FOR PARSING AND MANIPULATING DATA')
         
         if defaultInput is not False:
+            #dataArgs.add_argument('-i', '--input', dest='inFiles', nargs='*', type=FileType('rb'), default=None, 
+            #                    help='Series of intput files with data to be plotted')
             dataArgs.add_argument('-i', '--input', dest='inFiles', nargs='*', type=str, default=None, 
                                 help='Series of intput files with data to be plotted')
 
@@ -571,6 +733,8 @@ class PlottingArgumentParser(ArgumentParser):
                                 help='number of figures to place per row in a multiplot')
 
         if defaultOutput is not False:
+            #self.add_argument('-o', '--output', dest='outFile', type=FileType('w'), default=sys.stdout, 
+            #                    help='file to write output to (default stdout or display plot to screen)')
             self.add_argument('-o', '--output', dest='outFile', type=str, default=None, 
                                 help='file to write output to (default stdout or display plot to screen)')
 
@@ -580,11 +744,19 @@ class PlottingArgumentParser(ArgumentParser):
                                 help='string with four characters representing patterns (hatching) for the four wedges \
                                 (e.g., default is %s) out of \"/ \\ | - + x X o O . *\" and blank' % defaultHatches)
 
+        if defaultSeriesNames is not False:
+            self.add_argument('--series-names', dest='seriesNames', nargs='*', type=str, default=None, 
+                                help='names to give each plotted series, which will trigger the creation of a legend')
+
+        if defaultLegendTextKwargs is not False:
+            self.add_argument('--legend-text-kwargs', dest='additionalLegendTextKwargs', nargs='*', type=str, default=defaultLegendTextKwargs,
+                                help='kwargs to be passed on to the legend function (default %s), if --series-names are specified' % ' '.join(defaultLegendTextKwargs))
+
         if defaultHistogram is not False:
             histogramArgs = self.add_argument_group('ARGUMENTS FOR PLOTTING OF HISTOGRAMS')
 
             histogramArgs.add_argument('--histogram', dest='histogram', default=False, action='store_true',
-                                help='plot a histogram rather than line plot, disregarding or redefining some options')
+                                help='plot a histogram rather than line plot, disregarding or redefining some options (difference from --bar-graph is that histogram automatically bins data)')
 
             histogramArgs.add_argument('--histogram-bins', dest='histogramBins', default=defaultHistogramBins, type=int,
                                 help='the number of bins to calculate, if this is a histogram plot (default %d)' % defaultHistogramBins)
@@ -595,6 +767,12 @@ class PlottingArgumentParser(ArgumentParser):
 
             histogramArgs.add_argument('--normalize-histogram', dest='normalizeHistogram', default=False, action='store_true',
                                 help='normalilze histogram series, so that multiple series are comparable')
+
+        if defaultBarGraph is not False:
+            barGraphArgs = self.add_argument_group('ARGUMENTS FOR PLOTTING BAR GRAPHS')
+            
+            barGraphArgs.add_argument('--bar-graph', dest='barGraph', default=False, action='store_true',
+                                help='plot a bar graph rather than line plot, disregarding or redefining some options (difference from --histogram is that histogram automatically bins data)')
 
 
 def make_figure_and_subplots(nrows, ncols):
@@ -632,7 +810,7 @@ def prepare_all_kwargs(options):
             [('labelsize', options.axisTickFontsize)])
     
     #these can only be combined like this because no specific values are being passed in
-    allKwargDict['xTickKwargs'], allKwargDict['yTickKwargs'], allKwargDict['plotKwargs'], allKwargDict['histogramKwargs'] = [ prepare_plot_kwargs(kw, []) for kw in [ options.additionalXTickKwargs, options.additionalYTickKwargs, options.additionalPlotKwargs, options.additionalHistogramKwargs ] ]
+    allKwargDict['xTickKwargs'], allKwargDict['yTickKwargs'], allKwargDict['xTickLabelKwargs'], allKwargDict['yTickLabelKwargs'], allKwargDict['plotKwargs'], allKwargDict['histogramKwargs'], allKwargDict['legendTextKwargs'] = [ prepare_plot_kwargs(kw, []) for kw in [ options.additionalXTickKwargs, options.additionalYTickKwargs, options.additionalXTickLabelKwargs, options.additionalYTickLabelKwargs, options.additionalPlotKwargs, options.additionalHistogramKwargs, options.additionalLegendTextKwargs ] ]
 
     return allKwargDict
         
@@ -736,22 +914,28 @@ def full_plot_routine(options, fileData):
             markersToIterate = np.ravel( [ mark for mark, _ in zip(cycle(options.markers), axesToIterate) ] )
             markerSizesToIterate = np.ravel( [ size for size, _ in zip(cycle(options.markerSizes), axesToIterate) ] )
             lineWidthsToIterate = np.ravel( [ width for width, _ in zip(cycle(options.lineWidth), axesToIterate) ] )
+            lineStylesToIterate = np.ravel( [ style for style, _ in zip(cycle(options.lineStyle), axesToIterate) ] )
             colorValuesToIterate = np.ravel( [ color for color, _ in zip(cycle(options.colorValues if options.colorValues else options.greyValues), axesToIterate) ] )
             hatchesToIterate = np.ravel( [ hatch for hatch, _ in zip(cycle(options.hatchString if options.hatchString else 'o'), axesToIterate) ] )
+            seriesNamesToIterate = np.ravel( [ name for name, _ in zip(cycle(options.seriesNames if options.seriesNames else '_nolegend_'), axesToIterate) ] )
         elif options.cycleStylesWithinFiles:
             #this is the default really, sucessive styples within subplots
             markersToIterate = np.ravel( [ [ mark for mark, _ in zip(cycle(options.markers), options.dataColumnFunc) ] for _ in fileData ] )
             markerSizesToIterate = np.ravel( [ [ size for size, _ in zip(cycle(options.markerSizes), options.dataColumnFunc) ] for _ in fileData ] )
             lineWidthsToIterate = np.ravel( [ [ width for width, _ in zip(cycle(options.lineWidth), options.dataColumnFunc) ] for _ in fileData ] )
+            lineStylesToIterate = np.ravel( [ [ style for style, _ in zip(cycle(options.lineStyle), options.dataColumnFunc) ] for _ in fileData ] )
             colorValuesToIterate = np.ravel( [ [ color for color, _ in zip(cycle(options.colorValues if options.colorValues else options.greyValues), options.dataColumnFunc) ] for _ in fileData ] )
             hatchesToIterate = np.ravel( [ [ hatch for hatch, _ in zip(cycle(options.hatchString if options.hatchString else 'o'), options.dataColumnFunc) ] for _ in fileData ] )
+            seriesNamesToIterate = np.ravel( [ [ name for name, _ in zip(cycle(options.seriesNames if options.seriesNames else '_nolegend_'), options.dataColumnFunc) ] for _ in fileData ] )
         else:
             #use a single style for all series in a single file
             markersToIterate = np.ravel( [ [ mark for _ in options.dataColumnFunc ] for mark, f in zip( cycle(options.markers), fileData) ] )
             markerSizesToIterate = np.ravel( [ [ size for _ in options.dataColumnFunc ] for mark, f in zip( cycle(options.markerSizes), fileData) ] )
             lineWidthsToIterate = np.ravel( [ [ width for _ in options.dataColumnFunc ] for mark, f in zip( cycle(options.lineWidth), fileData) ] )
+            lineStylesToIterate = np.ravel( [ [ style for _ in options.dataColumnFunc ] for mark, f in zip( cycle(options.lineStyle), fileData) ] )
             colorValuesToIterate = np.ravel( [ [ color for _ in options.dataColumnFunc ] for mark, f in zip( cycle(options.colorValues if options.colorValues else options.greyValues), fileData) ] )
             hatchesToIterate = np.ravel( [ [ hatch for _ in options.dataColumnFunc ] for hatch, f in  zip(cycle(options.hatchString if options.hatchString else 'o'), fileData) ] )
+            seriesNamesToIterate = np.ravel( [ [ name for _ in options.dataColumnFunc ] for name, f in  zip(cycle(options.seriesNames if options.seriesNames else '_nolegend_'), fileData) ] )
             
         iterLen = numSeries
 
@@ -760,9 +944,11 @@ def full_plot_routine(options, fileData):
         assert(len(markersToIterate) == iterLen)
         assert(len(markerSizesToIterate) == iterLen)
         assert(len(lineWidthsToIterate) == iterLen)
+        assert(len(lineStylesToIterate) == iterLen)
         assert(len(colorValuesToIterate) == iterLen)
         assert(len(axesToIterate) == iterLen)
         assert(len(hatchesToIterate) == iterLen)
+        assert(len(seriesNamesToIterate) == iterLen)
 
         return izip(
                 inFilesToIterate,
@@ -771,13 +957,15 @@ def full_plot_routine(options, fileData):
                 markersToIterate,
                 markerSizesToIterate,
                 lineWidthsToIterate,
+                lineStylesToIterate,
                 colorValuesToIterate,
                 hatchesToIterate,
+                seriesNamesToIterate,
                 axesToIterate)
     #####################
 
     #cycle through markers, marker sizes, colors, axes, etc., plotting one series per loop
-    for num, (inFile, series, function, marker, markerSize, lineWidth, color, hatch, subplot) in enumerate(make_plot_iterator()):
+    for num, (inFile, series, function, marker, markerSize, lineWidth, lineStyle, color, hatch, seriesName, subplot) in enumerate(make_plot_iterator()):
         #turn off extra ticks
         subplot.get_xaxis().tick_bottom()
         subplot.get_yaxis().tick_left()
@@ -802,7 +990,26 @@ def full_plot_routine(options, fileData):
         if options.xTickFunction:
             #xtickKwargs = {'rotation':90, 'size':'xx-small'}
             tickFunc = eval(options.xTickFunction)
-            plt.xticks(range(len(series)), tickFunc(series))
+            #note that the tick_params calls below mainly affect the ticks themselves, rather
+            #than the tick _labels_.  Although, the tick_params do set the label fontsizes.
+            #This pyplot.xticks call sets the location and labels of the ticks
+            #but any text property kwargs can also be passed
+            xTickData = tickFunc(series)
+            if len(xTickData) == 2:
+                #this is assuming that the tickData returned from the function is two lists, 
+                #one specifying tick locations and the other the labels
+                #plt.xticks(*tickData, rotation=90, weight='bold')
+                plt.xticks(*xTickData, **allKwargDict['xTickLabelKwargs'])
+            else:
+                #this is treating the tickData just as labels, to be placed at 0, 1, 2, etc.
+                #not that useful
+                plt.xticks(range(len(series)), xTickData, **allKwargDict['xTickLabelKwargs'])
+                #plt.xticks(range(len(series)), tickData, rotation=90, weight='bold')
+                #plt.xticks(range(len(series)), tickFunc(series))
+        else:
+            plt.xticks(**allKwargDict['xTickLabelKwargs'])
+
+        plt.yticks(**allKwargDict['yTickLabelKwargs'])
 
         #change tick properties
         if allKwargDict['tickKwargs']:
@@ -824,28 +1031,34 @@ def full_plot_routine(options, fileData):
         two arguments, hence the * to remove the tuple containing the two lists,
         which I think is required for the lambda'''
         if isinstance(toPlot[0], list):
-            if not options.histogram:
+            if not options.histogram and not options.barGraph:
                 subplot.plot(*dataFunc(series), 
                         marker=marker, 
                         markersize=markerSize, 
-                        linewidth=lineWidth, 
+                        linewidth=lineWidth,
+                        linestyle=lineStyle,
                         color=color,
                         mfc=None,
                         mec=color,
                         **allKwargDict['plotKwargs'])
             else:
-                #bins = np.linspace(0, 1.0, options.histogramBins)
-                bins = np.linspace(options.xRange[0] if options.xRange else 0.0, options.xRange[1] if options.xRange else 1.0, options.histogramBins)
-                outN, outBins, patches = subplot.hist(*dataFunc(series), 
-                        bins=bins,
-                        facecolor=color,
-                        normed=options.normalizeHistogram,
-                        **allKwargDict['histogramKwargs'])
+                if options.histogram:
+                    bins = np.linspace(options.xRange[0] if options.xRange else 0.0, options.xRange[1] if options.xRange else 1.0, options.histogramBins)
+                    outN, outBins, patches = subplot.hist(*dataFunc(series), 
+                            bins=bins,
+                            facecolor=color,
+                            normed=options.normalizeHistogram,
+                            **allKwargDict['histogramKwargs'])
+                else:
+                    patches = subplot.bar(*dataFunc(series), 
+                            color=color, label=seriesName)
+                    if options.seriesNames:
+                        subplot.legend(frameon=False, prop=font_manager.FontProperties(**allKwargDict['legendTextKwargs']))
                 for pat in patches:
                     pat.set_hatch(hatch)
 
         else:
-            if not options.histogram:
+            if not options.histogram and not options.barGraph:
                 subplot.plot(dataFunc(series), 
                         marker=marker, 
                         markersize=markerSize, 
@@ -853,27 +1066,43 @@ def full_plot_routine(options, fileData):
                         color=color,
                         **allKwargDict['plotKwargs'])
             else:
-                #bins = np.linspace(0, 1.0, options.histogramBins)
-                bins = np.linspace(options.xRange[0] if options.xRange else 0.0, options.xRange[1] if options.xRange else 1.0, options.histogramBins)
-                outN, outBins, patches = subplot.hist(dataFunc(series), 
-                        bins=bins,
-                        facecolor=color,
-                        normed=options.normalizeHistogram,
-                        **allKwargDict['histogramKwargs'])
+                if options.histogram:
+                    bins = np.linspace(options.xRange[0] if options.xRange else 0.0, options.xRange[1] if options.xRange else 1.0, options.histogramBins)
+                    outN, outBins, patches = subplot.hist(dataFunc(series), 
+                            bins=bins,
+                            facecolor=color,
+                            normed=options.normalizeHistogram,
+                            **allKwargDict['histogramKwargs'])
+                else:
+                    patches = subplot.bar(dataFunc(series),
+                            color=color, label=seriesName)
+                    if options.seriesNames:
+                        subplot.legend(frameon=False, fontsize=24)
                 for pat in patches:
                     pat.set_hatch(hatch)
-                '''
-                subplot.hist(dataFunc(series), 
-                        bins=options.histogramBins,
-                        facecolor=color,
-                        normed=True,
-                        **plotKwargs)
-                '''
-            
+        
+        #set the width of the axes box (frame) which I thought I could set on the frame rectangle, but that didn't work
+        #kwargs here are <edge><w or s>, i.e. rightw or tops
+        dzAxisKwargs = prepare_plot_kwargs(options.dzAxisKwargs,
+            [ ])
+
+        for opt, val in dzAxisKwargs.items():
+            which = opt[:-1]
+            if opt[-1] == 'w':
+                subplot.spines[which].set_linewidth(int(val))
+            elif opt[-1] == 's':
+                subplot.spines[which].set_linestyle(val)
+            else:
+                sys.exit('unrecognized dzAxisKwarg: %s=%s' % (opt, val))
+   
         #this plots x=0 and y=0 axis lines
         if options.drawAxesAtZero:
             subplot.axhline(xmin=-sys.maxint - 1, xmax=sys.maxint)
             subplot.axvline(ymin=-sys.maxint - 1, ymax=sys.maxint)
+
+    #remove any unused axes
+    for ax in axes[numSubplots:]:
+        ax.set_axis_off()
 
     #return the current figure, so more manipulations could potentially be done on it
     return plt.gcf()
