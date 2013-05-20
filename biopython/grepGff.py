@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(description='extract records from a gff file')
 mutExclGroup = parser.add_mutually_exclusive_group()
 
 #add possible arguments
-parser.add_argument('-v', '--invert-match', dest='options.invertMatch', action='store_true', default=False,
+parser.add_argument('-v', '--invert-match', dest='invertMatch', action='store_true', default=False,
                     help='invert the sense of the match (default false)')
 
 mutExclGroup.add_argument('-s', '--sort', dest='sortOutput', action='store_true', default=False,

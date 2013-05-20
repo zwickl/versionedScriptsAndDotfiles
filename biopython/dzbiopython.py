@@ -5,6 +5,7 @@ from os.path import expandvars
 import copy
 import itertools
 from Bio.SeqFeature import FeatureLocation
+from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 import Bio
 import BCBio
