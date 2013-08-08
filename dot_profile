@@ -466,6 +466,10 @@ function listJobDirsSGE(){
     done
 }
 
+function cnt(){
+    ls $@ | wc -l
+}
+
 #mac specific
 if [[ $OS == 'darwin' ]]; then
 	alias temp='sysctl kern.cpu_temp'
