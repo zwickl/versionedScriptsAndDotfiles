@@ -135,6 +135,7 @@ elif [ $OS = "linux" ];then
     else
         export MAFFT_BINARIES=$HOME/my_usr/local/libexec/mafft/
     fi
+    alias ls='ls --color=auto'
 	alias qa='qstat -u "*" | sort | grep [0-9]' 
 	alias qz='qstat | sort | grep [0-9]' 
 	alias devQrsh='qrsh -q dev.q -l h_vmem=4G -l vf=4G'
