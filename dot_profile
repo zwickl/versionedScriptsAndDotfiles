@@ -186,10 +186,12 @@ if [ $OS = "linux" ];then
     #export ORYZA_ROOT=$DEV/oryza/
     export PORYZA_ROOT=$DEV/productionOryza/
     export ORYZA_ROOT=$PORYZA_ROOT
+    export FULLORYZA_ROOT=$DEV/fullGenomeOryza/
 else
     export OLD_ORYZA_ROOT=$DEV/experiments/oryza/
     export PORYZA_ROOT=$DEV/experiments/productionOryza/
     export ORYZA_ROOT=$PORYZA_ROOT
+    export FULLORYZA_ROOT=$DEV/experiments/fullGenomeOryza/
     export FULL_ANALYSES=$ORYZA_ROOT/gramene34_split_cleanedByCSHL/alignmentsAndTrees/ms2006.frac0.5/dag.G1.D4.C4.N5/
 fi
 export G34=$OLD_ORYZA_ROOT/gramene34_omap_genes/
@@ -206,12 +208,14 @@ if [ ! -d "$ORYZA_ROOT" ];then
     #ls $ORYZA_ROOT &> /dev/null
 fi
 export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/analysisScripts/
+export ANALYSIS_SCRIPTS_FULLORYZA=$FULLORYZA_ROOT/scripts/analysisScripts/
 export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/alignmentScripts/
 export GENERAL_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/generalScripts/
 export ANNOTATION_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/annotationSplittingScripts/
 export PLOT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/plottingScripts/
 export POST_PROCESS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/postProcessScripts/
 export NUMORYZA=11
+export NUMFULLORYZA=9
 
 
 export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
@@ -248,12 +252,22 @@ alias ddel="disq_del"
 alias pull="git pull origin"
 alias push="git push origin"
 
-alias mark="pwd > $HOME/.markedDir"
-alias cdm="cd `cat $HOME/.markedDir`"
-alias mark2="pwd > $HOME/.markedDir2"
-alias cdm2="cd `cat $HOME/.markedDir2`"
-alias mark3="pwd > $HOME/.markedDir3"
-alias cdm3="cd `cat $HOME/.markedDir3`"
+function mark(){
+    if [ ! "$#" -eq 1 ];then
+        echo "Enter a name for this mark"
+        return
+    fi
+    pwd > $HOME/.markedDirs/$1
+}
+
+function cdm(){
+    if [ ! "$#" -eq 1 ];then
+        echo "Enter a named mark"
+        return
+    fi
+    cd `cat $HOME/.markedDirs/$1`
+}
+
 alias runLast='`cat $HOME/.lastMake`/installed/bin/Garli'
 alias debLast='gdb `cat $HOME/.lastMake`/installed/bin/Garli'
 
@@ -491,9 +505,24 @@ fi
 HISTIGNORE=\&
 HISTFILESIZE=1000
 
+function ogeFullData(){
+    PATH=$PATH:/opt/iCommands/
+    icd /iplant/home/shared/agi_data
+}
 
+if [[ $OS == 'darwin' ]]; then
+    #for rbenv ruby utility
+    PATH=$PATH:/Users/zwickl/.rbenv/bin
 
-# Setting PATH for Python 2.7
-# The orginal version is saved in .profile.pysave
-PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
-export PATH
+    # Setting PATH for Python 2.7
+    # The orginal version is saved in .profile.pysave
+    PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
+    export PATH
+
+    export ANDROIDSDK=$HOME/android_dev/adt-bundle-mac-x86_64-20130522/sdk
+    export ANDROIDNDK=$HOME/android_dev/android-ndk-r8e
+    export ANDROIDNDKVER=r8e
+    export ANDROIDAPI=14
+
+    export PATH=$ANDROIDNDK:$ANDROIDSDK/tools:$PATH
+fi
