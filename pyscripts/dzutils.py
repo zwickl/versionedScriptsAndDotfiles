@@ -2,56 +2,169 @@
 
 import sys
 import re
-import itertools
+from os import path, stat
+import cPickle
+from itertools import izip
+from argparse import ArgumentTypeError, ArgumentParser
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
 
-class CoordinateSet:
+
+#this is for used for type checking as a type= argument in argparse.add_argument
+def proportion_type(string):
+    #it would be nice to be able to pass as specific range, but the func can only take 1 arg
+    min_val, max_val = 0.0, 1.0
+    value = float(string)
+    if value < min_val or value > max_val:
+        mess = 'value %f must be between %.2f and %.2f' % (value, min_val, max_val)
+        raise ArgumentTypeError(mess)
+    return value
+
+
+class BarebonesArgumentParser(ArgumentParser):
+    def __init__(self, **kwargs):
+        #these are the defaults which can be overwridden with keyword arguments
+        defaultInput = kwargs.pop('defaultInput', True)
+        defaultOutput = kwargs.pop('defaultOutput', sys.stdout)
+        
+        #base constructor
+        super(BarebonesArgumentParser, self).__init__(self, **kwargs)
+        
+        if defaultInput is not False:
+            self.add_argument('-i', '--input', dest='inFiles', nargs='*', type=str, default=None, 
+                                help='intput files')
+
+        if defaultOutput is not False:
+            self.add_argument('-o', '--output', dest='outFile', type=str, default=defaultOutput, 
+                                help='file to write output to (default stdout)')
+
+
+def read_from_file_or_pickle(filename, pickleName, readFunc, *readFuncArgs, **readFuncKwargs):
+    '''This takes a filename, and a function that would be used to parse that file, as well as arguments for
+    that parsing function.  If there is a file with the name <filename>.pickle that is more recent than 
+    <filename>, it will be unpickled into an object and returned.  Otherwise the parsing function will be 
+    called on the file, and the result pickled and returned.
+
+    The unsatisfying thing is that some parsing functions may return a generator rather than a list, dict or
+    other object.  Generators are not pickle-able, so this causes a problem.  Currently if the object returned
+    from the parse is a generator, cast it as a list before pickling it.  For many cases this will be fine for 
+    client code, but it obviously will not be ideal if the caller doesn't want the whole list in memory.
+    This is currently the caller's responsibility, and if they want a generator, don't use this function.  
+    For many cases this will be fine for client code, but it obviously will not be ideal if the caller 
+    doesn't want the whole list in memory.
+    NOTE: This is currently the caller's responsibility, and if they want a generator, don't use this function.
+    '''
+    if path.exists(filename):
+        sourceTime = stat(filename).st_mtime
+    else:
+        raise IOError("file %s doesn't exist?" % filename)
+    
+    #pickleName = filename + ".pickle"
+    pickleOK = False
+    if path.exists(pickleName):
+        pickleTime = stat(pickleName).st_mtime
+        if sourceTime <= pickleTime:
+            pickleOK = True
+        else:
+            sys.stderr.write('pickle file %s is too old, rewriting\n')
+
+    if pickleOK:
+        with open(pickleName, 'rb') as pickleIn:
+            sys.stderr.write('reading pickle file %s... ' % pickleName)
+            parsed = cPickle.load(pickleIn)
+            sys.stderr.write('done\n')
+    else:
+        with open(filename, 'rb') as fileIn:
+            parsed = readFunc(filename, *readFuncArgs, **readFuncKwargs)
+            import inspect
+            if inspect.isgenerator(parsed):
+                parsed = list(parsed)
+        with open(pickleName, 'wb') as pickleOut:
+            sys.stderr.write('writing pickle file %s... ' % pickleName)
+            import inspect
+            if inspect.isgenerator(parsed):
+                parsed = list(parsed)
+            cPickle.dump(parsed, pickleOut, cPickle.HIGHEST_PROTOCOL)
+            sys.stderr.write('done\n')
+    return parsed
+
+
+def extract_sequences_and_stuff_from_nexus_file(nfile, taxToSequenceDict, beginningLinesInNexus, endLinesInNexus):
+    '''this just gets some random stuff that I extract from a nexus file that I was using in a few different scripts
+    this includes a dictionary of taxon names to sequences, the lines in the file before the matrix, and the lines
+    in the file after the matrix'''
+    foundSequences = False
+    with open(nfile, 'rb') as nexusFile:
+        for line in nexusFile:
+            #get the sequence lines in the nexus file
+            if re.search('^[\']', line):
+                foundSequences = True
+
+                #want to go from 
+                #'Oryza blah AA' ACGT... to [ 'Oryza blah AA', 'ACGT...' ]
+                #this looks like an ugly way to do this, but is much faster than using shlex as I used to
+                #stuff = shlex.split(line)
+                stuff = line.split()
+                stuff = [ re.sub('\'', '', ' '.join(stuff[:-1])), stuff[-1] ]
+
+                if len(stuff) != 2:
+                    exit("problem parsing line %s" % line)
+                taxToSequenceDict[stuff[0]] = stuff[1]
+            else:
+                if foundSequences:
+                    endLinesInNexus.append(line)
+                else:
+                    beginningLinesInNexus.append(line)
+ 
+
+class CoordinateSet(object):
     '''A set of chromosomal coordinates for each sequence in an alignment
     Single copy ONLY!  Missing taxa are allowed though
     '''
     def __init__(self, taxa_names):
         self.defaultCoord = -1
         self.seqCoords = {}
-        #for tax in oryza.taxon_names:
-        if len(taxa_names) == 0:
-            exit("you must pass a list of taxon names")
-        for tax in taxa_names:
-            self.seqCoords[tax] = self.defaultCoord
+        assert taxa_names, "you must pass a list of taxon names"
+        self.seqCoords = dict.fromkeys( taxa_names, self.defaultCoord )
+    
     def set_coordinate(self, taxon, coord):
-        try:
+        if taxon in self.seqCoords:
             if self.seqCoords[taxon] is not None:
                 self.seqCoords[taxon] = int(coord)
-        except KeyError:
+        else:
             print self.seqCoords
             exit("trying to assign coordinate to unknown taxon: %s" % taxon)
+
     def set_filename(self, name):
         self.filename = name
         self.short_filename = extract_core_filename(name)
-
+    
     def output(self):
-        for t in self.seqCoords.keys():
-            print t,
-            print self.seqCoords[t]
+        for name, coord in self.seqCoords.iteritems():
+            print name, coord
+    
     def row_output(self, taxon_labels=None):
-        str = ''
+        mystr = ''
         if taxon_labels is None:
             #this will sort the columns alphabetically by taxon name
-            for t in sorted(self.seqCoords.keys()):
-                str += '%d\t' % int(self.seqCoords[t])
+            for t in sorted(self.seqCoords.iterkeys()):
+                mystr += '%d\t' % int(self.seqCoords[t])
         #IMPORTANT: if taxon labels are passed in, the coord order will be the same, NOT alphabetical
         else:
             try:
                 for lab in taxon_labels:
-                    str += '%d\t' % int(self.seqCoords[lab])
+                    mystr += '%d\t' % int(self.seqCoords[lab])
             except:
                 exit('could not match taxon %s with any coordinate' % lab)
-        return str
+        return mystr
 
-def extract_core_filename(name):
+
+def extract_core_filename(name, no_nchar=False):
     '''
+    extract the "core" portion of a filename, regardless of exactly what the original filename is
+    this includes the cluster number, number of taxa, number of characters and other stuff
     >>> extract_core_filename('../alignments/aligned.blink.00047.00002.8T.noDupes.954C.nex')
     '00047.00002.8T.noDupes.954C'
     >>> extract_core_filename('../../alignments/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.nex')
@@ -61,28 +174,53 @@ def extract_core_filename(name):
 
     '''
     extracted = None
-    patts = [ '^.*blink[.](.*)', '^.*clique[.](.*)', '^.*MCL.*[.](.*)' ]
+    patts = [ '^.*blink[.](.*)', '^.*clique[.](.*)', '^.*MCL.*[.](.*)', '^.*MCcoalSim[.](.*)' ]
     for p in patts:
         search = re.search(p, name)
-        if search is not None:
+        if search:
             extracted = search.group(1)
             break
     if extracted is None:
-        exit("problem shortening name: %s" % name)
+        exit("problem shortening name 1: %s" % name)
    
     extracted2 = None
-    patts = [ '(.*).nex$', '(.*).best.tre$', '(.*).boot.tre$', '(.*).tre$', '(.*).boot$' ]
+    #don't think that these really need to be at the end of lines
+    #patts = [ '(.*).nex$', '(.*).best.tre$', '(.*).boot.tre$', '(.*).tre$', '(.*).boot$' ]
+    patts = [ '(.*).nex', '(.*).best.tre', '(.*).boot.tre', '(.*).tre', '(.*).boot' ]
     for p in patts:
         search = re.search(p, extracted)
-        if search is not None:
+        if search:
             extracted2 = search.group(1)
             break
     if extracted2 is None:
-        exit("problem shortening name: %s" % name)
+        exit("problem shortening name 2: %s" % name)
+
+    if no_nchar:
+        search = re.search('(.*)[.].*C$', extracted2)
+        if search:
+            extracted2 = search.group(1)
+
     return extracted2
 
 
-class DagLine:
+def parse_numerical_filename_details(name):
+    '''
+    >>> parse_numerical_filename_details('../alignments/aligned.blink.00047.00002.8T.noDupes.954C.nex')
+    (47, 2, 8, 954)
+    >>> parse_numerical_filename_details('../../alignments/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.nex')
+    (0, 0, 10, 2079)
+    >>> parse_numerical_filename_details('../garli.gblocks.collapse/runs/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.best.tre')
+    (0, 0, 10, 2079)
+    '''
+    core = extract_core_filename(name)
+    search = re.search('([0-9]+)[.]([0-9]+)[.]([0-9]+)T[.][a-zA-Z]+[.]([0-9]+)C.*', core)
+    if search:
+        return int(search.group(1)), int(search.group(2)), int(search.group(3)), int(search.group(4))
+    else:
+        exit("count not parse %s" % name)
+
+
+class DagLine(object):
     '''Simple container for dagchainer formatted lines.'''
     def __init__(self, line):
         '''Store whole line as string, and some parsed fields.
@@ -98,34 +236,41 @@ class DagLine:
         self.tax[12] -- taxon names, pulled from fields 1 and 5
         self.evalue -- 'nuf said
         '''
+        self.fields = line.split() if isinstance(line, str) else line
+        '''
         if isinstance(line, str):
             self.fields = line.split()
         else:
             self.fields = line
+        '''
         if len(self.fields) != 9:
             raise ValueError('Wrong number of fields in dag string')
         self.string = '\t'.join(self.fields)
         #this is just the line string minus the e-value, which can be represented in text multiple ways
         self.cut_string = '\t'.join(self.fields[:-1])
-        self.tax1 = self.fields[1]
-        self.tax2 = self.fields[5]
-        self.evalue = self.fields[8]
+        self.tax1, self.tax2, self.evalue = self.fields[1], self.fields[5], self.fields[8]
+
     def __hash__(self):
         return hash(self.cut_string)
+    
     def __cmp__(self, other):
-        raise Moo
+        raise Exception
         sys.stderr.write('CMP %s %s' % (self, other))
         #return cmp(self.cut_string, other.cut_string)
         return cmp((self.tax1, self.tax2), (other.tax1, other.tax2))
+    
     def __eq__(self, other):
         return self.cut_string == other.cut_string
+    
     def __ne__(self, other):
         return not self.__eq__(other)
+    
     def __lt__(self, other):
         if self.tax1 != other.tax1:
             return self.tax1 < other.tax1
         else:
             return self.tax2 < other.tax2
+    
     def __str__(self):
         return self.string
 
@@ -145,11 +290,11 @@ def my_dag_sort(first, sec):
             return False
 
 
-def parse_daglines(file, self_hits=False):
-    if isinstance(file, str):
-        hand = open(file, 'r')
+def parse_daglines(infile, self_hits=False):
+    if isinstance(infile, str):
+        hand = open(infile, 'r')
     else:
-        hand = file
+        hand = infile
 
     lines = [ line.split() for line in hand if not '#' in line ]
     lines.sort()
@@ -160,8 +305,10 @@ def parse_daglines(file, self_hits=False):
     return dagLines
 
 
-class BlinkCluster:
-    def __init__(self, num, members=[], dagLines=None, daglineDoubleDict=None, mapping=None):
+class BlinkCluster(object):
+    def __init__(self, num, members=None, dagLines=None, daglineDoubleDict=None, mapping=None):
+        if members is None:
+            members = []
         #print members
         #for iteration
         self.index = 0
@@ -174,13 +321,9 @@ class BlinkCluster:
                 self.cluster_members.append(mapping[member])
         
         self.cluster_members.sort()
+    
+        self.member_set = set(tuple(sorted(self.cluster_members))) if self.cluster_members else set()
 
-        if len(self.cluster_members) > 0:
-            self.member_set = set(tuple(sorted(self.cluster_members)))
-        else:
-            self.member_set = set()
-
-        self.noDupes = True
         taxonDict = {}
         for memb in self.cluster_members:
             if memb[0:7] in taxonDict:
@@ -188,17 +331,19 @@ class BlinkCluster:
                 break
             else:
                 taxonDict[memb[0:7]] = True
+        else:
+            self.noDupes = True
 
-        if dagLines is not None and len(dagLines) > 0:
+        if dagLines is not None and len(dagLines):
             #daglineDoubleDict = get_dagline_double_dict(dagLines)
             daglineDoubleDict = get_dagline_double_dict_from_dagline_objects(dagLines)
         else:
             self.dag_lines = []
             self.dag_line_set = set()
-        if daglineDoubleDict is not None:
+        if daglineDoubleDict:
             self.dag_lines = get_dagline_list_for_cluster(self.cluster_members, daglineDoubleDict)
             self.dag_line_set = get_dagline_set_for_cluster(self.cluster_members, daglineDoubleDict)
-            if len(self.dag_lines) == 0 and len(self.cluster_members) > 1:
+            if not self.dag_lines and len(self.cluster_members) > 1:
                 print len(daglineDoubleDict)
                 print self
                 exit('no daglines %d?' % len(self.cluster_members))
@@ -212,18 +357,21 @@ class BlinkCluster:
 
     def add(self, member):
         self.cluster_members.append(member)
+    
     def __len__(self):
         return len(self.cluster_members)
+    
     def output(self, stream=sys.stdout):
         for mem in self.cluster_members:
             stream.write('%d\t%s\n' % (self.number, mem))
+    
     def __repr__(self):
         string = 'cluster %d ' % self.number
         string += '%d members\n' % len(self.cluster_members)
         for mem in self.cluster_members:
             string += '\t%d\t%s\n' % (self.number, mem)
         string += 'daglines\n'
-        if self.dag_lines is not None:
+        if self.dag_lines:
             for line in self.dag_lines:
                 if isinstance(line, DagLine):
                     string += '\t%s\n' % line.string
@@ -234,22 +382,25 @@ class BlinkCluster:
         return string
 
     def __str__(self):
-        string = ''
-        for mem in self.cluster_members:
-            string += '\t%d\t%s\n' % (self.number, mem)
-        return string
+        return ''.join(['\t%d\t%s\n' % (self.number, mem) for mem in self.cluster_members ])
 
     def contains_matching_taxon(self, patt):
         for m in self.cluster_members:
             if re.search(patt, m) is not None:
                 return True
         return False
+    
     def __contains__(self, name):
+        return name in self.cluster_members
+        '''
         if name in self.cluster_members:
             return True
         return False
+        '''
+    
     def __iter__(self):
         return self
+    
     def next(self):
         try:
             result = self.cluster_members[self.index]
@@ -277,14 +428,16 @@ class BlinkCluster:
     def is_single_copy(self):
         return self.noDupes
 
-class SetOfClusters():
-    def __init__(self, blink_clusters=[]):
+class SetOfClusters(object):
+    def __init__(self, blink_clusters=None):
+        if blink_clusters is None:
+            blink_clusters = []
         #for iteration
         self.index = 0
         #BlinkCluster objects
         #in case blink_clusters is a set   
         blink_clusters = list(blink_clusters)
-        if len(blink_clusters) > 0:
+        if blink_clusters:
             if isinstance(blink_clusters[0], BlinkCluster):
                 self.blink_clusters = blink_clusters
             else:
@@ -296,12 +449,12 @@ class SetOfClusters():
         self.cluster_member_tuples = [ tuple(sorted(clust.cluster_members)) for clust in self.blink_clusters ]
         #dictionary to find clusters indexed by their tuples
         clusterDict = {}
-        for tup, clust in itertools.izip(self.cluster_member_tuples, self.blink_clusters):
+        for tup, clust in izip(self.cluster_member_tuples, self.blink_clusters):
             clusterDict[tup] = clust
         #a single set, with clusters (as tuples) as members 
         self.cluster_tuple_set = set(self.cluster_member_tuples)
     
-    def get_cluster_by_member(memb):
+    def get_cluster_by_member(self, memb):
         for clust in self.blink_clusters:
             if memb in clust:
                 return clust
@@ -370,7 +523,7 @@ class SetOfClusters():
                 #print 'inner'
                 #print n1, n2
                 n2+=1
-                if len(clust1.member_intersection(clust2)) > 0:
+                if len(clust1.member_intersection(clust2) > 0:
                     if clust1.noDupes or clust2.noDupes:
                         if len(clust1.member_difference(clust2)) != 0 and len(clust2.member_difference(clust1)) != 0:
                             print 'not sub or super'
@@ -400,8 +553,7 @@ def parse_mcl_output(filename):
     output is simply one line per cluster:
     OminuCC03S_FGT1789  OminuCC03S_FGT1792  OoffiCC03S_FGT1798  OminuBB03S_FGT0728  OminuBB03S_FGT0727  OoffiCC03S_FGT1799  OminuCC03S_FGT1791  OminuCC03S_FGT1790   
     '''
-    mclOut = open(filename, "rb")
-    lines = [ l.split() for l in mclOut ]
+    lines = ( l.split() for l in open(filename, "rb") )
     allClusters = []
 
     num = 1
@@ -425,15 +577,13 @@ def parse_blink_output(filename, dagline_dict=None):
     2	OglabAA03S_FGT0266
     2	OminuCC03S_FGT0238
     '''
-    blinkOut = open(filename, "rb")
-    lines = [ l.split() for l in blinkOut ]
+    lines = ( l.split() for l in open(filename, "rb") )
     allClusters = []
  
     clustDict = {}
     for line in lines:
         try:
-            num = int(line[0])
-            name = line[1]
+            num, name = int(line[0]), line[1]
             if num in clustDict:
                 clustDict[num].append(name)
             else:
@@ -448,7 +598,7 @@ def parse_blink_output(filename, dagline_dict=None):
             #my_output("expecting lines with only:\ncluster# seqname\n", logfile)
             exit(1)
  
-    for c in sorted(clustDict.keys()):
+    for c in sorted(clustDict.iterkeys()):
         allClusters.append(BlinkCluster(c, clustDict[c], daglineDoubleDict=dagline_dict))
     return allClusters
 
@@ -511,17 +661,17 @@ def get_dagline_list_for_cluster(genes, daglineDoubleDict):
     #print 'dictsize', len(daglineDoubleDict)
     #print daglineDoubleDict.keys()
     clustHits = []
-    for tax1 in range(0, len(genes)):
-        names1 = [genes[tax1], re.sub('[.][0-9]$', '', genes[tax1])]
+    for tax1 in genes:
+        names1 = [tax1, re.sub('[.][0-9]$', '', tax1)]
         #print 'names1', names1
         for n1 in names1:
             found = False
             if n1 in daglineDoubleDict:
                 #print '\tfound n1:', n1
                 sub_dict = daglineDoubleDict[n1]
-                for tax2 in range(0, len(genes)):
+                for tax2 in genes:
                     if tax1 != tax2:
-                        names2 = [genes[tax2], re.sub('[.][0-9]$', '', genes[tax2])]
+                        names2 = [tax2, re.sub('[.][0-9]$', '', tax2)]
                         #print '\tnames1', names1
                         for n2 in names2:
                             if n2 in sub_dict:
@@ -587,22 +737,20 @@ def get_dagline_double_dict(lineList, bidirectional=False):
             if bidirectional:
                 lineTups.append((line[5], line[1], line))
 
-    for tup in lineTups:
-        t1 = tup[0]
-        t2 = tup[1]
-        
+    for t1, t2, line in lineTups:
         match = re.search('(.*)[.][0-9]*$', t1)
-        if match is not None:
-             t1 = match.group(1)
+        if match:
+            t1 = match.group(1)
         
         match = re.search('(.*)[.][0-9]*$', t2)
-        if match is not None:
+        if match:
             t2 = match.group(1)
-        
-        if t1 in my_dict:
-            my_dict[t1][t2] = tup[2]
-        else:
-            my_dict[t1] = {t2 : tup[2]}
+      
+        my_dict[t1].setdefault(t1, {})[t2] = line
+        #if t1 in my_dict:
+        #    my_dict[t1][t2] = line
+        #else:
+        #    my_dict[t1] = {t2 : line}
     return my_dict
 
 
@@ -622,32 +770,27 @@ def get_dagline_double_dict_from_dagline_objects(daglines):
     if len(daglines) == 0:
         raise poo
         exit("get_dagline_double_dict_from_dagline_objects passed empty list")
-
-    
     
     for line in daglines:
-        t1 = line.tax1
+        t1, t2 = line.tax1, line.tax2
         
         match = re.search('(.*)[.][0-9]*$', t1)
-        if match is not None:
-             t1 = match.group(1)
-             #print 'matched', t1
+        if match:
+            t1 = match.group(1)
             
-        t2 = line.tax2
-        
         match = re.search('(.*)[.][0-9]*$', t2)
-        if match is not None:
+        if match:
             t2 = match.group(1)
-            #print 'matched', t2
-        
-        if t1 in my_dict:
-            my_dict[t1][t2] = line
-        else:
-            my_dict[t1] = {t2 : line}
+       
+        my_dict.setdefault(t1, {})[t2] = line
+        #if t1 in my_dict:
+        #    my_dict[t1][t2] = line
+        #else:
+        #    my_dict[t1] = {t2 : line}
     return my_dict
 
 
-class HitList:
+class HitList(object):
     def __init__(self, hits):
         #self.hitlist = sets.Set(hits)
         self.hitlist = set(hits)
@@ -692,17 +835,10 @@ class HitList:
                     if not name in self.uniqueNames:
                         self.uniqueNames[name] = count
                         self.numbersToNames[count] = name
-                        count +=1
+                        count += 1
             if len(self.uniqueNames) != len(self.numbersToNames):
                 exit("problem mapping hit names to numbers")
         return self.uniqueNames.keys()
-        '''
-            self.uniqueNames = set()
-            for hit in self.hitlist:
-                self.uniqueNames.add(hit[0])
-                self.uniqueNames.add(hit[1])
-        return self.uniqueNames
-        '''
 
     def output(self, stream=sys.stdout):
         for hit in self.hitlist:
@@ -713,7 +849,8 @@ class HitList:
             self.unique_names()
         numSet = set()
         for hit in self.hitlist:
-            set.add((self.uniqueNames[hit[0]], self.uniqueNames[hit[1]]))
+            #set.add((self.uniqueNames[hit[0]], self.uniqueNames[hit[1]]))
+            numSet.add((self.uniqueNames[hit[0]], self.uniqueNames[hit[1]]))
 
     def output_for_dfmax(self, stream=sys.stdout):
         if self.uniqueNames is None:
@@ -723,24 +860,26 @@ class HitList:
         for hit in self.hitlist:
             stream.write('e %s %s\n' % (self.uniqueNames[hit[0]], self.uniqueNames[hit[1]]))
 
+
 def parse_hits_file(filename):
-    hitsFile = open(filename, "rb")
-    lines = [ tuple(l.split()) for l in hitsFile ]
+    lines = [ tuple(l.split()) for l in open(filename, "rb") ]
     #return HitList(lines).get_sublist_by_query_names(['LOC'])
     return HitList(lines)
-   
+
+
 def make_dictionary_from_gff_arbitrary_field(string):
-    dict = {}
+    mydict = {}
     fields = string.split(';')
     for f in fields:
         sep = f.split('=')
         try:
-            dict[sep[0]] = sep[1]
+            mydict[sep[0]] = sep[1]
         except:
             exit("problem reading field, %s" % sep)
-    return dict
+    return mydict
 
-class ParsedSequenceDescription:
+
+class ParsedSequenceDescription(object):
     def __init__(self, description=None, gff=None):
         '''
         OGE gff lines:
@@ -872,6 +1011,8 @@ class ParsedSequenceDescription:
             desc = description.replace(";", " ")
             #desc = desc.replace(":", " ")
             split_desc = desc.split()
+            if len(split_desc) < 3:
+                exit('Description malformed? %s' % desc)
             
             #get the name
             self.name = split_desc[0].replace(">", "")

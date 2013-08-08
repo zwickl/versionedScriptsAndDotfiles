@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-import os
 import sys
 import string
-import StringIO
 
 from optparse import OptionParser
 
@@ -20,19 +18,19 @@ parser.add_option("--colheaders", dest="colfile", help="File containing column l
 #    print_usage("")
 
 if len(args) == 1:
-	filename = args[0]
-	try:
-		file = open(filename, 'r')
-	except:
-		sys.exit("problem opening file")
-elif len(args) > 0:
-	sys.exit("expecting only one argument, got %s" % args)
+    filename = args[0]
+    try:
+        infile = open(filename, 'r')
+    except IOError:
+        sys.exit("problem opening file")
+elif args:
+    sys.exit("expecting only one argument, got %s" % args)
 else:
-	file = sys.stdin
+    infile = sys.stdin
 
 outprec = int(options.prec)
-haveRows = bool(options.rowfile is not None)
-haveCols = bool(options.colfile is not None)
+haveRows = options.rowfile is not None
+haveCols = options.colfile is not None
 hor = options.hor
 vert = options.vert
 rowFile = None
@@ -41,54 +39,54 @@ rowHeads = []
 colHeads = []
 
 if haveRows:
-	try:
-		rowFile = open(options.rowfile, "rU")
-	except:
-		exit("Problem opening file %s" % options.rowfile)
-	for r in rowFile:
-		rowHeads.extend(string.replace(s, "_", " ") for s in r.split())
+    try:
+        rowFile = open(options.rowfile, "rU")
+    except IOError:
+        exit("Problem opening file %s" % options.rowfile)
+    for r in rowFile:
+        rowHeads.extend(string.replace(s, "_", " ") for s in r.split())
 if haveCols:
-	try:
-		colFile = open(options.colfile, "rU")
-	except:
-		exit("Problem opening file %s" % options.colfile)
-	for c in colFile:
-		colHeads.extend(string.replace(s, "_", " ") for s in c.split())
+    try:
+        colFile = open(options.colfile, "rU")
+    except IOError:
+        exit("Problem opening file %s" % options.colfile)
+    for c in colFile:
+        colHeads.extend(string.replace(s, "_", " ") for s in c.split())
 
 lines = [ l.split() for l in file ]
 numCols = len(lines[0])
 floatRows = [[ float(e) for e in l ] for l in lines]
 actualRows = [[ "%.*f" % (outprec, e) for e in l ] for l in floatRows ]
 
-if haveRows == True:
-	numCols = numCols + 1
-	for l in range(0, len(actualRows)):
-		actualRows[l].insert(0, rowHeads[l])
-		#actualRows[l].insert(0, rowHeads[l].replace("_", " "))
+if haveRows:
+    numCols = numCols + 1
+    for l in range(0, len(actualRows)):
+        actualRows[l].insert(0, rowHeads[l])
+        #actualRows[l].insert(0, rowHeads[l].replace("_", " "))
 
 print "\\begin {table}\n\\begin{center}\n\\resizebox{4in}{!}{"
 
-if vert == True:
-	print "\\begin{tabular}{ | " + " | ".join("c" for x in range(0, numCols)) + " | }"
+if vert:
+    print "\\begin{tabular}{ | " + " | ".join("c" for x in range(0, numCols)) + " | }"
 else:
-	print "\\begin{tabular}{ " + " ".join("c" for x in range(0, numCols)) + " }"
+    print "\\begin{tabular}{ " + " ".join("c" for x in range(0, numCols)) + " }"
 
-if hor == True:
-	print "\\hline"
-if haveCols == True:
-	print " & ".join(colHeads) + "\\\\"
-	print "\\hline"
-elif hor == True:
-	print "\\hline"
+if hor:
+    print "\\hline"
+if haveCols:
+    print " & ".join(colHeads) + "\\\\"
+    print "\\hline"
+elif hor:
+    print "\\hline"
 
 outRows = []
 for l in actualRows:
-	outRows.append(" & ".join(l) + "\\\\")
-	if hor == True:
-		outRows.append(" \\hline")
+    outRows.append(" & ".join(l) + "\\\\")
+    if hor:
+        outRows.append(" \\hline")
 print "\n".join(outRows)
 #for e in floatRows:
-#	textLines.append(" & " + " & ".join( [ "%.*f" % (outprec, e) for e in l ] ))
+#    textLines.append(" & " + " & ".join( [ "%.*f" % (outprec, e) for e in l ] ))
 
 #textLines = "\n".join([ " & " + " & ".join( [ "%.*f" % (outprec, e) for e in l ] ) + " \\\\" for l in floatRows ])
 #print textLines

@@ -3,6 +3,7 @@ set nocompatible
 set t_kb=
 
 :syntax on
+filetype indent plugin on
 :set scrolloff=20
 :set incsearch
 :set ruler
@@ -13,7 +14,8 @@ set t_kb=
 :set expandtab
 :set softtabstop=4
 :set autoindent
-autocmd BufRead *.py set smartindent cinwords=if,elif,else,for,while,try,except,finally,def,class
+"autocmd BufRead *.py set smartindent cinwords=if,elif,else,for,while,try,except,finally,def,class
+autocmd BufRead *.py set cinwords=if,elif,else,for,while,try,except,finally,def,class
 "au BufReadPost * if line("'\"") > 0|if line("'\"") <= line("$")|exe("norm '\"")|else|exe "norm $"|endif|endif 
 
 if has("autocmd")
@@ -43,7 +45,7 @@ augroup END
 
 
 set background=dark
-colorscheme ir_black
+"colorscheme ir_black
 set ls=2
 
 " Maintainer:	Lars H. Nielsen (dengmao@gmail.com)

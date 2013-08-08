@@ -1,20 +1,13 @@
 #!/usr/bin/env python
-import os
 import sys
-import subprocess
-import string
-from StringIO import StringIO
 import re
-import itertools
 import argparse
-import new
-import copy
 
 from Bio import SeqIO
-from Bio import AlignIO
-from Bio.Align.Applications import MuscleCommandline
 from Bio.Alphabet import IUPAC
-from Bio.Blast import NCBIStandalone
+from dzutils import ParsedSequenceDescription
+from dzutils import read_from_file_or_pickle
+
 
 '''
 #this was just some experimentation with making my own hashes
@@ -45,7 +38,7 @@ exit()
 print s
 '''
 
-class my_SeqRecord(SeqIO.SeqRecord):
+class my_SeqRecord(SeqIO.SeqRecord, object):
     '''
     def __init__(self, other=None):
         if other is not None:
@@ -58,20 +51,31 @@ class my_SeqRecord(SeqIO.SeqRecord):
     def __cmp__(self, other):
         return False
 
-def add_hash(an_instance):
-    an_instance.__hash__ = new.instancemethod(my_seqrecord_hash, an_instance, an_instance.__class__)
+#def add_hash(an_instance):
+#    an_instance.__hash__ = new.instancemethod(my_seqrecord_hash, an_instance, an_instance.__class__)
 
 #add_hash(SeqIO.SeqRecord)
 
 #use argparse module to parse commandline input
 parser = argparse.ArgumentParser(description='extract sequences from a fasta file')
 
+mutExclGroup = parser.add_mutually_exclusive_group()
+
 #add possible arguments
 parser.add_argument('-v', '--invert-match', dest='invertMatch', action='store_true', default=False,
                     help='invert the sense of the match (default false)')
 
-parser.add_argument('-s', '--sort', dest='sortOutput', action='store_true', default=False,
+mutExclGroup.add_argument('-s', '--sort', dest='sortOutput', action='store_true', default=False,
                     help='alphanumerically sort the sequences by name (default false)')
+
+mutExclGroup.add_argument('-sc', '--sort-coord', dest='sortOutputByCoord', action='store_true', default=False,
+                    help='sort sequences by coordinate if embedded in description (default false)')
+
+parser.add_argument('-p', '--pickle', dest='usePickle', action='store_true', default=False,
+                    help='read and write pickled sequence files (<seqfile>.pickle, sometimes faster, default False)')
+
+parser.add_argument('-ms', '--match-sequence', dest='matchSequence', action='store_true', default=False,
+                    help='search through the actual sequences for a match, rather than the sequence names')
 
 parser.add_argument('--range', dest='baseRange', nargs=2, type=int, default=[1, -1], metavar=('startbase', 'endbase'),
                     help='range of alignment positions to output, start at 1, last position included, -1 for end')
@@ -83,34 +87,34 @@ parser.add_argument('pattern',
                     help='a quoted regular expression to search sequence names for')
 
 parser.add_argument('filenames', nargs='*', default=[], 
-                    help='a list of filenames to search (none for stdin)')
+                    help='a list of filenames to search')
 
 #now process the command line
-parsed = parser.parse_args()
+options = parser.parse_args()
 
-invertMatch = parsed.invertMatch
-startBase = parsed.baseRange[0] - 1
-endBase = parsed.baseRange[1]
-if parsed.patternFile is not None:
-    sys.stderr.write('reading patterns from file %s ...\n' % parsed.patternFile)
-    pf = open(parsed.patternFile, 'rb')
+log = sys.stderr
+
+startBase = options.baseRange[0] - 1
+endBase = options.baseRange[1]
+if options.patternFile is not None:
+    log.write('reading patterns from file %s ...\n' % options.patternFile)
+    pf = open(options.patternFile, 'rb')
     seqPatterns = [ line.strip() for line in pf ]
-    sys.stderr.write('patterns: %s' % str(seqPatterns))
+    log.write('patterns: %s' % str(seqPatterns))
 else:
-    seqPatterns = [parsed.pattern]
-seqFiles = parsed.filenames
-sortOutput = parsed.sortOutput
+    seqPatterns = [options.pattern]
+seqFiles = options.filenames
 
 compiledPats = []
 for pat in seqPatterns:
     try:
         cpat = re.compile(pat)
         compiledPats.append(cpat)
-    except:
-        sys.stderr.write("problem compiling regex pattern %s\n" % pat)
+    except StandardError:
+        log.write("problem compiling regex pattern %s\n" % pat)
         exit(1)
 
-sys.stderr.write("Parsing sequence files %s ...\n" % str(seqFiles))
+log.write("Parsing sequence files %s ...\n" % str(seqFiles))
 
 #read the recs from all of the files
 recList = []
@@ -121,33 +125,40 @@ for oneSeqFile in seqFiles:
         #allRecs = set([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
         #recList.extend([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
         #recList |= set([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
-        recList.extend([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
+        
+        if not options.usePickle:
+            recList.extend( rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) )
+        else:
+            recList.extend( rec for rec in read_from_file_or_pickle(oneSeqFile, oneSeqFile + '.pickle', SeqIO.parse, "fasta", alphabet=IUPAC.ambiguous_dna) )
       
         #recSet |= set([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
     except IOError:
-        sys.stderr.write("error reading file %s!" % oneSeqFile)
+        log.write("error reading file %s!" % oneSeqFile)
         exit(1)
     
-    #if sortOutput is True:
+    #if sortOutput:
     #    allRecs.sort(key=lambda x:x.name)
 
-recSet = set([ my_SeqRecord(rec.seq, description=rec.description, name=rec.name, id =rec.id) for rec in recList ])
+recSet = set( my_SeqRecord(rec.seq, description=rec.description, name=rec.name, id =rec.id) for rec in recList )
 
-if invertMatch:
+if options.invertMatch:
     matchedRecs = set(recSet)
 else:
     matchedRecs = set()
 for cpat in compiledPats:
     for seq in recSet:
-        match = cpat.search(seq.description)
+        if options.matchSequence:
+            match = cpat.search(seq.seq.data)
+        else:
+            match = cpat.search(seq.description)
         if match is not None:
-            if invertMatch:
+            if options.invertMatch:
                 if seq in matchedRecs:
                     matchedRecs.remove(seq)
             else:
                 matchedRecs.add(seq)
         '''     
-        if ( match is not None and invertMatch is False ) or ( match is None and invertMatch is True ):
+        if ( match is not None and not invertMatch ) or ( match is None and invertMatch ):
             #element -1 is the last element, but slicing includes up to but not including the second
             #value.  So, leave it out to get up to the actual end
             if endBase == -1:
@@ -161,13 +172,21 @@ if endBase == -1:
 else:
     preparedRecs = [ seq[startBase:endBase] for seq in matchedRecs ]
 
-if sortOutput:
-    preparedRecs.sort(key=lambda x:x.name)
+#print ParsedSequenceDescription(preparedRecs[0].description)
 
-if len(matchedRecs) > 0:
-    sys.stderr.write("matched %d sequences in %s\n" % (len(preparedRecs), str(seqFiles)))
+if options.sortOutput:
+    log.write("sorting by sequence name\n")
+    preparedRecs.sort(key=lambda x:x.name)
+elif options.sortOutputByCoord:
+    log.write("sorting by sequence start coordinate\n")
+    for rec in preparedRecs:
+        rec.coord_start  = ParsedSequenceDescription(rec.description).coord_start
+    preparedRecs.sort(key=lambda x:x.coord_start)
+
+if matchedRecs:
+    log.write("matched %d sequences in %s\n" % (len(preparedRecs), str(seqFiles)))
     SeqIO.write(preparedRecs, sys.stdout, "fasta")
 else:
-    sys.stderr.write("no sequences matched in %s!\n" % str(seqFiles))
+    log.write("no sequences matched in %s!\n" % str(seqFiles))
 
 

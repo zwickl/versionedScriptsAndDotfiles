@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-import sys
-import re
-from dzutils import *
+from re import search, sub
+from dzutils import ParsedSequenceDescription
+from dzutils import CoordinateSet
+from dzutils import extract_core_filename
+#from dzutils import *
 
-class Oryza:
+class Oryza(object):
     def __init__(self):
         #self.taxon_names = [ 'O. sativaj AA', 'O. sativai AA', 'O. barthii AA', 'O. brachyantha FF', 'O. glaberrima AA', 'O. glaberrimaF AA', 'O. glaberrimaM AA', 'O. glumaepatula AA', 'O. meridionalis AA', 'O. minuta BB', 'O. minuta CC', 'O. nivara AA', 'O. officinalis CC', 'O. punctata BB', 'O. rufipogon AA' ]
         #self.short_names = [ 'OsatjAA', 'OsatiAA', 'ObartAA', 'ObracFF', 'OglabAA', 'OglaFAA', 'OglaMAA', 'OglumAA', 'OmeriAA', 'OminuBB', 'OminuCC', 'OnivaAA', 'OoffiCC', 'OpuncBB', 'OrufiAA' ]
@@ -19,23 +21,78 @@ class Oryza:
 
 oryza = Oryza()
 
+
+def filter_out_alignments_with_borked_sativa_extractions(toFilter):
+    #these are the alignments affected by the sativa mis-extraction problems in /productionOryza2/gramene34_split/alignmentsAndTrees.glabM/ms2006.frac0.5/dag.G1.D2.C4.N5/
+    #added here to temporarily easily strip them from various uses of the alignment names
+    namesToRemove = [
+        '00034.00009.10T.noDupes',
+        '00086.00051.11T.noDupes',
+        '00146.00032.10T.noDupes',
+        '00216.00061.10T.noDupes',
+        '00434.00224.11T.noDupes',
+        '00477.00041.9T.noDupes',
+        '00531.00267.11T.noDupes',
+        '00669.00173.10T.noDupes',
+        '00675.00175.10T.noDupes',
+        '00787.00407.11T.noDupes',
+        '01013.00282.10T.noDupes',
+        '01043.00474.11T.noDupes',
+        '01123.00307.10T.noDupes',
+        '01152.00137.9T.noDupes',
+        '01261.00059.8T.noDupes',
+        '01276.00357.10T.noDupes',
+        '01602.00404.10T.noDupes',
+        '01639.00100.8T.noDupes',
+        '01740.00114.8T.noDupes',
+        '01785.00070.7T.noDupes',
+        '01835.00060.6T.noDupes'
+        ]
+    return filter_out_strings_by_pattern(toFilter, namesToRemove)
+    
+
+def filter_out_strings_by_pattern(toFilter, patterns):
+    if not patterns:
+        return toFilter
+    filtering = []
+    for name in toFilter:
+        for patt in patterns:
+            if search(patt, name):
+                break
+        else:
+            filtering.append(name)
+    return filtering
+
+
 def rename_sativa_to_oge_standard(name):
     '''standardize the naming format'''
     newName = name.replace('LOC_Os', 'OsatjAA')
     #indica names are like this: BGIOSGA009362
-    newName = newName.replace('BGIOSGA0', 'OsatiAA03g')
+    #the -TA appears in indica gene transcript (mRNA) names. I was stripping this off because it was
+    #annoying, but that caused problems because then the gene and mRNA had the same name, and the mRNA 
+    #was its own parent.
+    if '-TA' in newName:
+        newName = newName.replace('BGIOSGA0', 'OsatiAA03gt')
+        newName = newName.replace('-TA', '')
+    else:
+        newName = newName.replace('BGIOSGA0', 'OsatiAA03g')
+    #newName = newName.replace('-TA', '')
+    #need to make the two glab short names unique
     if 'ORGLA' in name:
         #glaberrima MIPS annotations are named like this: ORGLA03G0400100.1
         #want OglabAA03S_M4001
-        newName = newName.replace('ORGLA03G0', 'OglabAA03S_M')
-        newName = re.sub('00[.](1)', '.\\1', newName)
-        newName = re.sub('00$', '', newName)
+        newName = newName.replace('ORGLA03G0', 'OglaMAA03S_M')
+        newName = sub('00[.](1)', '.\\1', newName)
+        newName = sub('00$', '', newName)
+    elif 'OglabAA' in name:
+        newName = newName.replace('OglabAA', 'OglaFAA')
     return newName.replace('BGIOSIFCE', 'OsatiAA03.')
 
 
-def extract_all_information_for_seqs_in_alignments(filenames):
+def extract_all_information_for_seqs_in_alignments(filenames, returnAs='list'):
     '''This script is extracting information from something like the following that I write to the end of the nexus alignments, and returning
-    a list of tuples (one per alignment file) with (corefilename, [(seqname, ParsedSequenceDescription)]
+    a list of tuples (one per alignment file) with (corefilename, [(seqname, ParsedSequenceDescription)], CoordinateSet)
+    Alternatively, if returnAs is 'dict', then return a dict with corefilename keys and (dict(seqname: ParsedSequenceDescription), CoordinateSet) values
 
     [Cluster 82: 10 seq
     len 927    O. sativa AA         = LOC_Os03g29730.1|13103.m03407|CDS expressed protein
@@ -57,36 +114,47 @@ def extract_all_information_for_seqs_in_alignments(filenames):
     len 3340   O. sativaj AA        = OsatjAA03g29730 seq=gene; coord=Chr3:16936454..16939793:-1
     ]
     '''
-    alignments = []
+    if returnAs == 'dict':
+        alignments = {}
+    else:
+        alignments = []
 
     if isinstance(filenames, str):
         filenames = [ filenames ]
     #work through the files
     for filename in filenames:
         #open a nexus alignment
-        file = open(filename, 'rb')
+        alfile = open(filename, 'rb')
         #get the part of the alignment filename that will be identical to part of the treefile name, according to my convention
         coreFilename = extract_core_filename(filename)
         
         #read lines at end of nexus file that give information on sequences, including coordinate
-        seqLines = [ line for line in file if ((line[0] == 'O' or line[0:3] == 'len') and not 'LOC' in line)]
+        seqLines = [ line for line in alfile if line.startswith('len') and not 'LOC' in line ]
+        #seqLines = [ line for line in file if ((line[0] == 'O' or line[0:3] == 'len') and not 'LOC' in line )]
         try:
             seqDescs = []
             for desc in seqLines:
-                search = re.search('.*(O.*) = (.*)', desc)
+                found = search('.*(O.*) = (.*)', desc)
                 #pull out tuples for normalized taxon names and longer more informative OGE description strings
-                seqDescs.append((search.group(1).strip(), search.group(2).strip()))
+                seqDescs.append((found.group(1).strip(), found.group(2).strip()))
         except:
-            sys.stderr.write('problem parsing file %s' % filename)
-            exit()
-        #parse the description part into my ParsedSequenceDescription data structure
-        parsed = [ (seq[0], ParsedSequenceDescription(seq[1])) for seq in seqDescs ]
+            raise RuntimeError('problem parsing file %s' % filename)
         #make a CoordinateSet structure for this alignment file
         coords = CoordinateSet(oryza.taxon_names)
-        for p in parsed:
-            coords.set_coordinate(p[0], p[1].coord_start)
+        #parse the description part into my ParsedSequenceDescription data structure
+        if returnAs == 'dict':
+            parsed = dict([(seq[0], ParsedSequenceDescription(seq[1])) for seq in seqDescs])
+            for key, val in parsed.items():
+                coords.set_coordinate(key, val.coord_start)
+        else:
+            parsed = [ (seq[0], ParsedSequenceDescription(seq[1])) for seq in seqDescs ]
+            for p in parsed:
+                coords.set_coordinate(p[0], p[1].coord_start)
         coords.set_filename(filename)
         #collect a tuple for this alignment with the filename, parsed seq descriptions, and CoordinateSet
-        alignments.append( (str(coreFilename), parsed, coords) )
+        if returnAs == 'dict':
+            alignments[str(coreFilename)] = (parsed, coords)
+        else:
+            alignments.append( (str(coreFilename), parsed, coords) )
     return alignments
 

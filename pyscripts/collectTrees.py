@@ -1,9 +1,6 @@
 #!/usr/bin/env python
-import os
 import sys
 import glob
-import string
-import StringIO
 
 if len(sys.argv) > 1:
     if len(sys.argv) > 2:
@@ -35,18 +32,15 @@ else:
     sys.stderr.write('as command line arguments, enter\n\ta list of tree files\n\ta literal glob surrounded by quotes\n\tpath or partial pattern to which *.tre can be appended\n')
     exit()
 
-file1 = open(files[0], "rU")
-
 #get the translate block from the first file
-for line in file1:
+for line in open(files[0], "rU"):
     if line.find("tree ") < 0:
         print line,
     else:
         break
 
 for f in files:
-    eachFile = open(f, "rU")
-    for indLine in eachFile:
+    for indLine in open(f, "rU"):
         if indLine.lower().find("tree") > -1 and indLine.lower().find("=") > -1:
             print indLine,
 

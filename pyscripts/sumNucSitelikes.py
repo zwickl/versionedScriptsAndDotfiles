@@ -1,26 +1,21 @@
 #!/usr/bin/env python
-import os
 import sys
-import string
-import StringIO
-
 
 if len(sys.argv) < 3:
     print "usage\nsumNucSitelikes.py <# sites per codon (2 or 3)> <filename>"
-    exit()
+    sys.exit()
 else:
     if sys.argv[1] == '2' or sys.argv[1] == '3':
         sitesPerCodon = int(sys.argv[1])   
     else:
         print "usage\nsumNucSitelikes.py <# sites per codon (2 or 3)> <filename>"
-        exit()   
+        sys.exit()   
     filename = sys.argv[2]
-    file = open(filename, 'rU')
 
 poo = ""
 lnLs = []
 print "codon#   lnL"
-for i in file:
+for i in open(filename, 'rU'):
     poo = i
     spl = poo.split()
     if spl[0].isdigit() > 0:
@@ -31,12 +26,12 @@ for i in file:
             
         if len(lnLs) == sitesPerCodon:
             if sitesPerCodon == 3:
-                sum = lnLs[0] + lnLs[1] + lnLs[2]
+                mySum = lnLs[0] + lnLs[1] + lnLs[2]
                 codNum = int(spl[0]) / 3
-                print  codNum, "\t", sum
+                print  codNum, "\t", mySum
             else:
-                sum = lnLs[0] + lnLs[1]
+                mySum = lnLs[0] + lnLs[1]
                 codNum = int(spl[0]) / 2
-                print  codNum, "\t", sum
+                print  codNum, "\t", mySum
             lnLs = []
     

@@ -60,8 +60,14 @@ export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
 export HAL=zwickl@hal.biosci.arizona.edu
 export WORKLAP=zwickl@128.196.193.227
 export FLOYD=zwickl@128.196.193.200
+export KSMAC=zwickl@129.237.138.142
+export MEDIA=Laura@192.168.1.113
+export GREENTULIP=Laura@192.168.1.136
+export SYNCMEDIA=Laura@192.168.1.113:/cygdrive/g/PicturesSync/
+export OPENTREE=zwickl@opentree-dev.bio.ku.edu
 
 #ssh aliases
+alias opentree='ssh $OPENTREE'
 alias lonestar='ssh $LONESTAR'
 alias dlonestar='ssh $DLONESTAR'
 alias csem='ssh zwickl@dscr-login-03.oit.duke.edu'
@@ -95,15 +101,16 @@ if [ $OS = "darwin" ];then
 	GNUTERM=x11
     alias ls='ls -G'
     alias inkscape="/Applications/Inkscape.app/Contents/Resources/bin/inkscape"
+    PATH=/usr/local/Trolltech/Qt-4.8.2/bin:$PATH
 elif [ $OS = "cygwin" ];then
 	export HOMEDRIVE=/cygdrive/c/
 	export DESK=/cygdrive/f/Desk/
 	export DEV=$DESK/GarliDEV/
 	export NCL=$DEV/ncl/
-	export NCL_INST=$NCL/branches/v2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/
+	export NCL_INST=$NCL/branches/v2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
 	export PROJ=$TRUNK/project/standardGarliVC/
 	#export HOMELAP='zwickl@192.168.1.65'
-	export HOMELAP='zwickl@192.168.2.6'
+	export HOMELAP='zwickl@192.168.1.114'
 	PATH=$PATH:/cygdrive/c/Program\ Files/Java/jre6/bin/
 	PATH=$PATH:$HOME/bin/pyscripts/:/cygdrive/c/Program\ Files/NCBI/blast-2.2.25/bin/
 	PATH=$PATH:/usr/local/emboss/bin/
@@ -115,18 +122,20 @@ elif [ $OS = "cygwin" ];then
 	alias syncWorkDeskDown='rsync -avz --exclude-from=/home/zwickl/.syncExclude $MONTY:WIN_SYNC/Desk/ /cygdrive/f/Desk/'
     alias ls='ls --color=auto'
 elif [ $OS = "linux" ];then
-	PATH=/home/zwickl/my_usr/bin/:$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
+	PATH=/home/zwickl/my_usr/local/bin/:/home/zwickl/my_usr/bin/:$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
     PATH=$PATH:$HOME/libbuilds/lagan20/
 	export PYTHONPATH=/home/zwickl/my_usr/lib/python2.7/:/home/zwickl/my_usr/lib/python/:/share/apps/Python-2.6.4/lib/python2.6/
 	export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
 	export DEV=$HOME
 	export NCL=/home/zwickl/ncl/
 	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
+    #unset MAFFT_BINARIES
     if [ -d /share/apps/lib/mafft/ ];then
         export MAFFT_BINARIES=/share/apps/lib/mafft/
     else
-        export MAFFT_BINARIES=$HOME/my_usr/lib/mafft/
+        export MAFFT_BINARIES=$HOME/my_usr/local/libexec/mafft/
     fi
+    alias ls='ls --color=auto'
 	alias qa='qstat -u "*" | sort | grep [0-9]' 
 	alias qz='qstat | sort | grep [0-9]' 
 	alias devQrsh='qrsh -q dev.q -l h_vmem=4G -l vf=4G'
@@ -178,10 +187,13 @@ if [ $OS = "linux" ];then
     #export ORYZA_ROOT=$DEV/oryza/
     export PORYZA_ROOT=$DEV/productionOryza/
     export ORYZA_ROOT=$PORYZA_ROOT
+    export FULLORYZA_ROOT=$DEV/fullGenomeOryza/
 else
     export OLD_ORYZA_ROOT=$DEV/experiments/oryza/
     export PORYZA_ROOT=$DEV/experiments/productionOryza/
     export ORYZA_ROOT=$PORYZA_ROOT
+    export FULLORYZA_ROOT=$DEV/experiments/fullGenomeOryza/
+    export FULL_ANALYSES=$ORYZA_ROOT/gramene34_split_cleanedByCSHL/alignmentsAndTrees/ms2006.frac0.5/dag.G1.D4.C4.N5/
 fi
 export G34=$OLD_ORYZA_ROOT/gramene34_omap_genes/
 export C34=$OLD_ORYZA_ROOT/gramene34_cleanedByCSHL/
@@ -197,10 +209,14 @@ if [ ! -d "$ORYZA_ROOT" ];then
     #ls $ORYZA_ROOT &> /dev/null
 fi
 export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/analysisScripts/
+export ANALYSIS_SCRIPTS_FULLORYZA=$FULLORYZA_ROOT/scripts/analysisScripts/
 export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/alignmentScripts/
 export GENERAL_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/generalScripts/
 export ANNOTATION_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/annotationSplittingScripts/
+export PLOT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/plottingScripts/
+export POST_PROCESS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/postProcessScripts/
 export NUMORYZA=11
+export NUMFULLORYZA=9
 
 
 export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
@@ -237,12 +253,22 @@ alias ddel="disq_del"
 alias pull="git pull origin"
 alias push="git push origin"
 
-alias mark="pwd > $HOME/.markedDir"
-alias cdm="cd `cat $HOME/.markedDir`"
-alias mark2="pwd > $HOME/.markedDir2"
-alias cdm2="cd `cat $HOME/.markedDir2`"
-alias mark3="pwd > $HOME/.markedDir3"
-alias cdm3="cd `cat $HOME/.markedDir3`"
+function mark(){
+    if [ ! "$#" -eq 1 ];then
+        echo "Enter a name for this mark"
+        return
+    fi
+    pwd > $HOME/.markedDirs/$1
+}
+
+function cdm(){
+    if [ ! "$#" -eq 1 ];then
+        echo "Enter a named mark"
+        return
+    fi
+    cd `cat $HOME/.markedDirs/$1`
+}
+
 alias runLast='`cat $HOME/.lastMake`/installed/bin/Garli'
 alias debLast='gdb `cat $HOME/.lastMake`/installed/bin/Garli'
 
@@ -272,7 +298,7 @@ function inEachDir(){
 }
 
 function usedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm cwlinkem
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado scotty323 cwlinkem
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
@@ -282,7 +308,7 @@ function usedCount(){
 }
 
 function queuedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm cwlinkem
+	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado scotty323 cwlinkem
 	do
 		echo -n "$name	"
 		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
@@ -304,6 +330,14 @@ function mkcd(){
 	cd $@
 }
 
+function vm(){
+    if [ $# -eq 2 ];then
+        echo $2 > $HOME/.vmark$1
+    elif [ $# -eq 1 ];then
+        vi `cat $HOME/.vmark$1`
+    fi
+}
+
 function countFastaSeqs(){
     for i in $@
     do
@@ -313,7 +347,13 @@ function countFastaSeqs(){
 }
 
 function occurenceCount(){
-    grep $1 $2 | wc -l
+    PATT=$1
+    shift 1
+    grep $PATT $@ | wc -l
+}
+
+function fileCount(){
+    ls $@ | wc -l
 }
 
 if [[ $OS == 'darwin' ]]; then
@@ -335,6 +375,17 @@ fi
 if [[ $OS == 'darwin' ]]; then
     function viewDagchainer(){
         ~/Desktop/code/DAGCHAINER/Java_XY_plotter/run_XYplot.pl $1 $2
+    }
+    function disableSpotlightIndexing(){
+        #the other lines here actually disable spotlight entirely
+        sudo mdutil -a -i off
+        #sudo launchctl unload -w /System/Library/LaunchDaemons/
+        #com.apple.metadata.mds.plist
+    }
+    function enableSpotlightIndexing(){
+        sudo mdutil -a -i on
+        #sudo launchctl load -w /System/Library/LaunchDaemons/
+        #com.apple.metadata.mds.plist
     }
 fi
 
@@ -369,11 +420,15 @@ fi
 }
 
 function startScript(){
-    echo "#!/bin/bash" > $@ 
-    echo >> $@ 
-    echo >> $@ 
-    vi +3 $@
-    chmod +x $@
+    if [ ! -e "$@" ];then
+        echo "#!/bin/bash" > $@ 
+        echo >> $@ 
+        echo >> $@ 
+        vi +3 $@
+        chmod +x $@
+    else
+        vi $@
+    fi
 }
 
 function startGnuplotScript(){
@@ -391,6 +446,39 @@ function myqrsh(){
     fi
     echo qrsh -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
     qrsh -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
+}
+
+function cdjob(){
+    cd `qstat -j $1 | grep cwd | awk '{print $2}'`
+}
+
+function killAndResubmitJob(){
+    cd `qstat -j $1 | grep cwd | awk '{print $2}'`
+    SCRIPT=`qstat -j $1 | grep script_file | awk '{print $2}'`
+    qdel $1
+    qsub $SCRIPT
+}
+
+function killAllSGE(){
+    for JOB in `qstat | awk '{print $1}' | grep '^[0-9]'`
+    do
+        qdel $JOB
+    done
+}
+
+function killAllQueued(){
+    for JOB in `qstat | grep qw | awk '{print $1}' | grep '^[0-9]'`
+    do
+        qdel $JOB
+    done
+}
+
+function listJobDirsSGE(){
+    for JOB in `qstat | awk '{print $1}' | grep '^[0-9]'`
+    do
+        echo $JOB
+        qstat -j $JOB | grep workdir
+    done
 }
 
 #mac specific
@@ -418,9 +506,24 @@ fi
 HISTIGNORE=\&
 HISTFILESIZE=1000
 
+function ogeFullData(){
+    PATH=$PATH:/opt/iCommands/
+    icd /iplant/home/shared/agi_data
+}
 
+if [[ $OS == 'darwin' ]]; then
+    #for rbenv ruby utility
+    PATH=$PATH:/Users/zwickl/.rbenv/bin
 
-# Setting PATH for Python 2.7
-# The orginal version is saved in .profile.pysave
-PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
-export PATH
+    # Setting PATH for Python 2.7
+    # The orginal version is saved in .profile.pysave
+    PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
+    export PATH
+
+    export ANDROIDSDK=$HOME/android_dev/adt-bundle-mac-x86_64-20130522/sdk
+    export ANDROIDNDK=$HOME/android_dev/android-ndk-r8e
+    export ANDROIDNDKVER=r8e
+    export ANDROIDAPI=14
+
+    export PATH=$ANDROIDNDK:$ANDROIDSDK/tools:$PATH
+fi
