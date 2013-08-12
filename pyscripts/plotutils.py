@@ -3,7 +3,7 @@ import sys
 from os import path
 import re
 #from math import *
-from itertools import izip, cycle
+from itertools import izip, cycle, chain
 import collections
 import argparse 
 import numpy as np
@@ -476,350 +476,6 @@ class PlottingArgumentParser(argparse.ArgumentParser):
     option.
     '''
 
-    #def __init__(self, **kwargs):
-    def __old_init__(self, **kwargs):
-        '''These are the defaults which can be overwridden with keyword arguments passed
-        to the constructor.
-        '''
-        defaultSubplotKwargs = kwargs.pop('defaultSubplotKwargs', [])
-        
-        #plot defaults
-        defaultGreys = kwargs.pop('defaultGreys', ['0.0'])
-        defaultColors = kwargs.pop('defaultColors', None)
-        defaultMarkerSizes = kwargs.pop('defaultMarkerSizes', [12.0])
-        defaultMarkers = kwargs.pop('defaultMarkers', 'osx*^h')
-        defaultLineWidth = kwargs.pop('defaultLineWidth', [3.0])
-        defaultLineStyle = kwargs.pop('defaultLineStyle', ['-', '--', ':'])
-        defaultCycleStylesWithinFiles = kwargs.pop('defaultCycleStylesWithinFiles', True)
-        defaultPlotKwargs = kwargs.pop('defaultPlotKwargs', [])
-        
-        #axis defaults
-        defaultYrange = kwargs.pop('defaultYrange', None)
-        defaultXrange = kwargs.pop('defaultXrange', None)
-        defaultAxisTickFontsize = kwargs.pop('defaultAxisTickFontsize', 16.0)
-        defaultAxisLabelFontsize = kwargs.pop('defaultAxisLabelFontsize', 32.0)
-        
-        defaultXTickFunction = kwargs.pop('defaultXTickFunction', None)
-        defaultTickKwargs = kwargs.pop('defaultTickKwargs', [])
-        defaultXTickKwargs = kwargs.pop('defaultXTickKwargs', [])
-        defaultYTickKwargs = kwargs.pop('defaultYTickKwargs', [])
-        
-        defaultXTickLabelKwargs = kwargs.pop('defaultXTickLabelKwargs', ['weight=bold'])
-        defaultYTickLabelKwargs = kwargs.pop('defaultYTickLabelKwargs', ['weight=bold'])
-        defaultXTickLabelLocation = kwargs.pop('defaultXTickLabelLocation', 'm')
-        defaultYTickLabelLocation = kwargs.pop('defaultYTickLabelLocation', 'm')
-        defaultDrawAxesAtZero = kwargs.pop('defaultDrawAxesAtZero', None)
-        
-        #axis labels
-        defaultXlabel = kwargs.pop('defaultXlabel', None)
-        defaultYlabel = kwargs.pop('defaultYlabel', None)
-        defaultXlabelLocation = kwargs.pop('defaultXlabelLocation', 's')
-        defaultYlabelLocation = kwargs.pop('defaultYlabelLocation', 's')
-        defaultXlabelKwargs = kwargs.pop('defaultXlabelKwargs', [])
-        defaultYlabelKwargs = kwargs.pop('defaultYlabelKwargs', [])
-        
-        #title defaults
-        defaultTitleFunc = kwargs.pop('defaultTitleFunc', None)
-        defaultTitles = kwargs.pop('defaultTitles', None)
-        defaultTitleFontsize = kwargs.pop('defaultTitleFontsize', 18.0)
-        defaultSuperTitle = kwargs.pop('defaultSuperTitle', None)
-        defaultSuperTitleFontsize = kwargs.pop('defaultSuperTitleFontsize', 32.0)
-        defaultTitleHalign = kwargs.pop('defaultTitleHalign', 'center')
-        defaultTitleValign = kwargs.pop('defaultTitleValign', 'top')
-        defaultTitleKwargs = kwargs.pop('defaultTitleKwargs', [])
-        defaultSuperTitleKwargs = kwargs.pop('defaultSuperTitleKwargs', [])
-        
-        defaultDZaxKwargs = kwargs.pop('defaultDZaxKwargs', ['leftw=4', 'lefts=solid', 'rightw=4', 'rights=solid', 'topw=4', 'tops=solid', 'bottomw=4', 'bottoms=solid'])
-
-        defaultNcol = kwargs.pop('defaultNcol', 2)
-        defaultOnePlot = kwargs.pop('defaultOnePlot', None)
-        defaultSubplotPerFunction = kwargs.pop('defaultSubplotPerFunction', None)
-        defaultInput = kwargs.pop('defaultInput', True)
-        defaultOutput = kwargs.pop('defaultOutput', True)
-
-        defaultMissingOk = kwargs.pop('defaultMissingOk', None)
-        defaultDataColumnFunc = kwargs.pop('defaultDataColumnFunc', None)
-
-        #defaultHatches = kwargs.pop('defaultHatches', 'Xo+ ')
-        defaultHatches = kwargs.pop('defaultHatches', None)
-
-        defaultSkipRows = kwargs.pop('defaultSkipRows', 0)
-        defaultRowIgnorePatterns = kwargs.pop('defaultRowIgnorePatterns', [])
-
-        defaultSeriesNames = kwargs.pop('defaultSeriesNames', None)
-
-        defaultHistogram = kwargs.pop('defaultHistogram', None)
-        defaultHistogramKwargs = kwargs.pop('defaultHistogramKwargs', [])
-        defaultHistogramBins = kwargs.pop('defaultHistogramBinsBins', 20)
-       
-        defaultLegendTextKwargs = kwargs.pop('defaultLegendTextKwargs', [])
-        
-        defaultBarGraph = kwargs.pop('defaultBarGraph', None)
-        #base constructor
-        super(PlottingArgumentParser, self).__init__(self, *kwargs)
-      
-        if defaultSubplotKwargs is not False:
-            self.add_argument('--subplot-kwargs', dest='additionalSubplotKwargs', nargs='*', type=str, default=defaultSubplotKwargs,
-                                help='kwargs to be passed on to matplotlib Figure.subplots_adjust function (default %s)' % ' '.join(defaultSubplotKwargs))
-        
-        if defaultDZaxKwargs is not False:
-            self.add_argument('--dz-axis-kwargs', dest='dzAxisKwargs', nargs='*', type=str, default=defaultDZaxKwargs,
-                    help='settings for axis appearance - interpreted by ME not MPL. w=weight, s=style, examples: rights=bold topw=5. Default: %s' % ' '.join(defaultDZaxKwargs))
-        ################
-        #argument for plotting of lines/points
-        styleArgs = self.add_argument_group('ARGUMENTS FOR POINT AND LINE STYLES')
-
-        if defaultGreys is not False:
-            styleArgs.add_argument('-gv', '--grey-values', dest='greyValues', nargs='*', type=str, default=defaultGreys,
-                                help='floating point values in range 0.0 - 1.0 (black to white) indicating grey value cycle of lines (default %s)' % str(defaultGreys))
-
-        if defaultColors is not False:
-            styleArgs.add_argument('-cv', '--color-values', dest='colorValues', nargs='*', type=str, default=defaultColors,
-                                help='valid matplotlib color specs indicating color cycle of lines (default %s)' % str(defaultColors))
-        
-        if defaultMarkers is not False:
-            styleArgs.add_argument('-m', '--markers', dest='markers', type=str, default=defaultMarkers,
-                                help='single string with marker designations for 1 2 3 (default %s)' % str(defaultMarkers))
-
-        if defaultMarkerSizes is not False:
-            styleArgs.add_argument('-ms', '--marker-sizes', dest='markerSizes', nargs='*', type=float, default=defaultMarkerSizes,
-                                help='floating point values indicating size of markers in points for series 1 2 3, or a single value to apply to all (default %s)' % str(defaultMarkerSizes))
-
-        if defaultLineWidth is not False:
-            styleArgs.add_argument('-lw', '--line-width', dest='lineWidth', nargs='*', type=float, default=defaultLineWidth,
-                                help='point size of lines to cycle through (default %s)' % str(defaultLineWidth))
- 
-        if defaultLineStyle is not False:
-            styleArgs.add_argument('-ls', '--line-style', dest='lineStyle', nargs='*', type=str, default=defaultLineStyle,
-                                help='styles of lines to cycle through (default %s)' % str(defaultLineStyle))
- 
-        if defaultCycleStylesWithinFiles is not False:
-            self.add_argument('--styles-per-file', dest='cycleStylesWithinFiles', default=defaultCycleStylesWithinFiles, action='store_false',
-                                                    help='use the same line/point styles for all series within a given file, rather \
-                                                    than cycling through styles for each series _within_ a file')
-
-        if defaultPlotKwargs is not False:
-            self.add_argument('--plot-kwargs', dest='additionalPlotKwargs', nargs='*', type=str, default=defaultPlotKwargs,
-                                help='kwargs to be passed on to matplotlib axes.plot function (default %s)' % ' '.join(defaultPlotKwargs))
-        
-        ############
-        #axis labels
-        axisLabelArgs = self.add_argument_group('ARGUMENTS FOR AXIS LABELING')
-        if defaultXlabel is not False:
-            axisLabelArgs.add_argument('-xl', '--x-label', dest='xLabel', type=str, default=defaultXlabel,
-                                help='label for x axis (default %s)' % str(defaultXlabel))
-
-            if defaultXlabelLocation is not False:
-                axisLabelArgs.add_argument('-xll', '--x-label-location', dest='xLabelLocation', type=str, default=defaultXlabelLocation, choices=['s', 'm', 'n'],
-                                    help='where xlabels should appear in multiplot: s (single centered), m (one per plot on margins), n (none)')
-        
-            if defaultXlabelKwargs is not False:
-                axisLabelArgs.add_argument('--x-label-kwargs', dest='additionalXlabelKwargs', nargs='*', type=str, default=defaultXlabelKwargs,
-                                help='kwargs to be passed on to pyplot.xlabel function (default %s)' % ' '.join(defaultXlabelKwargs))
-        
-        if defaultYlabel is not False:
-            axisLabelArgs.add_argument('-yl', '--y-label', dest='yLabel', type=str, default=defaultYlabel,
-                                help='label for y axis (default %s)' % str(defaultYlabel))
-
-            if defaultYlabelLocation is not False:
-                axisLabelArgs.add_argument('-yll', '--y-label-location', dest='yLabelLocation', type=str, default=defaultYlabelLocation, choices=['s', 'm', 'n'],
-                                    help='where ylabels should appear in multiplot: s (single centered), m (one per plot on margins), n (none)')
-        
-            if defaultYlabelKwargs is not False:
-                axisLabelArgs.add_argument('--y-label-kwargs', dest='additionalYlabelKwargs', nargs='*', type=str, default=defaultYlabelKwargs,
-                                help='kwargs to be passed on to pyplot.ylabel function (default %s)' % ' '.join(defaultYlabelKwargs))
-        
-        if defaultXlabel is not False or defaultYlabel is not False:
-            if defaultAxisLabelFontsize is not False:
-                axisLabelArgs.add_argument('-als', '--axis-label-fontsize', dest='axisLabelFontsize', type=float, default=defaultAxisLabelFontsize,
-                                    help='font size of axis labels (default %d)' % defaultAxisLabelFontsize)
-            
-        ##########
-        #axis range and tics
-        axisArgs = self.add_argument_group('ARGUMENTS FOR AXIS RANGES AND TICKS')
-        
-        if defaultYrange is not False:
-            axisArgs.add_argument('-yr', '--y-range', dest='yRange', nargs='*', type=float, default=defaultYrange,
-                                help='min and max values on y axis pass one min max pair to have it shared, or a series of min max min max for each subplot (default is auto determined by pyplot from the data)')
-
-        if defaultXrange is not False:
-            axisArgs.add_argument('-xr', '--x-range', dest='xRange', nargs='*', type=float, default=defaultXrange,
-                                help='min and max values on x axis pass one min max pair to have it shared, or a series of min max min max for each subplot (default is auto determined by pyplot from the data)')
-        '''
-        if defaultYrange is not False:
-            axisArgs.add_argument('-yr', '--y-range', dest='yRange', nargs=2, type=float, default=defaultYrange,
-                                help='min and max values on y axis (default is auto determined by pyplot from the data)')
-
-        if defaultXrange is not False:
-            axisArgs.add_argument('-xr', '--x-range', dest='xRange', nargs=2, type=float, default=defaultXrange,
-                                help='min and max values on x axis (default is auto determined by pyplot from the data)')
-        '''
-
-        if defaultAxisTickFontsize is not False:
-            axisArgs.add_argument('-ats', '--axis-tick-fontsize', dest='axisTickFontsize', type=float, default=defaultAxisTickFontsize,
-                                help='font size of cumulative graph tick labels (default %d)' % defaultAxisTickFontsize)
-
-        if defaultXTickFunction is not False:
-            axisArgs.add_argument('--x-tick-function', dest='xTickFunction', type=str, default=defaultXTickFunction,
-                                help='optional lambda or named function to get x-axis tick labels from input file')
-
-        if defaultTickKwargs is not False:
-            axisArgs.add_argument('--tick-kwargs', dest='additionalTickKwargs', nargs='*', type=str, default=defaultTickKwargs,
-                                help='kwargs to be passed on to matplotlib axes.tick_params function, applied to both axes (default %s)' % ' '.join(defaultTickKwargs))
-        
-        if defaultXTickKwargs is not False:
-            axisArgs.add_argument('--x-tick-kwargs', dest='additionalXTickKwargs', nargs='*', type=str, default=defaultXTickKwargs,
-                                help='kwargs to be passed on to matplotlib axes.tick_params function, applied to only x axis (default %s)' % ' '.join(defaultXTickKwargs))
-        
-        if defaultYTickKwargs is not False:
-            axisArgs.add_argument('--y-tick-kwargs', dest='additionalYTickKwargs', nargs='*', type=str, default=defaultYTickKwargs,
-                                help='kwargs to be passed on to matplotlib axes.tick_params function, applied to only y axis (default %s)' % ' '.join(defaultYTickKwargs))
-        
-        if defaultXTickLabelKwargs is not False:
-            axisArgs.add_argument('--x-tick-label-kwargs', dest='additionalXTickLabelKwargs', nargs='*', type=str, default=defaultXTickLabelKwargs,
-                                help='kwargs to be passed on to pyplot.xticks (default %s)' % ' '.join(defaultXTickLabelKwargs))
-
-        if defaultYTickLabelKwargs is not False:
-            axisArgs.add_argument('--y-tick-label-kwargs', dest='additionalYTickLabelKwargs', nargs='*', type=str, default=defaultYTickLabelKwargs,
-                                help='kwargs to be passed on to pyplot.yticks (default %s)' % ' '.join(defaultYTickLabelKwargs))
-
-        if defaultDrawAxesAtZero is not False:
-            axisArgs.add_argument('--draw-axes-at-zero', dest='drawAxesAtZero', default=defaultDrawAxesAtZero, action='store_true', 
-                                help='whether to draw horizontal and vertical lines through 0, 0')
-       
-        if defaultXTickLabelLocation is not False:
-            axisArgs.add_argument('--x-tick-label-location', dest='xTickLabelLocation', default=defaultXTickLabelLocation, choices=['m', 'e', 'n'],
-                    help='whether to draw X tick labels only on (m)arginal plots, (n)one, or on (e)very plot. Default: %s' % defaultXTickLabelLocation)
-       
-        if defaultYTickLabelLocation is not False:
-            axisArgs.add_argument('--y-tick-label-location', dest='yTickLabelLocation', default=defaultYTickLabelLocation, choices=['m', 'e', 'n'],
-                    help='whether to draw Y tick labels only on (m)arginal plots, (n)one, or on (e)very plot. Default: %s' % defaultYTickLabelLocation)
-       
-        #########
-        #titles
-        titleArgs = self.add_argument_group('ARGUMENTS FOR PLOT AND SUBPLOT TITLES')
-        if defaultTitleFunc is not False or defaultTitle is not False:
-            titleType = titleArgs.add_mutually_exclusive_group()
-            titleType.add_argument('--titles', dest='titles', nargs='*', type=str, default=defaultTitles,
-                                help='plot titles, HACKY!, must supply one per SERIES, although if multiple series per plot then later will supercede earlier')
-            
-            titleType.add_argument('--title-func', dest='titleFunc', type=str, default=defaultTitleFunc,
-                                help='function used to map arbitrary strings (datafile path names) to plot names')
-                        
-            if defaultTitleHalign is not False:
-                titleArgs.add_argument('-tha', '--title-horiz-align', dest='titleHalign', type=str, default=defaultTitleHalign, choices=['left', 'right', 'center'],
-                                    help='horizontal alignment of title (default %s)' % defaultTitleHalign)
-
-            if defaultTitleValign is not False:
-                titleArgs.add_argument('-tva', '--title-vert-align', dest='titleValign', type=str, default=defaultTitleValign, choices=['top', 'bottom', 'center', 'baseline'],
-                                    help='vertical alignment of title (default %s)' % defaultTitleValign)
- 
-            if defaultTitleKwargs is not False:
-                titleArgs.add_argument('--title-kwargs', dest='additionalTitleKwargs', nargs='*', type=str, default=defaultTitleKwargs,
-                                    help='kwargs to be passed on to matplotlib axes.setTitle function (default %s)' % ' '.join(defaultTitleKwargs))
-
-            if defaultTitleFontsize is not False:
-                titleArgs.add_argument('-ts', '--title-fontsize', dest='titleFontsize', type=float, default=defaultTitleFontsize,
-                                    help='font size of title (default %d)' % defaultTitleFontsize)
-
-        if defaultSuperTitle is not False:
-            titleArgs.add_argument('-st', '--super-title', dest='superTitle', type=str, default=defaultSuperTitle,
-                                help='plot super title on multiplot')
-
-            if defaultSuperTitleFontsize is not False:
-                titleArgs.add_argument('-stf', '--super-title-fontsize', dest='superTitleFontsize', type=float, default=defaultSuperTitleFontsize,
-                                    help='font size of super title of multiplot (default %d)' % defaultSuperTitleFontsize)
-
-            if defaultSuperTitleKwargs is not False:
-                titleArgs.add_argument('--super-title-kwargs', dest='additionalSuperTitleKwargs', nargs='*', type=str, default=defaultSuperTitleKwargs,
-                                    help='kwargs to be passed on to pyplot.suptitle function (default %s)' % ' '.join(defaultSuperTitleKwargs))
-       
-        ##############
-        dataArgs = self.add_argument_group('ARGUMENTS FOR PARSING AND MANIPULATING DATA')
-        
-        if defaultInput is not False:
-            #dataArgs.add_argument('-i', '--input', dest='inFiles', nargs='*', type=FileType('rb'), default=None, 
-            #                    help='Series of intput files with data to be plotted')
-            dataArgs.add_argument('-i', '--input', dest='inFiles', nargs='*', type=str, default=None, 
-                                help='Series of intput files with data to be plotted')
-
-        if defaultDataColumnFunc is not False:
-            dataArgs.add_argument('--data-column-func', dest='dataColumnFunc', nargs='*', type=str, default=defaultDataColumnFunc,
-                                help='functions to select or convert column(s) in datafiles to a plotable series for pyplot.plot. \
-                                To plot a single series of only x values, something like \'lambda rows:([float(r[1]) - float(r[3]) for r in rows])\'\
-                                will work.  To plot x-y points, \'lambda rows: ([float(r[1]) for r in rows], [float(r[3])/float(r[2]) for r in rows])\'\
-                                Multiple functions can be used, in which case each is applied to each datafile.  (default \'%s\')' % defaultDataColumnFunc )
-        
-        if defaultSkipRows is not False:
-            dataArgs.add_argument('--skip-rows', dest='skipRows', type=int, default=defaultSkipRows,
-                                help='number of rows to skip at start of data file (default %d)' % defaultSkipRows )
-        
-        if defaultRowIgnorePatterns is not False:
-            dataArgs.add_argument('--row-ignore-patterns', dest='rowIgnorePatterns', nargs='*', type=str, default=defaultRowIgnorePatterns,
-                                help='lines in the data file matching these regex patterns are ignored (default %s)' % defaultRowIgnorePatterns )
-        
-        if defaultMissingOk is not False:
-            dataArgs.add_argument('--missing-ok', dest='missingOk', action='store_true', default=False, 
-                                help='allow some input files to be missing')
-
-        ###############
-        plotType = self.add_mutually_exclusive_group()
-        if defaultSubplotPerFunction is not False:
-            plotType.add_argument('--subplot-per-function', dest='subplotPerFunction', default=False, action='store_true',
-                                help='plot each data column function on a new subplot, rather than using one subplot per _file_')
-        
-        if defaultOnePlot is not False:
-            plotType.add_argument('--one-plot', dest='onePlot', default=False, action='store_true',
-                                help='plot all data from all files and data functions on one axis, rather than using one file per subplot')
-        
-        if defaultNcol is not False:        
-            self.add_argument('-c', '--columns', dest='ncols', type=int, default=defaultNcol,
-                                help='number of figures to place per row in a multiplot')
-
-        if defaultOutput is not False:
-            #self.add_argument('-o', '--output', dest='outFile', type=FileType('w'), default=sys.stdout, 
-            #                    help='file to write output to (default stdout or display plot to screen)')
-            self.add_argument('-o', '--output', dest='outFile', type=str, default=None, 
-                                help='file to write output to (default stdout or display plot to screen)')
-
-        #this is specialized and not generally useful (but used for pies)
-        if defaultHatches is not False:
-            self.add_argument('-p', '--patterns', dest='hatchString', nargs='*', type=str, default=defaultHatches, 
-                                help='string with four characters representing patterns (hatching) for the four wedges \
-                                (e.g., default is %s) out of \"/ \\ | - + x X o O . *\" and blank' % defaultHatches)
-
-        if defaultSeriesNames is not False:
-            self.add_argument('--series-names', dest='seriesNames', nargs='*', type=str, default=None, 
-                                help='names to give each plotted series, which will trigger the creation of a legend')
-
-        if defaultLegendTextKwargs is not False:
-            self.add_argument('--legend-text-kwargs', dest='additionalLegendTextKwargs', nargs='*', type=str, default=defaultLegendTextKwargs,
-                                help='kwargs to be passed on to the legend function (default %s), if --series-names are specified' % ' '.join(defaultLegendTextKwargs))
-
-        if defaultHistogram is not False:
-            histogramArgs = self.add_argument_group('ARGUMENTS FOR PLOTTING OF HISTOGRAMS')
-
-            histogramArgs.add_argument('--histogram', dest='histogram', default=False, action='store_true',
-                                help='plot a histogram rather than line plot, disregarding or redefining some options (difference from --bar-graph is that histogram automatically bins data)')
-
-            histogramArgs.add_argument('--histogram-bins', dest='histogramBins', default=defaultHistogramBins, type=int,
-                                help='the number of bins to calculate, if this is a histogram plot (default %d)' % defaultHistogramBins)
-
-            if defaultHistogramKwargs is not False:
-                histogramArgs.add_argument('--histogram-kwargs', dest='additionalHistogramKwargs', nargs='*', type=str, default=defaultHistogramKwargs,
-                                help='kwargs to be passed on to hist function (default %s), if --histogram is used' % ' '.join(defaultHistogramKwargs))
-
-            histogramArgs.add_argument('--normalize-histogram', dest='normalizeHistogram', default=False, action='store_true',
-                                help='normalilze histogram series, so that multiple series are comparable')
-
-        if defaultBarGraph is not False:
-            barGraphArgs = self.add_argument_group('ARGUMENTS FOR PLOTTING BAR GRAPHS')
-            
-            barGraphArgs.add_argument('--bar-graph', dest='barGraph', default=False, action='store_true',
-                                help='plot a bar graph rather than line plot, disregarding or redefining some options (difference from --histogram is that histogram automatically bins data)')
-
-
-    #the default named kwargs here are just those from the normal ArgumentParser, except for the formatter_class
     def __init__(self, 
              prog=None,
              usage=None,
@@ -834,7 +490,8 @@ class PlottingArgumentParser(argparse.ArgumentParser):
              conflict_handler='error',
              add_help=True,
              **kwargs):
-        '''These are the defaults which can be overwridden with keyword arguments passed
+        '''#the default named kwargs here are just those from the normal ArgumentParser, except for the formatter_class
+        These are the defaults which can be overwridden with keyword arguments passed
         to the constructor.
         '''
         
@@ -866,6 +523,8 @@ class PlottingArgumentParser(argparse.ArgumentParser):
                 'defaultXTickLabelLocation': 'm',
                 'defaultYTickLabelLocation': 'm',
                 'defaultDrawAxesAtZero': None,
+                'defaultDrawVerticalGrid': False,
+                'defaultDrawHorizontalGrid': False,
                         
                 #axis labels
                 'defaultXlabel': None,
@@ -911,10 +570,13 @@ class PlottingArgumentParser(argparse.ArgumentParser):
                        
                 'defaultLegendTextKwargs': [],
                         
-                'defaultBarGraph': None
+                'defaultBarGraph': None,
+                'defaultTkGui': False
                 }
 
         
+        #this just pulls out and removes any kwargs matching the keys for the defaults defined above, 
+        #and then passes any remaining on to the base __init__
         reduced_kwargs = dict(kwargs)
         for key, val in kwargs.iteritems():
             if key[0:7] == "default":
@@ -1051,6 +713,14 @@ class PlottingArgumentParser(argparse.ArgumentParser):
             axisArgs.add_argument('--draw-axes-at-zero', dest='drawAxesAtZero', default=option_defaults['defaultDrawAxesAtZero'], action='store_true', 
                                 help='whether to draw horizontal and vertical lines through 0, 0')
        
+        if 'defaultDrawVerticalGrid' in option_defaults:
+            axisArgs.add_argument('--draw-vertical-grid', dest='drawVerticalGrid', default=option_defaults['defaultDrawVerticalGrid'], action='store_true', 
+                                help='whether to draw vertical lines from top to bottom axis at major tick points')
+       
+        if 'defaultDrawHorizontalGrid' in option_defaults:
+            axisArgs.add_argument('--draw-horizonal-grid', dest='drawHorizontalGrid', default=option_defaults['defaultDrawHorizontalGrid'], action='store_true', 
+                                help='whether to draw horizontal lines from left to right axis at major tick points')
+       
         if 'defaultXTickLabelLocation' in option_defaults:
             axisArgs.add_argument('--x-tick-label-location', dest='xTickLabelLocation', default=option_defaults['defaultXTickLabelLocation'], choices=['m', 'e', 'n'],
                     help='whether to draw X tick labels only on (m)arginal plots, (n)one, or on (e)very plot.')
@@ -1058,7 +728,7 @@ class PlottingArgumentParser(argparse.ArgumentParser):
         if 'defaultYTickLabelLocation' in option_defaults:
             axisArgs.add_argument('--y-tick-label-location', dest='yTickLabelLocation', default=option_defaults['defaultYTickLabelLocation'], choices=['m', 'e', 'n'],
                     help='whether to draw Y tick labels only on (m)arginal plots, (n)one, or on (e)very plot.')
-       
+
         #########
         #titles
         titleArgs = self.add_argument_group('ARGUMENTS FOR PLOT AND SUBPLOT TITLES')
@@ -1182,6 +852,10 @@ class PlottingArgumentParser(argparse.ArgumentParser):
             barGraphArgs.add_argument('--bar-graph', dest='barGraph', default=False, action='store_true',
                                 help='plot a bar graph rather than line plot, disregarding or redefining some options (difference from --histogram is that histogram automatically bins data)')
 
+        if 'defaultTkGui' in option_defaults:
+            self.add_argument('--gui', dest='useGui', default=False, action='store_true',
+                                help='Start a tkinter-based GUI for plotting - experimental, and may not work')
+
 
 
 def make_figure_and_subplots(nrows, ncols):
@@ -1219,7 +893,14 @@ def prepare_all_kwargs(options):
             [('labelsize', options.axisTickFontsize)])
     
     #these can only be combined like this because no specific values are being passed in
-    allKwargDict['xTickKwargs'], allKwargDict['yTickKwargs'], allKwargDict['xTickLabelKwargs'], allKwargDict['yTickLabelKwargs'], allKwargDict['plotKwargs'], allKwargDict['histogramKwargs'], allKwargDict['legendTextKwargs'] = [ prepare_plot_kwargs(kw, []) for kw in [ options.additionalXTickKwargs, options.additionalYTickKwargs, options.additionalXTickLabelKwargs, options.additionalYTickLabelKwargs, options.additionalPlotKwargs, options.additionalHistogramKwargs, options.additionalLegendTextKwargs ] ]
+    others = [ ('xTickKwargs', 'additionalXTickKwargs'), ('yTickKwargs', 'additionalYTickKwargs'), ('xTickLabelKwargs', 'additionalXTickLabelKwargs' ), ('yTickLabelKwargs', 'additionalYTickLabelKwargs'), ('plotKwargs', 'additionalPlotKwargs'), ('histogramKwargs', 'additionalHistogramKwargs'), ('legendTextKwargs', 'additionalLegendTextKwargs') ]
+    for var, opt in others:
+        if hasattr(options, opt):
+            allKwargDict[var] = prepare_plot_kwargs(options.__dict__[opt], []) 
+        else:
+            allKwargDict[var] = []
+    
+    #allKwargDict['xTickKwargs'], allKwargDict['yTickKwargs'], allKwargDict['xTickLabelKwargs'], allKwargDict['yTickLabelKwargs'], allKwargDict['plotKwargs'], allKwargDict['histogramKwargs'], allKwargDict['legendTextKwargs'] = [ prepare_plot_kwargs(kw, []) for kw in [ options.additionalXTickKwargs, options.additionalYTickKwargs, options.additionalXTickLabelKwargs, options.additionalYTickLabelKwargs, options.additionalPlotKwargs, options.additionalHistogramKwargs, options.additionalLegendTextKwargs ] ]
 
     return allKwargDict
         
@@ -1282,11 +963,6 @@ def full_plot_routine(options, fileData):
     #xtics = mpl.ticker.FixedLocator([0, 50, 100, 200, 400])
     #axes[0].get_xaxis().set_major_locator(xtics)
 
-    #if location options is s(ingle), center label in overall figure
-    #don't rescale fonts in that case
-    xFontScaler = 1.0 if multiplot and options.xLabelLocation == 's' else ncols
-    yFontScaler = 1.0 if multiplot and options.yLabelLocation == 's' else ncols
-
     #make a single centered label spanning individual plots
     if options.xLabel and options.xLabelLocation == 's':
         fig.text(allKwargDict['xLabelKwargs'].pop('x'), allKwargDict['xLabelKwargs'].pop('y'), options.xLabel, **allKwargDict['xLabelKwargs'])
@@ -1309,7 +985,7 @@ def full_plot_routine(options, fileData):
         #can't use ravel here, because lowest level list of lines will also be collapsed
         dataToIterate = []
         for dat in fileData:
-            dataToIterate.extend([ dat for _ in xrange(numFuncs) ] )
+            dataToIterate.extend( [ dat for _ in xrange(numFuncs) ] )
 
         #this will be equivalent to the data
         inFilesToIterate = np.ravel( [ [ inf for _ in xrange(numFuncs) ] for inf in options.inFiles ] )
