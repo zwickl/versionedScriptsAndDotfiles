@@ -59,3 +59,6 @@ sudo apt-get install default-jdk
 sudo apt-get install nvidia-cuda-dev
 sudo apt-get install nvidia-cuda-toolkit
 
+svn co https://beagle-lib.googlecode.com/svn/ beagle --username=dzwickl@gmail.com
+
+
