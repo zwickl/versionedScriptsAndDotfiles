@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from dendropy import Tree, TreeList
+
 class MyTree(Tree):
     '''This is my override of denodropy Tree, which redefines equality as 
     '''
@@ -225,5 +227,98 @@ class MyTreeList(TreeList):
             if tr not in self:
                 self.append(tr)
                 #print tr.as_newick_string()
+
+
+#this was a hack to ensure that only single taxa were combined, using combine_components, 
+#which works around multiple represenations of same tree, but only for 4 or 5 taxa
+#this has been deprecated
+def arguments_not_list_or_tuple(one, two):
+    for t in [list, tuple]:
+        if isinstance(one, t) or isinstance(two, t):
+            return False
+    return True
+
+
+def combine_components(seedComp, min_components=1, max_components=20, criterion=None):
+    '''This will recursively combine components to make all possible nested tuples of orginal list
+    Written generally, but not clear what the use would be besides generating newick strings to represent
+    trees.
+    NOTE: not all trees are really unique due to equality of differently oriented trees.  Need to filter
+    returned list to make unique.
+    '''
+    seedLevel = len(seedComp) 
+    if seedLevel < min_components:        return []
+    elif seedLevel == min_components:
+        return [seedComp]
+
+    toReturn = []    
+    if seedLevel <= max_components:
+        toReturn.append(seedComp)    
+        for num1 in xrange(seedLevel - 1):
+            for num2 in xrange(num1 + 1, seedLevel):
+                if not criterion or criterion(seedComp[num1], seedComp[num2]):
+                    #print seedComp[num1], seedComp[num2]
+                    newList = list(seedComp)
+                    newItem = [newList.pop(num2), newList.pop(num1)]
+                    newList.append(tuple(sorted(newItem)))
+                    newList.sort()
+                    toReturn.extend(combine_components(newList, min_components=min_components, max_components=max_components, criterion=criterion))
+        
+    return toReturn
+
+
+def combine_components_and_uniqueify(seedComponents, min_components=3, max_components=20, criterion=None):
+    '''Intent here was to filter what is returned from combine_components such that all represented 
+    unique trees.  It does not entirely do so.  It does NOT completely uniquify things if trees 
+    are oriented differently or nodes rotated. Use of a criterion like arguments_not_list_or_tuple 
+    was a previous hack to allow generation of unique trees in the special case of < 6 taxa.  Not needed now.
+    '''
+    compLists = combine_components(seedComponents, min_components=min_components, max_components=max_components, criterion=criterion)
+    compTuples = [ tuple(c) for c in compLists ]
+    compSet = set(compTuples)
+    compSet = list(compSet)
+    #sort by resolvedness
+    compSet.sort(key=lambda t:len(t), reverse=True)
+
+    return compSet
+
+
+def generate_quartet_lists_from_file(filename='quartetList'):
+    '''this generates the possible quartets of taxa from the formatted taxon strings, like
+    one, three, four, five
+    two, three, four, five
+    Or, you can use colons to indicate groups of taxa to make quartets combinatorically,
+    i.e. this would be equivalent to the two lines above:
+    one:two, three, four, five
+    '''
+
+    allQuartets = set()
+    comboQuartets = []
+
+    for line in open(filename, 'rb'):
+        #ignore blank lines and "comments" starting with #
+        if len(line.strip()) > 0 and line[0] != '#':
+            if ':' in line:
+                comboQuartets.append([tax.strip() for tax in line.split(',')])
+            else:
+                allQuartets |= set([tuple([tax.strip() for tax in line.split(',')])])
+
+    quartsFromCombos = []
+    for combo in comboQuartets:
+        thisCombo = []
+        for subset in combo:
+            thisSubset = []
+            for el in subset.split(':'):
+                if thisCombo:
+                    thisSubset.extend([ p + [el] for p in thisCombo ])
+                else:
+                    thisSubset.append([el])
+            thisCombo = thisSubset
+        quartsFromCombos.extend(thisCombo)
+    allQuartets |= set([tuple(q) for q in quartsFromCombos])
+
+    #allQuartets was initially a set of tuples, to ensure that duplicate quarts weren't kept, now
+    #convert back to list of lists
+    return [list(q) for q in allQuartets]
 
 
