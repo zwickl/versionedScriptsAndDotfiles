@@ -3,12 +3,46 @@ import sys
 from os import path
 import re
 #from math import *
-from itertools import izip, cycle, chain
+from itertools import izip, izip_longest, cycle, chain, repeat, islice
 import collections
 import argparse 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
+
+def padded(toPad, n, fillvalue=None):
+    '''return an iterator of n elements, either slicing toPad or padding it
+    >>> [ e for e in padded((1, 2, 3), 2) ]
+    [1, 2]
+    >>> [ e for e in padded((1, 2, 3), 4, 0) ]
+    [1, 2, 3, 0]
+    '''
+    padNum = n - len(toPad)
+    if padNum <= 0 :
+        return islice(toPad, n)
+    return chain(toPad, repeat(fillvalue, padNum))
+
+
+def cycle_n_elements(toCycle, n):
+    '''return an iterator of length n, drawing items from iterable toCycle, cycling if n > len(toCycle)
+    If n < len(toCycle), identical to padded(toCycle, n))
+    >>> [ e for e in cycle_n_elements([1, 2, 3], 4) ]
+    [1, 2, 3, 1]
+    >>> [ e for e in cycle_n_elements([1, 2, 3], 2) ]
+    [1, 2]
+    '''
+    return iter(el for el, _ in izip(cycle(toCycle), xrange(n)))
+
+
+def cycle_n_elements_m_times(toCycle, n , m):
+    '''this is confusing - repeat the following m times, chaining into a single iterable:
+    draw n items from toCycle, cycling if n > len(toCycle)
+    (see cycle_n_elements)
+    >>> [ el for el in cycle_n_elements_m_times([1, 2, 3], 4, 2) ]
+    [1, 2, 3, 1, 1, 2, 3, 1]
+    '''
+    return chain.from_iterable(cycle_n_elements(toCycle, n) for __ in xrange(m))
+
 
 def read_files_and_split_columns_as_strings(filenames, skipRows=None, ignorePatts=None, allowMissing=False):
     if skipRows and ignorePatts:
@@ -495,13 +529,14 @@ class PlottingArgumentParser(argparse.ArgumentParser):
         to the constructor.
         '''
         
+        #marker "x" was not working in the defaultMarkers, for some reason
         option_defaults = {
                 'defaultSubplotKwargs': [],
                 #plot defaults
                 'defaultGreys': ['0.0'],
                 'defaultColors': None,
                 'defaultMarkerSizes': [12.0],
-                'defaultMarkers': 'osx*^h',
+                'defaultMarkers': 'Dos*^+',
                 'defaultLineWidth': [3.0],
                 'defaultLineStyle': ['-', '--', ':'],
                 'defaultCycleStylesWithinFiles': True,
@@ -900,16 +935,15 @@ def prepare_all_kwargs(options):
         else:
             allKwargDict[var] = []
     
-    #allKwargDict['xTickKwargs'], allKwargDict['yTickKwargs'], allKwargDict['xTickLabelKwargs'], allKwargDict['yTickLabelKwargs'], allKwargDict['plotKwargs'], allKwargDict['histogramKwargs'], allKwargDict['legendTextKwargs'] = [ prepare_plot_kwargs(kw, []) for kw in [ options.additionalXTickKwargs, options.additionalYTickKwargs, options.additionalXTickLabelKwargs, options.additionalYTickLabelKwargs, options.additionalPlotKwargs, options.additionalHistogramKwargs, options.additionalLegendTextKwargs ] ]
-
     return allKwargDict
         
 
 def full_plot_routine(options, fileData):
     '''This does a whole bunch of stuff related to making subplots, plotting data, cycling through styles,
     etc.  It is directed by the options returned from the parse_args call to a PlottingArgumentParser.
+    
     There are a number of ways to line up plots/files/series, etc.
-    A=axis, F=file, S=series(i.e., data function)
+    A=(axis,alternatively called subplot), F=file, S=series(i.e., data function)
     1. Everything goes onto one axis. (options.onePlot = True)
         A   A   A   A
         F   F   F2  F2
@@ -922,6 +956,23 @@ def full_plot_routine(options, fileData):
         A1  A1  A2  A2
         F   F   F2  F2
         S   S2  S   S2
+ 
+    A number of important quantities:
+        These don't depend on which of the options above are used:
+            numFiles  =  what it sounds like 
+            numFuncs  =  number of data funcs _per file_
+            numSeries =  numFiles * numFuncs
+        
+        These do depend on options 1-3 
+            numUsedSubplots = the actual number of axes that series are put on
+                Option 1: numUsedSubplots = 1
+                Option 2: numUsedSubplots = numSeries
+                Option 3: numUsedSubplots = numFiles
+            
+            totalSubplots = may be greater than numUsed subplots, for example
+                if a 2 x 2 matrix of subplots are created but only 3 are used.
+                len(axes) will be equal to this.
+
     '''
 
     numFiles = len(fileData)
@@ -929,20 +980,23 @@ def full_plot_routine(options, fileData):
     numSeries = numFiles * numFuncs
 
     if options.subplotPerFunction:
-        numSubplots = numSeries
+        numUsedSubplots = numSeries
     elif options.onePlot:
-        numSubplots = 1
+        numUsedSubplots = 1
     else:
-        numSubplots = numFiles
+        numUsedSubplots = numFiles
 
     #################
     #now the plotting
 
     #make a multiplot (i.e., call pyplot.subplots) even if there is only one plot, to standardize below code
     multiplot = True
-    nrows = int(np.ceil(numSubplots / float(options.ncols)))
-    ncols = min(options.ncols, numSubplots)
+    nrows = int(np.ceil(numUsedSubplots / float(options.ncols)))
+    ncols = min(options.ncols, numUsedSubplots)
+    totalSubplots = nrows * ncols
     fig, axes = make_figure_and_subplots(nrows, ncols)
+
+    assert(len(axes) == totalSubplots)
 
     allKwargDict = prepare_all_kwargs(options)
 
@@ -951,8 +1005,7 @@ def full_plot_routine(options, fileData):
     if options.superTitle:
         plt.suptitle(options.superTitle, **allKwargDict['superTitleKwargs'])
 
-    #if this isn't explicitly set it is figured out by pyplot and applied
-    #equally to all subplots
+    #if this isn't explicitly set it is figured out by pyplot and applied equally to all subplots
     if options.yRange:
         plt.ylim(options.yRange)
 
@@ -969,72 +1022,101 @@ def full_plot_routine(options, fileData):
     if options.yLabel and options.yLabelLocation == 's':
         fig.text(allKwargDict['yLabelKwargs'].pop('x'), allKwargDict['yLabelKwargs'].pop('y'), options.yLabel, **allKwargDict['yLabelKwargs'])
 
-    #it will be easiest to just set up a bunch of lists of equal length, and then iterate through
-    #these to get the proper association between data, functions, axes, etc.
     #########################
     def make_plot_iterator():
+        '''it will be easiest to set up a bunch of lists of length numSeries, and then iterate through
+        these to get the proper association between data, functions, axes, etc.
+        '''
         if options.subplotPerFunction:
             #the # of axes should already be the # of plots, and will match up to d1f1 d1f2 d2f1 d2f2 etc
-            axesToIterate = [ ax for num, ax in enumerate(axes) if num < numSeries ]
+            #just slice off any axes that won't be used
+            axesToIterate = islice(axes, numSeries)
         elif options.onePlot:
-            axesToIterate = [ ax for _, ax in zip(range(numSeries), cycle(axes))]
+            #axes is a list of length 1, so repeat it numSeries times
+            assert(len(axes) == 1)
+            axesToIterate = axes * numSeries 
         else:
-            #a single axis for each datafile, which will be equivalent to the above unless there are multiple functions per file 
-            axesToIterate = np.ravel( [ [ ax for _ in options.dataColumnFunc ] for num, ax in enumerate(axes) if num * len(options.dataColumnFunc) < numSeries ] )
+            #a single axis for each datafile, which will be equivalent to subplotPerFunction  unless there are multiple functions per file 
+            axesToIterate = chain.from_iterable([ [ax] * numFuncs for ax in islice(axes, numFiles)])
 
-        #can't use ravel here, because lowest level list of lines will also be collapsed
-        dataToIterate = []
-        for dat in fileData:
-            dataToIterate.extend( [ dat for _ in xrange(numFuncs) ] )
-
-        #this will be equivalent to the data
-        inFilesToIterate = np.ravel( [ [ inf for _ in xrange(numFuncs) ] for inf in options.inFiles ] )
+        #this will be equivalent - the infiles are only used for titles anyway
+        dataToIterate = chain.from_iterable( [dat] * numFuncs for dat in fileData )
+        inFilesToIterate = chain.from_iterable( [ [inf] * numFuncs for inf in options.inFiles ] )
 
         #functions to iterate should just cycle through the functions for each file
-        functionsToIterate = np.ravel( [ [ func for func in options.dataColumnFunc ] for _ in xrange(numFiles) ] )
+        functionsToIterate = cycle_n_elements_m_times( options.dataColumnFunc, numFuncs, numFiles )
+
 
         #style stuff
-        if options.onePlot:
-            #each series gets a sucessive style within the one plot
-            markersToIterate = np.ravel( [ mark for mark, _ in zip(cycle(options.markers), axesToIterate) ] )
-            markerSizesToIterate = np.ravel( [ size for size, _ in zip(cycle(options.markerSizes), axesToIterate) ] )
-            lineWidthsToIterate = np.ravel( [ width for width, _ in zip(cycle(options.lineWidth), axesToIterate) ] )
-            lineStylesToIterate = np.ravel( [ style for style, _ in zip(cycle(options.lineStyle), axesToIterate) ] )
-            colorValuesToIterate = np.ravel( [ color for color, _ in zip(cycle(options.colorValues if options.colorValues else options.greyValues), axesToIterate) ] )
-            hatchesToIterate = np.ravel( [ hatch for hatch, _ in zip(cycle(options.hatchString if options.hatchString else 'o'), axesToIterate) ] )
-            seriesNamesToIterate = np.ravel( [ name for name, _ in zip(cycle(options.seriesNames if options.seriesNames else '_nolegend_'), axesToIterate) ] )
+        if options.onePlot or options.subplotPerFunction:
+            #each series (whether from different files or not) gets a sucessive style within the one plot - thus, generally just keep cycling
+            markersToIterate = cycle_n_elements(options.markers, numSeries)
+            markerSizesToIterate = cycle_n_elements(options.markerSizes, numSeries)
+            lineWidthsToIterate = cycle_n_elements(options.lineWidth, numSeries)
+            lineStylesToIterate = cycle_n_elements(options.lineStyle, numSeries)
+            colorValuesToIterate = cycle_n_elements(options.colorValues if options.colorValues else options.greyValues, numSeries)
+            hatchesToIterate = cycle_n_elements(options.hatchString or [''], numSeries)
+            seriesNamesToIterate = padded(options.seriesNames or [], numSeries, '_nolegend_')
+
         elif options.cycleStylesWithinFiles:
             #this is the default really, sucessive styles within subplots
-            markersToIterate = np.ravel( [ [ mark for mark, _ in zip(cycle(options.markers), options.dataColumnFunc) ] for _ in fileData ] )
-            markerSizesToIterate = np.ravel( [ [ size for size, _ in zip(cycle(options.markerSizes), options.dataColumnFunc) ] for _ in fileData ] )
-            lineWidthsToIterate = np.ravel( [ [ width for width, _ in zip(cycle(options.lineWidth), options.dataColumnFunc) ] for _ in fileData ] )
-            lineStylesToIterate = np.ravel( [ [ style for style, _ in zip(cycle(options.lineStyle), options.dataColumnFunc) ] for _ in fileData ] )
-            colorValuesToIterate = np.ravel( [ [ color for color, _ in zip(cycle(options.colorValues if options.colorValues else options.greyValues), options.dataColumnFunc) ] for _ in fileData ] )
-            hatchesToIterate = np.ravel( [ [ hatch for hatch, _ in zip(cycle(options.hatchString if options.hatchString else 'o'), options.dataColumnFunc) ] for _ in fileData ] )
-            #seriesNamesToIterate = np.ravel( [ [ name for name, _ in zip(cycle(options.seriesNames if options.seriesNames else '_nolegend_'), options.dataColumnFunc) ] for _ in fileData ] )
-            seriesNamesToIterate = np.ravel( [ [ name for name, _ in zip((options.seriesNames[n] if options.seriesNames and n < len(options.seriesNames) else '_nolegend_' for n in xrange(numFuncs)), options.dataColumnFunc) ] for _ in fileData ] )
+            ''' This won't work, I believe
+            markersToIterate = markerSizesToIterate = lineWidthsToIterate = lineStylesToIterate = []
+            for it, source in [(markersToIterate, options.markers), (markerSizesToIterate, options.markerSizes), 
+                    (lineWidthsToIterate, options.lineWidth), (lineStylesToIterate, options.lineStyle)]:
+                it = cycle_n_elements_m_times(source, numFuncs, numFiles)
+            '''
+            markersToIterate = cycle_n_elements_m_times(options.markers, numFuncs, numFiles)
+            markerSizesToIterate = cycle_n_elements_m_times(options.markerSizes, numFuncs, numFiles)
+            lineWidthsToIterate = cycle_n_elements_m_times(options.lineWidth, numFuncs, numFiles)
+            lineStylesToIterate = cycle_n_elements_m_times(options.lineStyle, numFuncs, numFiles)
+            
+            #colorValuesToIterate = cycle_n_elements_m_times(options.colorValues if options.colorValues else options.greyValues, numFuncs, numFiles)
+            colorValuesToIterate = cycle_n_elements_m_times(options.colorValues or options.greyValues, numFuncs, numFiles)
+            hatchesToIterate = cycle_n_elements_m_times(options.hatchString or [''], numSeries, numFiles)
+            seriesNamesToIterate = cycle_n_elements_m_times(padded(options.seriesNames or [], numSeries, '_nolegend_'), numSeries, numFiles)
+
         else:
             #use a single style for all series in a single file
-            markersToIterate = np.ravel( [ [ mark for _ in options.dataColumnFunc ] for mark, f in zip( cycle(options.markers), fileData) ] )
-            markerSizesToIterate = np.ravel( [ [ size for _ in options.dataColumnFunc ] for mark, f in zip( cycle(options.markerSizes), fileData) ] )
-            lineWidthsToIterate = np.ravel( [ [ width for _ in options.dataColumnFunc ] for mark, f in zip( cycle(options.lineWidth), fileData) ] )
-            lineStylesToIterate = np.ravel( [ [ style for _ in options.dataColumnFunc ] for mark, f in zip( cycle(options.lineStyle), fileData) ] )
-            colorValuesToIterate = np.ravel( [ [ color for _ in options.dataColumnFunc ] for mark, f in zip( cycle(options.colorValues if options.colorValues else options.greyValues), fileData) ] )
-            hatchesToIterate = np.ravel( [ [ hatch for _ in options.dataColumnFunc ] for hatch, f in  zip(cycle(options.hatchString if options.hatchString else 'o'), fileData) ] )
-            seriesNamesToIterate = np.ravel( [ [ name for _ in options.dataColumnFunc ] for name, f in  zip(cycle(options.seriesNames if options.seriesNames else '_nolegend_'), fileData) ] )
+            markersToIterate = chain.from_iterable( [ [mark] * numFuncs for mark in cycle_n_elements(options.markers, numFiles) ] )
+            markerSizesToIterate = chain.from_iterable( [ [size] * numFuncs for size in cycle_n_elements(options.markerSizes, numFiles) ] )
+            lineWidthsToIterate = chain.from_iterable( [ [width] * numFuncs for width in cycle_n_elements(options.lineWidth, numFiles) ] )
+            lineStylesToIterate = chain.from_iterable( [ [style] * numFuncs for style in cycle_n_elements(options.lineStyle, numFiles) ] )
+            colorValuesToIterate = chain.from_iterable( [ [color] * numFuncs for color in cycle_n_elements(options.colorValues or options.greyValues, numFiles) ] )
+            hatchesToIterate = chain.from_iterable( [ [hatch] * numFuncs for hatch in cycle_n_elements(options.hatchString or [''], numFiles) ] )
+            seriesNamesToIterate = padded(options.seriesNames or [], numSeries, '_nolegend_')  
             
-        iterLen = numSeries
+            #seriesNamesToIterate = np.ravel( [ [ name for _ in options.dataColumnFunc ] for name, f in  zip(cycle(options.seriesNames if options.seriesNames else '_nolegend_'), fileData) ] )
+            
+            
+            #markerSizesToIterate = np.ravel( [ [ size for _ in options.dataColumnFunc ] for size, f in zip( cycle(options.markerSizes), fileData) ] )
+            #lineWidthsToIterate = np.ravel( [ [ width for _ in options.dataColumnFunc ] for width, f in zip( cycle(options.lineWidth), fileData) ] )
+            #lineStylesToIterate = np.ravel( [ [ style for _ in options.dataColumnFunc ] for style, f in zip( cycle(options.lineStyle), fileData) ] )
+            #colorValuesToIterate = np.ravel( [ [ color for _ in options.dataColumnFunc ] for color, f in zip( cycle(options.colorValues if options.colorValues else options.greyValues), fileData) ] )
+            #hatchesToIterate = np.ravel( [ [ hatch for _ in options.dataColumnFunc ] for hatch, f in  zip(cycle(options.hatchString if options.hatchString else 'o'), fileData) ] )
+            #seriesNamesToIterate = np.ravel( [ [ name for _ in options.dataColumnFunc ] for name, f in  zip(cycle(options.seriesNames if options.seriesNames else '_nolegend_'), fileData) ] )
+            
+            #markersToIterate = cycle_n_elements_m_times(options.markers, numSeries, numFiles)
 
-        assert(len(dataToIterate) == iterLen)
-        assert(len(functionsToIterate) == iterLen)
-        assert(len(markersToIterate) == iterLen)
-        assert(len(markerSizesToIterate) == iterLen)
-        assert(len(lineWidthsToIterate) == iterLen)
-        assert(len(lineStylesToIterate) == iterLen)
-        assert(len(colorValuesToIterate) == iterLen)
-        assert(len(axesToIterate) == iterLen)
-        assert(len(hatchesToIterate) == iterLen)
-        assert(len(seriesNamesToIterate) == iterLen)
+        '''
+        print len([ d for d in axesToIterate]), 
+        print len([ d for d in dataToIterate]),
+        print len([ d for d in functionsToIterate])
+        print options.markers, 
+        print [ m for m in markersToIterate ]
+        print options.markerSizes,
+        print [ m for m in markerSizesToIterate ]
+        print options.lineWidth,
+        print [ m for m in lineWidthsToIterate ]
+        print options.lineStyle,
+        print [ m for m in lineStylesToIterate ]
+        print options.greyValues,
+        print [ m for m in colorValuesToIterate ]
+        print [ m for m in hatchesToIterate ]
+        print options.seriesNames,
+        print [ m for m in seriesNamesToIterate ]
+        exit()
+        '''
 
         return izip(
                 inFilesToIterate,
@@ -1051,6 +1133,8 @@ def full_plot_routine(options, fileData):
     #####################
 
     #cycle through markers, marker sizes, colors, axes, etc., plotting one series per loop
+    #the izip object returned by make_plot_iterator will return tuples until the end of the shortest is reached
+    #subplot is a matplotlib.axes instance
     for num, (inFile, series, function, marker, markerSize, lineWidth, lineStyle, color, hatch, seriesName, subplot) in enumerate(make_plot_iterator()):
         #turn off extra ticks
         subplot.get_xaxis().tick_bottom()
@@ -1063,19 +1147,21 @@ def full_plot_routine(options, fileData):
                     subplot.set_ylabel(options.yLabel, **allKwargDict['yLabelKwargs'])
         if options.xLabel:
             if options.xLabelLocation == 'm' or not multiplot:
-                if num >= numPlots - ncols:
+                if num >= numSubPlots - ncols:
                     subplot.set_xlabel(options.xLabel, **allKwargDict['xLabelKwargs'])
 
         #set the title - this could get set multiple times for a single file/plot with multiple funcs
         if options.titleFunc and options.titleFunc != 'None':
-            subplot.set_title(options.titleFunc(inFile, sep=' '), **allKwargDict['titleKwargs'])
+            if isinstance(options.titleFunc, str):
+                subplot.set_title(eval(options.titleFunc)(inFile, sep=' '), **allKwargDict['titleKwargs'])
+            else:
+                subplot.set_title(options.titleFunc(inFile, sep=' '), **allKwargDict['titleKwargs'])
         elif options.titles:
             titleNum = num if len(options.titles) > 1 else 0
             subplot.set_title(options.titles[titleNum], **allKwargDict['titleKwargs'])
      
         #this is a little goofy, as it will be re-set for each subplot, despite being shared
         if options.xTickFunction:
-            #xtickKwargs = {'rotation':90, 'size':'xx-small'}
             tickFunc = eval(options.xTickFunction)
             #note that the tick_params calls below mainly affect the ticks themselves, rather
             #than the tick _labels_.  Although, the tick_params do set the label fontsizes.
@@ -1094,9 +1180,11 @@ def full_plot_routine(options, fileData):
                 #plt.xticks(range(len(series)), tickData, rotation=90, weight='bold')
                 #plt.xticks(range(len(series)), tickFunc(series))
         else:
-            plt.xticks(**allKwargDict['xTickLabelKwargs'])
+            #plt.xticks(**allKwargDict['xTickLabelKwargs'])
+            subplot.set_xticklabels(subplot.get_xticks(), **allKwargDict['xTickLabelKwargs'])
 
-        plt.yticks(**allKwargDict['yTickLabelKwargs'])
+        #plt.yticks(**allKwargDict['yTickLabelKwargs'])
+        subplot.set_yticklabels(subplot.get_yticks(), **allKwargDict['yTickLabelKwargs'])
 
         #change tick properties
         if allKwargDict['tickKwargs']:
@@ -1118,7 +1206,7 @@ def full_plot_routine(options, fileData):
         two arguments, hence the * to remove the tuple containing the two lists,
         which I think is required for the lambda'''
         if isinstance(toPlot[0], list):
-            if not options.histogram and not options.barGraph:
+            if (not hasattr(options, 'histogram') or not options.histogram) and (not hasattr(options, 'barGraph') or not options.barGraph):
                 subplot.plot(*dataFunc(series), 
                         marker=marker, 
                         markersize=markerSize, 
@@ -1130,7 +1218,7 @@ def full_plot_routine(options, fileData):
                         mec=color,
                         **allKwargDict['plotKwargs'])
             else:
-                if options.histogram:
+                if hasattr(options, 'histogram') and options.histogram:
                     bins = np.linspace(options.xRange[0] if options.xRange else 0.0, options.xRange[1] if options.xRange else 1.0, options.histogramBins)
                     outN, outBins, patches = subplot.hist(*dataFunc(series), 
                             bins=bins,
@@ -1139,14 +1227,15 @@ def full_plot_routine(options, fileData):
                             **allKwargDict['histogramKwargs'])
                 else:
                     patches = subplot.bar(*dataFunc(series), 
-                            color=color, label=seriesName)
+                            color=color, label=seriesName,
+                            **allKwargDict['histogramKwargs'])
                     if options.seriesNames:
                         subplot.legend(frameon=False, prop=font_manager.FontProperties(**allKwargDict['legendTextKwargs']))
                 for pat in patches:
                     pat.set_hatch(hatch)
 
         else:
-            if not options.histogram and not options.barGraph:
+            if (not hasattr(options, 'histogram') or not options.histogram) and (not hasattr(options, 'barGraph') or not options.barGraph):
                 subplot.plot(dataFunc(series), 
                         marker=marker, 
                         markersize=markerSize, 
@@ -1155,7 +1244,7 @@ def full_plot_routine(options, fileData):
                         color=color,
                         **allKwargDict['plotKwargs'])
             else:
-                if options.histogram:
+                if hasattr(options, 'histogram') and options.histogram:
                     bins = np.linspace(options.xRange[0] if options.xRange else 0.0, options.xRange[1] if options.xRange else 1.0, options.histogramBins)
                     outN, outBins, patches = subplot.hist(dataFunc(series), 
                             bins=bins,
@@ -1164,7 +1253,9 @@ def full_plot_routine(options, fileData):
                             **allKwargDict['histogramKwargs'])
                 else:
                     patches = subplot.bar(dataFunc(series),
-                            color=color, label=seriesName)
+                            color=color, label=seriesName, 
+                            **allKwargDict['histogramKwargs'])
+                            
                     if options.seriesNames:
                         subplot.legend(frameon=False, fontsize=24)
                 for pat in patches:
@@ -1189,25 +1280,28 @@ def full_plot_routine(options, fileData):
             subplot.axhline(xmin=-sys.maxint - 1, xmax=sys.maxint)
             subplot.axvline(ymin=-sys.maxint - 1, ymax=sys.maxint)
 
-        #TEMP
-        subplot.xaxis.grid(color='gray', linestyle='dashed')
+        if options.drawVerticalGrid:
+            subplot.xaxis.grid(color='gray', linestyle='dashed')
+
+        if options.drawHorizontalGrid:
+            subplot.yaxis.grid(color='gray', linestyle='dashed')
 
     if options.seriesNames:
         for ax in axes:
             ax.legend()
 
     #remove any unused axes
-    for ax in axes[numSubplots:]:
+    for ax in axes[numUsedSubplots:]:
         ax.set_axis_off()
 
     #return the current figure, so more manipulations could potentially be done on it
     return plt.gcf()
 
+    ###################
     if options.outFile:
         plt.savefig(options.outFile, transparent=True, bbox_inches='tight')
     else:
         plt.show()
-
 
 if __name__ == "__main__":
     import doctest
