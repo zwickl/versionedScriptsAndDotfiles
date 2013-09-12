@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from dendropy import Tree, TreeList
+import copy
+from dendropy import Tree, TreeList, treesplit
 
 class MyTree(Tree):
     '''This is my override of denodropy Tree, which redefines equality as 
@@ -27,17 +28,8 @@ class MyTreeList(TreeList):
 
             #EDIT - this is too dangerous - dendropy can consider trees unrooted
             #even if they have a bifurcating root.  Just test.
-            #if item.is_rooted != t.is_rooted or numNodes == len(t.nodes()):
-                #print 'testing'
             if treecalc.symmetric_difference(t, item) == 0:
-                #print 'same'
                 return True
-            '''
-            print 'testing'
-            if treecalc.symmetric_difference(t, item) == 0:
-                print 'same'
-                return True
-            '''
         #print 'no match'
         return False
 
@@ -103,7 +95,7 @@ class MyTreeList(TreeList):
 
         return float(found)/total
 
-    def masked_frequency_of_splitlist(self, **kwargs):
+    def masked_frequency_of_splitlist(self, returnMatches=False, **kwargs):
         """
         DJZ - this is my adaptation of frequency_of_masked_split that takes a
         taxon mask, in my own derived TreeList class
@@ -120,6 +112,9 @@ class MyTreeList(TreeList):
         NOTE: This is not that useful in some cases here you call it sucessively with
         different numbers of splits and expect the freqs to add up to 1.0
         """
+        
+        #if returnMatches is requested, return matching trees
+        matches = []
 
         partialMask = kwargs["mask"] if "mask" in kwargs else self.taxon_set.all_taxa_bitmask()
 
@@ -131,43 +126,42 @@ class MyTreeList(TreeList):
             if treesplit.count_bits(split) != len(k):
                 raise IndexError('Not all taxa could be mapped to split (%s): %s' \
                     % (self.taxon_set.split_bitmask_string(split), k))
+
         found = 0
         total = 0
-        requiredSplits = len(targetSplits)
-        for tree in self:
-            '''
-            #print dir(tree)
-            #print tree.as_newick_string()
-            for internal in tree.postorder_internal_node_iter():
-                print dir(internal)
-                print internal.label
-            for edge in tree.postorder_edge_iter():
-                print dir(tree.seed_node)
-                print tree.seed_node.description()
-            '''
+        for tnum, tree in enumerate(self):
             if not hasattr(tree, "split_edges"):
                 treesplit.encode_splits(tree)
             total += 1
             matchedSplits = 0
             incompatible = False
             #work through the required splits
-            for targetSplit in targetSplits:
+            for num, targetSplit in enumerate(targetSplits):
                 compSplit = (~targetSplit & partialMask)
                 #work through the splits in this tree
                 for test_split in tree.split_edges:
                     #mask out unimportant taxa
                     masked_test = (test_split & partialMask)
-                    if not treesplit.is_compatible(test_split, targetSplit, partialMask):
-                        incompatible = True
-                        break
-                    if targetSplit == masked_test or compSplit == masked_test :
-                        matchedSplits += 1
-                        break
+                    #don't need to test anything if masked_test is empty (i.e., no taxa in partialMask appear on opposite sides
+                    #of test_split
+                    if masked_test:
+                        #print '%13s %13s %13s %d' % (bin(targetSplit), bin(test_split), bin(masked_test), masked_test),
+                        if not treesplit.is_compatible(test_split, targetSplit, partialMask):
+                            incompatible = True
+                            break
+                        if targetSplit == masked_test or compSplit == masked_test:
+                            matchedSplits += 1
+                            break
                 if incompatible:
                     break
-            if not incompatible and matchedSplits == requiredSplits:
+            if not incompatible and matchedSplits == len(targetSplits):
                 found += 1
-        return float(found)/total
+                if returnMatches:
+                    matches.append(copy.deepcopy(tree))
+        if returnMatches:
+            return float(found)/total, matches
+        else:
+            return float(found)/total
 
     def generate_all_trees_for_taxon_list(self, taxon_list, min_bipartitions=None, max_bipartitions=None, criterion=None):
         '''Will call functions to generate newick strings representing all possible trees for taxon set.  Work must be done here to make that list
