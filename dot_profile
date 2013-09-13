@@ -4,6 +4,7 @@ if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
+
 #determine OS type
 OS='unknown'
 unamestr=`uname`
@@ -96,7 +97,7 @@ if [ $OS = "darwin" ];then
     #export MAFFT_BINARIES=/usr/local/bin/
     export MAFFT_BINARIES=
     PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
-	PATH=$PATH:/usr/local/cuda/bin
+	PATH=$HOME/my_usr/bin:$HOME/my_usr/local/bin:$PATH:/usr/local/cuda/bin
     PATH=/usr/local/ActivePerl-5.14/bin/:$PATH
 	GNUTERM=x11
     alias ls='ls -G'
@@ -229,7 +230,7 @@ alias lsl='ls -ltrh'
 alias xterm='xterm -ls'
 alias gp='gnuplot'
 #alias synHome='synergyc  -f --name newlap 192.168.1.64'
-alias synHome='synergyc  -f --name newlap 192.168.1.110'
+alias synHome='synergyc  -f --name newlap 192.168.1.120'
 alias lsl='ls -ltrh'
 alias hist='history | grep'
 alias mi='nice make -j 2 && nice make install && pwd > $HOME/.lastMake'
@@ -252,6 +253,7 @@ alias dsub="disq_sub"
 alias ddel="disq_del"
 alias pull="git pull origin"
 alias push="git push origin"
+alias shist="history | readHist"
 
 function mark(){
     if [ ! "$#" -eq 1 ];then
@@ -259,6 +261,15 @@ function mark(){
         return
     fi
     pwd > $HOME/.markedDirs/$1
+}
+
+function marks(){
+    for DIR in $HOME/.markedDirs/*
+    do
+        echo
+        echo ${DIR##*/}
+        cat $DIR
+    done
 }
 
 function cdm(){
