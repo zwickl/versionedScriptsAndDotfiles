@@ -9,6 +9,7 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
+from dzutils import flatten_array
 
 def padded(toPad, n, fillvalue=None):
     '''return an iterator of n elements, either slicing toPad or padding it
@@ -45,33 +46,34 @@ def cycle_n_elements_m_times(toCycle, n , m):
 
 
 def read_files_and_split_columns_as_strings(filenames, skipRows=None, ignorePatts=None, allowMissing=False):
-    if skipRows and ignorePatts:
-        exit('pass either skipRows or ignorePatts to\nread_and_split_columns_as_strings, not both')
+    '''This is very much like functions from the csv module, but reads multiple files and allows 
+    mechanisms for skipping rows based on a regex or skipping a specified number of leading 
+    rows'''
     data = []
+    compiledPatts = []
+
+    if isinstance(filenames, str):
+        filenames = [filenames]
+
     if ignorePatts:
         if isinstance(ignorePatts, str):
             ignorePatts = [ignorePatts]
-        compiledPatts = []
-        for patt in ignorePatts:
-            compiledPatts.append(re.compile(patt)) 
+        compiledPatts = [ re.compile(patt) for patt in ignorePatts ]
+    
     for f in filenames:
-        if ignorePatts:
-            rawData = [l for l in open(f, 'rb')]
+        if not path.exists(f) and allowMissing:
+            sys.stderr.write('WARNING: skipping missing file %s\n' % f)
+        else:
             theseData = []
-            for line in rawData:
-                for cpat in compiledPatts:
+            fileData = [ l.strip() for l in open(f, 'rb') ]
+            for line in fileData[skipRows:]:
+                 for cpat in compiledPatts:
                     if cpat.search(line):
                         break
-                else:
-                    theseData.append(line.strip().split())
-        else:
-            if not path.exists(f) and allowMissing:
-                sys.stderr.write('WARNING: skipping missing file %s\n' % f)
-            else:
-                theseData = [l.strip().split() for l in open(f, 'rb')]
-        if skipRows:
-            theseData = theseData[skipRows:]
-        data.append(theseData)
+                 #the freaky for-else construct ...
+                 else:
+                    theseData.append(line.split())
+            data.append(theseData)
     return data
 
 
@@ -441,6 +443,7 @@ def prepare_plot_kwargs(kwargDict, optionList, fontscaler=1.0):
         elif val == 'True':
             outKwargs[key] = True
         
+        #this doesn't really work as intended
         if 'fontsize' in key or 'labelsize' in key:
             outKwargs[key] = outKwargs[key] * fontscaler
 
@@ -458,7 +461,7 @@ class ArgparseActionAppendToDefault(argparse.Action):
     prepare_plot_kwargs function.
     '''
     def __call__(self, parser, namespace, values, option_string=None):
-        print '%r %r %r' % (self.dest, self.default, values)
+        #print '%r %r %r' % (self.dest, self.default, values)
         if not hasattr(self, 'default'):
             raise ValueError('only makes sense to call AppendToDefaultArgparseAction when default value to argument is defined')
         if not isinstance(self.default, list):
@@ -529,14 +532,14 @@ class PlottingArgumentParser(argparse.ArgumentParser):
         to the constructor.
         '''
         
-        #marker "x" was not working in the defaultMarkers, for some reason
+        #markers "x+|_" were not working in the defaultMarkers, for some reason
         option_defaults = {
                 'defaultSubplotKwargs': [],
                 #plot defaults
                 'defaultGreys': ['0.0'],
                 'defaultColors': None,
                 'defaultMarkerSizes': [12.0],
-                'defaultMarkers': 'Dos*^+',
+                'defaultMarkers': 'Dos*^p',
                 'defaultLineWidth': [3.0],
                 'defaultLineStyle': ['-', '--', ':'],
                 'defaultCycleStylesWithinFiles': True,
@@ -591,7 +594,6 @@ class PlottingArgumentParser(argparse.ArgumentParser):
                 'defaultMissingOk': None,
                 'defaultDataColumnFunc': None,
 
-                'defaultHatches': 'Xo+ ',
                 'defaultHatches': None,
 
                 'defaultSkipRows': 0,
@@ -629,7 +631,7 @@ class PlottingArgumentParser(argparse.ArgumentParser):
         super(PlottingArgumentParser, self).__init__(prog=prog, usage=usage, description=description, epilog=epilog, version=version, parents=parents, formatter_class=formatter_class, prefix_chars=prefix_chars, fromfile_prefix_chars=fromfile_prefix_chars, argument_default=argument_default, conflict_handler=conflict_handler, add_help=add_help, **reduced_kwargs)
         
         if 'defaultSubplotKwargs' in option_defaults:
-            self.add_argument('--subplot-kwargs', dest='additionalSubplotKwargs', nargs='*', type=str, default=option_defaults['defaultSubplotKwargs'], action=ArgparseActionAppendToDefault,
+            self.add_argument('--subplot-kwargs', nargs='*', type=str, default=option_defaults['defaultSubplotKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to matplotlib Figure.subplots_adjust function')
         
         if 'defaultDZaxKwargs' in option_defaults:
@@ -665,8 +667,8 @@ class PlottingArgumentParser(argparse.ArgumentParser):
  
         if 'defaultCycleStylesWithinFiles' in option_defaults:
             self.add_argument('--styles-per-file', dest='cycleStylesWithinFiles', default=option_defaults['defaultCycleStylesWithinFiles'], action='store_false',
-                                                    help='use the same line/point styles for all series within a given file, rather \
-                                                    than cycling through styles for each series _within_ a file')
+                                help='use the same line/point styles for all series within a given file, rather \
+                                than cycling through styles for each series _within_ a file')
 
         if 'defaultPlotKwargs' in option_defaults:
             self.add_argument('--plot-kwargs', dest='additionalPlotKwargs', nargs='*', type=str, default=option_defaults['defaultPlotKwargs'], action=ArgparseActionAppendToDefault,
@@ -738,11 +740,11 @@ class PlottingArgumentParser(argparse.ArgumentParser):
         
         if 'defaultXTickLabelKwargs' in option_defaults:
             axisArgs.add_argument('--x-tick-label-kwargs', dest='additionalXTickLabelKwargs', nargs='*', type=str, default=option_defaults['defaultXTickLabelKwargs'], action=ArgparseActionAppendToDefault,
-                                help='kwargs to be passed on to pyplot.xticks')
+                                help='kwargs to be passed on to axes.set_xticklabels')
 
         if 'defaultYTickLabelKwargs' in option_defaults:
             axisArgs.add_argument('--y-tick-label-kwargs', dest='additionalYTickLabelKwargs', nargs='*', type=str, default=option_defaults['defaultYTickLabelKwargs'], action=ArgparseActionAppendToDefault,
-                                help='kwargs to be passed on to pyplot.yticks')
+                                help='kwargs to be passed on to axes.set_yticklabels')
 
         if 'defaultDrawAxesAtZero' in option_defaults:
             axisArgs.add_argument('--draw-axes-at-zero', dest='drawAxesAtZero', default=option_defaults['defaultDrawAxesAtZero'], action='store_true', 
@@ -893,19 +895,18 @@ class PlottingArgumentParser(argparse.ArgumentParser):
 
 
 
-def make_figure_and_subplots(nrows, ncols):
+def make_figure_and_subplots(nrows, ncols, sharex=True, sharey=True):
+    '''Not overly helpful wrapper to the pyplot.subplots function'''
     
-    #set up the subplots
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True)
-
-    #if only one subplot ax is a single axes object, otherwise a tuple of them
-    #rather annoying
-    axes = [axes] if not isinstance(axes, collections.Iterable) else np.ravel(axes)
+    #squeeze=False ensures that the axes are returned in a 2-d array, even if only 1x1, which  
+    #standardizes things
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=sharex, sharey=sharey, squeeze=False)
+    axes = flatten_array(axes)
 
     #if don't do this, aspect ratio of subplots won't be same as a single plot would be, 
-    #but then need to scale fonts and points up as well (actually, not doing that anymore)
+    #but this also means that fonts and points will be effectively scaled down 
     oldSize = fig.get_size_inches()
-    fig.set_size_inches((oldSize[0] * ncols), oldSize[1] * nrows)
+    fig.set_size_inches(oldSize[0] * ncols, oldSize[1] * nrows)
     return fig, axes
 
 
@@ -916,7 +917,7 @@ def prepare_all_kwargs(options):
     allKwargDict['superTitleKwargs'] = prepare_plot_kwargs(options.additionalSuperTitleKwargs,
         [('fontsize', options.superTitleFontsize)])
     
-    allKwargDict['subplotKwargs'] = prepare_plot_kwargs(options.additionalSubplotKwargs, [])
+    allKwargDict['subplotKwargs'] = prepare_plot_kwargs(options.subplot_kwargs, [])
     
     allKwargDict['xLabelKwargs'], allKwargDict['yLabelKwargs'] = [ prepare_plot_kwargs(kw,  [('size', options.axisLabelFontsize)]) for kw in [options.additionalXlabelKwargs, options.additionalYlabelKwargs ] ]
     
@@ -994,7 +995,12 @@ def full_plot_routine(options, fileData):
     nrows = int(np.ceil(numUsedSubplots / float(options.ncols)))
     ncols = min(options.ncols, numUsedSubplots)
     totalSubplots = nrows * ncols
-    fig, axes = make_figure_and_subplots(nrows, ncols)
+    sharex = sharey = True
+    if options.xTickLabelLocation == 'e':
+        sharex = False
+    if options.yTickLabelLocation == 'e':
+        sharey = False
+    fig, axes = make_figure_and_subplots(nrows, ncols, sharex, sharey)
 
     assert(len(axes) == totalSubplots)
 
@@ -1180,10 +1186,9 @@ def full_plot_routine(options, fileData):
                 #plt.xticks(range(len(series)), tickData, rotation=90, weight='bold')
                 #plt.xticks(range(len(series)), tickFunc(series))
         else:
-            #plt.xticks(**allKwargDict['xTickLabelKwargs'])
             subplot.set_xticklabels(subplot.get_xticks(), **allKwargDict['xTickLabelKwargs'])
 
-        #plt.yticks(**allKwargDict['yTickLabelKwargs'])
+        #this turns out to be the cleanest way of setting the ticklabel kwargs
         subplot.set_yticklabels(subplot.get_yticks(), **allKwargDict['yTickLabelKwargs'])
 
         #change tick properties
@@ -1197,6 +1202,7 @@ def full_plot_routine(options, fileData):
         #do the actual data evaluation and plotting
         dataFunc = eval(function)
         toPlot = dataFunc(series)
+        print toPlot
         '''to plot just x values, lambda looks like this:
         lambda rows:[float(r[2]) for r in rows]
         i.e., output is [x1, x2, ...]
@@ -1263,8 +1269,7 @@ def full_plot_routine(options, fileData):
         
         #set the width of the axes box (frame) which I thought I could set on the frame rectangle, but that didn't work
         #kwargs here are <edge><w or s>, i.e. rightw or tops
-        dzAxisKwargs = prepare_plot_kwargs(options.dzAxisKwargs,
-            [ ])
+        dzAxisKwargs = prepare_plot_kwargs(options.dzAxisKwargs, [ ])
 
         for opt, val in dzAxisKwargs.items():
             which = opt[:-1]
