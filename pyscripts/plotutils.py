@@ -3,8 +3,7 @@ import sys
 from os import path
 import re
 #from math import *
-from itertools import izip, izip_longest, cycle, chain, repeat, islice
-import collections
+from itertools import izip,  cycle, chain, repeat, islice
 import argparse 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -67,11 +66,11 @@ def read_files_and_split_columns_as_strings(filenames, skipRows=None, ignorePatt
             theseData = []
             fileData = [ l.strip() for l in open(f, 'rb') ]
             for line in fileData[skipRows:]:
-                 for cpat in compiledPatts:
+                for cpat in compiledPatts:
                     if cpat.search(line):
                         break
-                 #the freaky for-else construct ...
-                 else:
+                #the freaky for-else construct ...
+                else:
                     theseData.append(line.split())
             data.append(theseData)
     return data
@@ -92,7 +91,7 @@ def translate_annotation_code(c):
 
 def translate_annotation_code_string(lines, column):
     translate = {'E':5, 'F':5, 'I':-5, 'J':-5, 'M':0, 'N':0}
-    return [ translate[line[colnum]] for line in lines ]
+    return [ translate[line[column]] for line in lines ]
 
 
 def string_to_float_or_zero(val):
@@ -376,10 +375,10 @@ def prepare_plot_kwargs(kwargDict, optionList, fontscaler=1.0):
     This is mainly for use with the PlottingArgumentParser defined below
     and would be called like this:
     
-        superTitleKwargs = prepare_kwargs(options.additionalSuperTitleKwargs,
-                [('fontsize', options.superTitleFontsize)],
+        superTitleKwargs = prepare_kwargs(opt.additionalSuperTitleKwargs,
+                [('fontsize', opt.superTitleFontsize)],
                 fontscaler=scaler)
-        plt.suptitle(options.superTitle, **superTitleKwargs)
+        plt.suptitle(opt.superTitle, **superTitleKwargs)
 
     where 
     -the first argument is any extra arbitrary kwargs that might have been
@@ -558,8 +557,8 @@ class PlottingArgumentParser(argparse.ArgumentParser):
                         
                 'defaultXTickLabelKwargs': ['weight=bold'],
                 'defaultYTickLabelKwargs': ['weight=bold'],
-                'defaultXTickLabelLocation': 'm',
-                'defaultYTickLabelLocation': 'm',
+                'defaultXtick_label_location': 'm',
+                'defaultYtick_label_location': 'm',
                 'defaultDrawAxesAtZero': None,
                 'defaultDrawVerticalGrid': False,
                 'defaultDrawHorizontalGrid': False,
@@ -635,75 +634,75 @@ class PlottingArgumentParser(argparse.ArgumentParser):
                                 help='kwargs to be passed on to matplotlib Figure.subplots_adjust function')
         
         if 'defaultDZaxKwargs' in option_defaults:
-            self.add_argument('--dz-axis-kwargs', dest='dzAxisKwargs', nargs='*', type=str, default=option_defaults['defaultDZaxKwargs'], action=ArgparseActionAppendToDefault,
+            self.add_argument('--dz-axis-kwargs', nargs='*', type=str, default=option_defaults['defaultDZaxKwargs'], action=ArgparseActionAppendToDefault,
                     help='settings for axis appearance - interpreted by ME not MPL. w=weight, s=style, examples: rights=bold topw=5.')
         ################
         #argument for plotting of lines/points
         styleArgs = self.add_argument_group('ARGUMENTS FOR POINT AND LINE STYLES')
 
         if 'defaultGreys' in option_defaults:
-            styleArgs.add_argument('-gv', '--grey-values', dest='greyValues', nargs='*', type=str, default=option_defaults['defaultGreys'],
+            styleArgs.add_argument('-gv', '--grey-values', nargs='*', type=str, default=option_defaults['defaultGreys'],
                                 help='floating point values in range 0.0 - 1.0 (black to white) indicating grey value cycle of lines')
 
         if 'defaultColors' in option_defaults:
-            styleArgs.add_argument('-cv', '--color-values', dest='colorValues', nargs='*', type=str, default=option_defaults['defaultColors'],
+            styleArgs.add_argument('-cv', '--color-values', nargs='*', type=str, default=option_defaults['defaultColors'],
                                 help='valid matplotlib color specs indicating color cycle of lines')
         
         if 'defaultMarkers' in option_defaults:
-            styleArgs.add_argument('-m', '--markers', dest='markers', type=str, default=option_defaults['defaultMarkers'],
+            styleArgs.add_argument('-m', '--markers', type=str, default=option_defaults['defaultMarkers'],
                                 help='single string with marker designations that will be cycled through for series')
 
         if 'defaultMarkerSizes' in option_defaults:
-            styleArgs.add_argument('-ms', '--marker-sizes', dest='markerSizes', nargs='*', type=float, default=option_defaults['defaultMarkerSizes'],
+            styleArgs.add_argument('-ms', '--marker-sizes', nargs='*', type=float, default=option_defaults['defaultMarkerSizes'],
                                 help='floating point values indicating size of markers in points for series 1 2 3, or a single value to apply to all')
 
         if 'defaultLineWidth' in option_defaults:
-            styleArgs.add_argument('-lw', '--line-width', dest='lineWidth', nargs='*', type=float, default=option_defaults['defaultLineWidth'],
+            styleArgs.add_argument('-lw', '--line-width', nargs='*', type=float, default=option_defaults['defaultLineWidth'],
                                 help='point size of lines to cycle through')
  
         if 'defaultLineStyle' in option_defaults:
-            styleArgs.add_argument('-ls', '--line-style', dest='lineStyle', nargs='*', type=str, default=option_defaults['defaultLineStyle'],
+            styleArgs.add_argument('-ls', '--line-style', nargs='*', type=str, default=option_defaults['defaultLineStyle'],
                                 help='styles of lines to cycle through')
  
         if 'defaultCycleStylesWithinFiles' in option_defaults:
-            self.add_argument('--styles-per-file', dest='cycleStylesWithinFiles', default=option_defaults['defaultCycleStylesWithinFiles'], action='store_false',
+            self.add_argument('--style-per-file', default=option_defaults['defaultCycleStylesWithinFiles'], action='store_false',
                                 help='use the same line/point styles for all series within a given file, rather \
                                 than cycling through styles for each series _within_ a file')
 
         if 'defaultPlotKwargs' in option_defaults:
-            self.add_argument('--plot-kwargs', dest='additionalPlotKwargs', nargs='*', type=str, default=option_defaults['defaultPlotKwargs'], action=ArgparseActionAppendToDefault,
+            self.add_argument('--plot-kwargs', nargs='*', type=str, default=option_defaults['defaultPlotKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to matplotlib axes.plot function')
         
         ############
         #axis labels
         axisLabelArgs = self.add_argument_group('ARGUMENTS FOR AXIS LABELING')
         if 'defaultXlabel' in option_defaults:
-            axisLabelArgs.add_argument('-xl', '--x-label', dest='xLabel', type=str, default=option_defaults['defaultXlabel'],
+            axisLabelArgs.add_argument('-xl', '--x-label', type=str, default=option_defaults['defaultXlabel'],
                                 help='label for x axis')
 
             if 'defaultXlabelLocation' in option_defaults:
-                axisLabelArgs.add_argument('-xll', '--x-label-location', dest='xLabelLocation', type=str, default=option_defaults['defaultXlabelLocation'], choices=['s', 'm', 'n'],
+                axisLabelArgs.add_argument('-xll', '--x-label-location', type=str, default=option_defaults['defaultXlabelLocation'], choices=['s', 'm', 'n'],
                                     help='where xlabels should appear in multiplot: s (single centered), m (one per plot on margins), n (none)')
         
             if 'defaultXlabelKwargs' in option_defaults:
-                axisLabelArgs.add_argument('--x-label-kwargs', dest='additionalXlabelKwargs', nargs='*', type=str, default=option_defaults['defaultXlabelKwargs'], action=ArgparseActionAppendToDefault,
+                axisLabelArgs.add_argument('--x-label-kwargs', nargs='*', type=str, default=option_defaults['defaultXlabelKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to pyplot.xlabel function')
         
         if 'defaultYlabel' in option_defaults:
-            axisLabelArgs.add_argument('-yl', '--y-label', dest='yLabel', type=str, default=option_defaults['defaultYlabel'],
+            axisLabelArgs.add_argument('-yl', '--y-label', type=str, default=option_defaults['defaultYlabel'],
                                 help='label for y axis')
 
             if 'defaultYlabelLocation' in option_defaults:
-                axisLabelArgs.add_argument('-yll', '--y-label-location', dest='yLabelLocation', type=str, default=option_defaults['defaultYlabelLocation'], choices=['s', 'm', 'n'],
+                axisLabelArgs.add_argument('-yll', '--y-label-location', type=str, default=option_defaults['defaultYlabelLocation'], choices=['s', 'm', 'n'],
                                     help='where ylabels should appear in multiplot: s (single centered), m (one per plot on margins), n (none)')
         
             if 'defaultYlabelKwargs' in option_defaults:
-                axisLabelArgs.add_argument('--y-label-kwargs', dest='additionalYlabelKwargs', nargs='*', type=str, default=option_defaults['defaultYlabelKwargs'], action=ArgparseActionAppendToDefault,
+                axisLabelArgs.add_argument('--y-label-kwargs', nargs='*', type=str, default=option_defaults['defaultYlabelKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to pyplot.ylabel function')
         
         if 'defaultXlabel' in option_defaults or 'defaultYlabel' in option_defaults:
             if 'defaultAxisLabelFontsize' in option_defaults:
-                axisLabelArgs.add_argument('-als', '--axis-label-fontsize', dest='axisLabelFontsize', type=float, default=option_defaults['defaultAxisLabelFontsize'],
+                axisLabelArgs.add_argument('-als', '--axis-label-fontsize', type=float, default=option_defaults['defaultAxisLabelFontsize'],
                                     help='font size of axis labels')
             
         ##########
@@ -711,59 +710,59 @@ class PlottingArgumentParser(argparse.ArgumentParser):
         axisArgs = self.add_argument_group('ARGUMENTS FOR AXIS RANGES AND TICKS')
         
         if 'defaultYrange' in option_defaults:
-            axisArgs.add_argument('-yr', '--y-range', dest='yRange', nargs='*', type=float, default=option_defaults['defaultYrange'],
+            axisArgs.add_argument('-yr', '--y-range', nargs='*', type=float, default=option_defaults['defaultYrange'],
                                 help='min and max values on y axis pass one min max pair to have it shared, or a series of min max min max for each subplot (default is auto determined by pyplot from the data)')
 
         if 'defaultXrange' in option_defaults:
-            axisArgs.add_argument('-xr', '--x-range', dest='xRange', nargs='*', type=float, default=option_defaults['defaultXrange'],
+            axisArgs.add_argument('-xr', '--x-range', nargs='*', type=float, default=option_defaults['defaultXrange'],
                                 help='min and max values on x axis pass one min max pair to have it shared, or a series of min max min max for each subplot (default is auto determined by pyplot from the data)')
 
         if 'defaultAxisTickFontsize' in option_defaults:
-            axisArgs.add_argument('-ats', '--axis-tick-fontsize', dest='axisTickFontsize', type=float, default=option_defaults['defaultAxisTickFontsize'],
+            axisArgs.add_argument('-ats', '--axis-tick-fontsize', type=float, default=option_defaults['defaultAxisTickFontsize'],
                                 help='font size of graph tick labels')
 
         if 'defaultXTickFunction' in option_defaults:
-            axisArgs.add_argument('--x-tick-function', dest='xTickFunction', type=str, default=option_defaults['defaultXTickFunction'],
+            axisArgs.add_argument('--x-tick-function', type=str, default=option_defaults['defaultXTickFunction'],
                                 help='optional lambda or named function to get x-axis tick labels from input file')
 
         if 'defaultTickKwargs' in option_defaults:
-            axisArgs.add_argument('--tick-kwargs', dest='additionalTickKwargs', nargs='*', type=str, default=option_defaults['defaultTickKwargs'], action=ArgparseActionAppendToDefault,
+            axisArgs.add_argument('--tick-kwargs', nargs='*', type=str, default=option_defaults['defaultTickKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to matplotlib axes.tick_params function, applied to both axes')
         
         if 'defaultXTickKwargs' in option_defaults:
-            axisArgs.add_argument('--x-tick-kwargs', dest='additionalXTickKwargs', nargs='*', type=str, default=option_defaults['defaultXTickKwargs'], action=ArgparseActionAppendToDefault,
+            axisArgs.add_argument('--x-tick-kwargs', nargs='*', type=str, default=option_defaults['defaultXTickKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to matplotlib axes.tick_params function, applied to only x axis')
         
         if 'defaultYTickKwargs' in option_defaults:
-            axisArgs.add_argument('--y-tick-kwargs', dest='additionalYTickKwargs', nargs='*', type=str, default=option_defaults['defaultYTickKwargs'], action=ArgparseActionAppendToDefault,
+            axisArgs.add_argument('--y-tick-kwargs', nargs='*', type=str, default=option_defaults['defaultYTickKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to matplotlib axes.tick_params function, applied to only y axis')
         
         if 'defaultXTickLabelKwargs' in option_defaults:
-            axisArgs.add_argument('--x-tick-label-kwargs', dest='additionalXTickLabelKwargs', nargs='*', type=str, default=option_defaults['defaultXTickLabelKwargs'], action=ArgparseActionAppendToDefault,
+            axisArgs.add_argument('--x-tick-label-kwargs', nargs='*', type=str, default=option_defaults['defaultXTickLabelKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to axes.set_xticklabels')
 
         if 'defaultYTickLabelKwargs' in option_defaults:
-            axisArgs.add_argument('--y-tick-label-kwargs', dest='additionalYTickLabelKwargs', nargs='*', type=str, default=option_defaults['defaultYTickLabelKwargs'], action=ArgparseActionAppendToDefault,
+            axisArgs.add_argument('--y-tick-label-kwargs', nargs='*', type=str, default=option_defaults['defaultYTickLabelKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to axes.set_yticklabels')
 
         if 'defaultDrawAxesAtZero' in option_defaults:
-            axisArgs.add_argument('--draw-axes-at-zero', dest='drawAxesAtZero', default=option_defaults['defaultDrawAxesAtZero'], action='store_true', 
+            axisArgs.add_argument('--draw-axes-at-zero', default=option_defaults['defaultDrawAxesAtZero'], action='store_true', 
                                 help='whether to draw horizontal and vertical lines through 0, 0')
        
         if 'defaultDrawVerticalGrid' in option_defaults:
-            axisArgs.add_argument('--draw-vertical-grid', dest='drawVerticalGrid', default=option_defaults['defaultDrawVerticalGrid'], action='store_true', 
+            axisArgs.add_argument('--draw-vertical-grid', default=option_defaults['defaultDrawVerticalGrid'], action='store_true', 
                                 help='whether to draw vertical lines from top to bottom axis at major tick points')
        
         if 'defaultDrawHorizontalGrid' in option_defaults:
-            axisArgs.add_argument('--draw-horizonal-grid', dest='drawHorizontalGrid', default=option_defaults['defaultDrawHorizontalGrid'], action='store_true', 
+            axisArgs.add_argument('--draw-horizonal-grid', default=option_defaults['defaultDrawHorizontalGrid'], action='store_true', 
                                 help='whether to draw horizontal lines from left to right axis at major tick points')
        
-        if 'defaultXTickLabelLocation' in option_defaults:
-            axisArgs.add_argument('--x-tick-label-location', dest='xTickLabelLocation', default=option_defaults['defaultXTickLabelLocation'], choices=['m', 'e', 'n'],
+        if 'defaultXtick_label_location' in option_defaults:
+            axisArgs.add_argument('--x-tick-label-location', default=option_defaults['defaultXtick_label_location'], choices=['m', 'e', 'n'],
                     help='whether to draw X tick labels only on (m)arginal plots, (n)one, or on (e)very plot.')
        
-        if 'defaultYTickLabelLocation' in option_defaults:
-            axisArgs.add_argument('--y-tick-label-location', dest='yTickLabelLocation', default=option_defaults['defaultYTickLabelLocation'], choices=['m', 'e', 'n'],
+        if 'defaultYtick_label_location' in option_defaults:
+            axisArgs.add_argument('--y-tick-label-location', default=option_defaults['defaultYtick_label_location'], choices=['m', 'e', 'n'],
                     help='whether to draw Y tick labels only on (m)arginal plots, (n)one, or on (e)very plot.')
 
         #########
@@ -771,38 +770,38 @@ class PlottingArgumentParser(argparse.ArgumentParser):
         titleArgs = self.add_argument_group('ARGUMENTS FOR PLOT AND SUBPLOT TITLES')
         if 'defaultTitleFunc' in option_defaults or 'defaultTitle' in option_defaults:
             titleType = titleArgs.add_mutually_exclusive_group()
-            titleType.add_argument('--titles', dest='titles', nargs='*', type=str, default=option_defaults['defaultTitles'],
+            titleType.add_argument('--titles', nargs='*', type=str, default=option_defaults['defaultTitles'],
                                 help='plot titles, HACKY!, must supply one per SERIES, although if multiple series per plot then later will supercede earlier')
             
-            titleType.add_argument('--title-func', dest='titleFunc', type=str, default=option_defaults['defaultTitleFunc'],
+            titleType.add_argument('--title-func', type=str, default=option_defaults['defaultTitleFunc'],
                                 help='function used to map arbitrary strings (datafile path names) to plot names')
             
             if 'defaultTitleHalign' in option_defaults:
-                titleArgs.add_argument('-tha', '--title-horiz-align', dest='titleHalign', type=str, default=option_defaults['defaultTitleHalign'], choices=['left', 'right', 'center'],
+                titleArgs.add_argument('-tha', '--title-horiz-align', type=str, default=option_defaults['defaultTitleHalign'], choices=['left', 'right', 'center'],
                                     help='horizontal alignment of title')
 
             if 'defaultTitleValign' in option_defaults:
-                titleArgs.add_argument('-tva', '--title-vert-align', dest='titleValign', type=str, default=option_defaults['defaultTitleValign'], choices=['top', 'bottom', 'center', 'baseline'],
+                titleArgs.add_argument('-tva', '--title-vert-align', type=str, default=option_defaults['defaultTitleValign'], choices=['top', 'bottom', 'center', 'baseline'],
                                     help='vertical alignment of title')
         
             if 'defaultTitleKwargs' in option_defaults:
-                titleArgs.add_argument('--title-kwargs', dest='additionalTitleKwargs', nargs='*', type=str, default=option_defaults['defaultTitleKwargs'], action=ArgparseActionAppendToDefault,
+                titleArgs.add_argument('--title-kwargs', nargs='*', type=str, default=option_defaults['defaultTitleKwargs'], action=ArgparseActionAppendToDefault,
                                     help='kwargs to be passed on to matplotlib axes.setTitle function')
 
             if 'defaultTitleFontsize' in option_defaults:
-                titleArgs.add_argument('-ts', '--title-fontsize', dest='titleFontsize', type=float, default=option_defaults['defaultTitleFontsize'],
+                titleArgs.add_argument('-ts', '--title-fontsize', type=float, default=option_defaults['defaultTitleFontsize'],
                                     help='font size of title')
 
         if 'defaultSuperTitle' in option_defaults:
-            titleArgs.add_argument('-st', '--super-title', dest='superTitle', type=str, default=option_defaults['defaultSuperTitle'],
+            titleArgs.add_argument('-st', '--super-title', type=str, default=option_defaults['defaultSuperTitle'],
                                 help='plot super title on multiplot')
 
             if 'defaultSuperTitleFontsize' in option_defaults:
-                titleArgs.add_argument('-stf', '--super-title-fontsize', dest='superTitleFontsize', type=float, default=option_defaults['defaultSuperTitleFontsize'],
+                titleArgs.add_argument('-stf', '--super-title-fontsize', type=float, default=option_defaults['defaultSuperTitleFontsize'],
                                     help='font size of super title of multiplot')
 
             if 'defaultSuperTitleKwargs' in option_defaults:
-                titleArgs.add_argument('--super-title-kwargs', dest='additionalSuperTitleKwargs', nargs='*', type=str, default=option_defaults['defaultSuperTitleKwargs'], action=ArgparseActionAppendToDefault,
+                titleArgs.add_argument('--super-title-kwargs', nargs='*', type=str, default=option_defaults['defaultSuperTitleKwargs'], action=ArgparseActionAppendToDefault,
                                     help='kwargs to be passed on to pyplot.suptitle function')
        
         ##############
@@ -815,36 +814,36 @@ class PlottingArgumentParser(argparse.ArgumentParser):
                                 help='Series of intput files with data to be plotted')
 
         if 'defaultDataColumnFunc' in option_defaults:
-            dataArgs.add_argument('--data-column-func', dest='dataColumnFunc', nargs='*', type=str, default=option_defaults['defaultDataColumnFunc'],
+            dataArgs.add_argument('--data-column-func', nargs='*', type=str, default=option_defaults['defaultDataColumnFunc'],
                                 help='functions to select or convert column(s) in datafiles to a plotable series for pyplot.plot. \
                                 To plot a single series of only x values, something like \'lambda rows:([float(r[1]) - float(r[3]) for r in rows])\'\
                                 will work.  To plot x-y points, \'lambda rows: ([float(r[1]) for r in rows], [float(r[3])/float(r[2]) for r in rows])\'\
                                 Multiple functions can be used, in which case each is applied to each datafile.')
         
         if 'defaultSkipRows' in option_defaults:
-            dataArgs.add_argument('--skip-rows', dest='skipRows', type=int, default=option_defaults['defaultSkipRows'],
+            dataArgs.add_argument('--skip-rows', type=int, default=option_defaults['defaultSkipRows'],
                                 help='number of rows to skip at start of data file')
         
         if 'defaultRowIgnorePatterns' in option_defaults:
-            dataArgs.add_argument('--row-ignore-patterns', dest='rowIgnorePatterns', nargs='*', type=str, default=option_defaults['defaultRowIgnorePatterns'],
+            dataArgs.add_argument('--row-ignore-patterns', nargs='*', type=str, default=option_defaults['defaultRowIgnorePatterns'],
                                 help='lines in the data file matching these regex patterns are ignored')
         
         if 'defaultMissingOk' in option_defaults:
-            dataArgs.add_argument('--missing-ok', dest='missingOk', action='store_true', default=False, 
+            dataArgs.add_argument('--missing-ok', action='store_true', default=False, 
                                 help='allow some input files to be missing')
 
         ###############
         plotType = self.add_mutually_exclusive_group()
         if 'defaultSubplotPerFunction' in option_defaults:
-            plotType.add_argument('--subplot-per-function', dest='subplotPerFunction', default=False, action='store_true',
+            plotType.add_argument('--subplot-per-function', default=False, action='store_true',
                                 help='plot each data column function on a new subplot, rather than using one subplot per _file_')
         
         if 'defaultOnePlot' in option_defaults:
-            plotType.add_argument('--one-plot', dest='onePlot', default=False, action='store_true',
+            plotType.add_argument('--one-plot', default=False, action='store_true',
                                 help='plot all data from all files and data functions on one axis, rather than using one file per subplot')
         
         if 'defaultNcol' in option_defaults:        
-            self.add_argument('-c', '--columns', dest='ncols', type=int, default=option_defaults['defaultNcol'],
+            self.add_argument('-c', '--columns', type=int, default=option_defaults['defaultNcol'],
                                 help='number of figures to place per row in a multiplot')
 
         if 'defaultOutput' in option_defaults:
@@ -855,38 +854,38 @@ class PlottingArgumentParser(argparse.ArgumentParser):
 
         #this is specialized and not generally useful (but used for pies)
         if 'defaultHatches' in option_defaults:
-            self.add_argument('-p', '--patterns', dest='hatchString', nargs='*', type=str, default=option_defaults['defaultHatches'], 
+            self.add_argument('-p', '--patterns', nargs='*', type=str, default=option_defaults['defaultHatches'], 
                                 help='string with four characters representing patterns (hatching) for the four wedges \
                                 out of \"/ \\ | - + x X o O . *\" and blank')
 
         if 'defaultSeriesNames' in option_defaults:
-            self.add_argument('--series-names', dest='seriesNames', nargs='*', type=str, default=None, 
+            self.add_argument('--series-names', nargs='*', type=str, default=None, 
                                 help='names to give each plotted series, which will trigger the creation of a legend')
 
         if 'defaultLegendTextKwargs' in option_defaults:
-            self.add_argument('--legend-text-kwargs', dest='additionalLegendTextKwargs', nargs='*', type=str, default=option_defaults['defaultLegendTextKwargs'], action=ArgparseActionAppendToDefault,
+            self.add_argument('--legend-text-kwargs', nargs='*', type=str, default=option_defaults['defaultLegendTextKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to the legend function, if --series-names are specified')
 
         if 'defaultHistogram' in option_defaults:
             histogramArgs = self.add_argument_group('ARGUMENTS FOR PLOTTING OF HISTOGRAMS')
 
-            histogramArgs.add_argument('--histogram', dest='histogram', default=False, action='store_true',
+            histogramArgs.add_argument('--histogram', default=False, action='store_true',
                                 help='plot a histogram rather than line plot, disregarding or redefining some options (difference from --bar-graph is that histogram automatically bins data)')
 
-            histogramArgs.add_argument('--histogram-bins', dest='histogramBins', default=option_defaults['defaultHistogramBins'], type=int,
+            histogramArgs.add_argument('--histogram-bins', default=option_defaults['defaultHistogramBins'], type=int,
                                 help='the number of bins to calculate, if this is a histogram plot')
 
             if 'defaultHistogramKwargs' in option_defaults:
-                histogramArgs.add_argument('--histogram-kwargs', dest='additionalHistogramKwargs', nargs='*', type=str, default=option_defaults['defaultHistogramKwargs'], action=ArgparseActionAppendToDefault,
+                histogramArgs.add_argument('--histogram-kwargs', nargs='*', type=str, default=option_defaults['defaultHistogramKwargs'], action=ArgparseActionAppendToDefault,
                                 help='kwargs to be passed on to hist function, if --histogram is used')
 
-            histogramArgs.add_argument('--normalize-histogram', dest='normalizeHistogram', default=False, action='store_true',
+            histogramArgs.add_argument('--normalize-histogram', default=False, action='store_true',
                                 help='normalilze histogram series, so that multiple series are comparable')
 
         if 'defaultBarGraph' in option_defaults:
             barGraphArgs = self.add_argument_group('ARGUMENTS FOR PLOTTING BAR GRAPHS')
             
-            barGraphArgs.add_argument('--bar-graph', dest='barGraph', default=False, action='store_true',
+            barGraphArgs.add_argument('--bar-graph', default=False, action='store_true',
                                 help='plot a bar graph rather than line plot, disregarding or redefining some options (difference from --histogram is that histogram automatically bins data)')
 
         if 'defaultTkGui' in option_defaults:
@@ -910,46 +909,46 @@ def make_figure_and_subplots(nrows, ncols, sharex=True, sharey=True):
     return fig, axes
 
 
-def prepare_all_kwargs(options):
+def prepare_all_kwargs(opt):
     #allKwargDict = collections.defaultdict(lambda: {})
     allKwargDict = {}
     
-    allKwargDict['superTitleKwargs'] = prepare_plot_kwargs(options.additionalSuperTitleKwargs,
-        [('fontsize', options.superTitleFontsize)])
+    allKwargDict['superTitleKwargs'] = prepare_plot_kwargs(opt.super_title_kwargs,
+        [('fontsize', opt.super_title_fontsize)])
     
-    allKwargDict['subplotKwargs'] = prepare_plot_kwargs(options.subplot_kwargs, [])
+    allKwargDict['subplotKwargs'] = prepare_plot_kwargs(opt.subplot_kwargs, [])
     
-    allKwargDict['xLabelKwargs'], allKwargDict['yLabelKwargs'] = [ prepare_plot_kwargs(kw,  [('size', options.axisLabelFontsize)]) for kw in [options.additionalXlabelKwargs, options.additionalYlabelKwargs ] ]
+    allKwargDict['xLabelKwargs'], allKwargDict['yLabelKwargs'] = [ prepare_plot_kwargs(kw,  [('size', opt.axis_label_fontsize)]) for kw in [opt.x_label_kwargs, opt.y_label_kwargs ] ]
     
     #various kwargs
-    allKwargDict['titleKwargs'] = prepare_plot_kwargs(options.additionalTitleKwargs, 
-            [('fontsize', options.titleFontsize), ('horizontalalignment', options.titleHalign), ('verticalalignment', options.titleValign)])
+    allKwargDict['titleKwargs'] = prepare_plot_kwargs(opt.title_kwargs, 
+            [('fontsize', opt.title_fontsize), ('horizontalalignment', opt.title_horiz_align), ('verticalalignment', opt.title_vert_align)])
 
-    allKwargDict['tickKwargs'] = prepare_plot_kwargs(options.additionalTickKwargs,
-            [('labelsize', options.axisTickFontsize)])
+    allKwargDict['tickKwargs'] = prepare_plot_kwargs(opt.tick_kwargs,
+            [('labelsize', opt.axis_tick_fontsize)])
     
     #these can only be combined like this because no specific values are being passed in
-    others = [ ('xTickKwargs', 'additionalXTickKwargs'), ('yTickKwargs', 'additionalYTickKwargs'), ('xTickLabelKwargs', 'additionalXTickLabelKwargs' ), ('yTickLabelKwargs', 'additionalYTickLabelKwargs'), ('plotKwargs', 'additionalPlotKwargs'), ('histogramKwargs', 'additionalHistogramKwargs'), ('legendTextKwargs', 'additionalLegendTextKwargs') ]
-    for var, opt in others:
-        if hasattr(options, opt):
-            allKwargDict[var] = prepare_plot_kwargs(options.__dict__[opt], []) 
+    others = [ ('xTickKwargs', 'x_tick_kwargs'), ('yTickKwargs', 'y_tick_kwargs'), ('xTickLabelKwargs', 'x_tick_label_kwargs' ), ('yTickLabelKwargs', 'y_tick_label_kwargs'), ('plotKwargs', 'plot_kwargs'), ('histogramKwargs', 'histogram_kwargs'), ('legendTextKwargs', 'legend_text_kwargs') ]
+    for var, option in others:
+        if hasattr(opt, option):
+            allKwargDict[var] = prepare_plot_kwargs(opt.__dict__[opt], []) 
         else:
             allKwargDict[var] = []
     
     return allKwargDict
         
 
-def full_plot_routine(options, fileData):
+def full_plot_routine(opt, fileData):
     '''This does a whole bunch of stuff related to making subplots, plotting data, cycling through styles,
     etc.  It is directed by the options returned from the parse_args call to a PlottingArgumentParser.
     
     There are a number of ways to line up plots/files/series, etc.
     A=(axis,alternatively called subplot), F=file, S=series(i.e., data function)
-    1. Everything goes onto one axis. (options.onePlot = True)
+    1. Everything goes onto one axis. (opt.onePlot = True)
         A   A   A   A
         F   F   F2  F2
         S   S2  S   S2
-    2. Everything goes on its own axis. (options.subplotPerFunction = True)
+    2. Everything goes on its own axis. (opt.subplotPerFunction = True)
         A1  A2  A3  A4
         F   F   F2  F2
         S   S2  S   S2
@@ -977,12 +976,12 @@ def full_plot_routine(options, fileData):
     '''
 
     numFiles = len(fileData)
-    numFuncs = len(options.dataColumnFunc)
+    numFuncs = len(opt.data_column_func)
     numSeries = numFiles * numFuncs
 
-    if options.subplotPerFunction:
+    if opt.subplot_per_function:
         numUsedSubplots = numSeries
-    elif options.onePlot:
+    elif opt.one_plot:
         numUsedSubplots = 1
     else:
         numUsedSubplots = numFiles
@@ -992,52 +991,48 @@ def full_plot_routine(options, fileData):
 
     #make a multiplot (i.e., call pyplot.subplots) even if there is only one plot, to standardize below code
     multiplot = True
-    nrows = int(np.ceil(numUsedSubplots / float(options.ncols)))
-    ncols = min(options.ncols, numUsedSubplots)
+    nrows = int(np.ceil(numUsedSubplots / float(opt.columns)))
+    ncols = min(opt.columns, numUsedSubplots)
     totalSubplots = nrows * ncols
     sharex = sharey = True
-    if options.xTickLabelLocation == 'e':
+    if opt.xtick_label_location == 'e':
         sharex = False
-    if options.yTickLabelLocation == 'e':
+    if opt.ytick_label_location == 'e':
         sharey = False
     fig, axes = make_figure_and_subplots(nrows, ncols, sharex, sharey)
 
     assert(len(axes) == totalSubplots)
 
-    allKwargDict = prepare_all_kwargs(options)
+    allKwargDict = prepare_all_kwargs(opt)
 
     fig.subplots_adjust(**allKwargDict['subplotKwargs'])
     
-    if options.superTitle:
-        plt.suptitle(options.superTitle, **allKwargDict['superTitleKwargs'])
+    if opt.super_title:
+        plt.suptitle(opt.super_title, **allKwargDict['superTitleKwargs'])
 
     #if this isn't explicitly set it is figured out by pyplot and applied equally to all subplots
-    if options.yRange:
-        plt.ylim(options.yRange)
+    if opt.y_range:
+        plt.ylim(opt.y_range)
 
-    if options.xRange:
-        plt.xlim(options.xRange)
-
-    #think that setting this for axes[0] only works because set to share axes in multiplot
-    #xtics = mpl.ticker.FixedLocator([0, 50, 100, 200, 400])
-    #axes[0].get_xaxis().set_major_locator(xtics)
+    if opt.x_range:
+        plt.xlim(opt.x_range)
 
     #make a single centered label spanning individual plots
-    if options.xLabel and options.xLabelLocation == 's':
-        fig.text(allKwargDict['xLabelKwargs'].pop('x'), allKwargDict['xLabelKwargs'].pop('y'), options.xLabel, **allKwargDict['xLabelKwargs'])
-    if options.yLabel and options.yLabelLocation == 's':
-        fig.text(allKwargDict['yLabelKwargs'].pop('x'), allKwargDict['yLabelKwargs'].pop('y'), options.yLabel, **allKwargDict['yLabelKwargs'])
+    if opt.x_label and opt.x_label_location == 's':
+        fig.text(allKwargDict['xLabelKwargs'].pop('x'), allKwargDict['xLabelKwargs'].pop('y'), opt.x_label, **allKwargDict['xLabelKwargs'])
+    if opt.y_label and opt.y_label_location == 's':
+        fig.text(allKwargDict['yLabelKwargs'].pop('x'), allKwargDict['yLabelKwargs'].pop('y'), opt.y_label, **allKwargDict['yLabelKwargs'])
 
     #########################
     def make_plot_iterator():
         '''it will be easiest to set up a bunch of lists of length numSeries, and then iterate through
         these to get the proper association between data, functions, axes, etc.
         '''
-        if options.subplotPerFunction:
+        if opt.subplot_per_function:
             #the # of axes should already be the # of plots, and will match up to d1f1 d1f2 d2f1 d2f2 etc
             #just slice off any axes that won't be used
             axesToIterate = islice(axes, numSeries)
-        elif options.onePlot:
+        elif opt.one_plot:
             #axes is a list of length 1, so repeat it numSeries times
             assert(len(axes) == 1)
             axesToIterate = axes * numSeries 
@@ -1047,79 +1042,65 @@ def full_plot_routine(options, fileData):
 
         #this will be equivalent - the infiles are only used for titles anyway
         dataToIterate = chain.from_iterable( [dat] * numFuncs for dat in fileData )
-        inFilesToIterate = chain.from_iterable( [ [inf] * numFuncs for inf in options.inFiles ] )
+        inFilesToIterate = chain.from_iterable( [ [inf] * numFuncs for inf in opt.inFiles ] )
 
         #functions to iterate should just cycle through the functions for each file
-        functionsToIterate = cycle_n_elements_m_times( options.dataColumnFunc, numFuncs, numFiles )
-
+        functionsToIterate = cycle_n_elements_m_times( opt.data_column_func, numFuncs, numFiles )
 
         #style stuff
-        if options.onePlot or options.subplotPerFunction:
+        if opt.one_plot or opt.subplot_per_function:
             #each series (whether from different files or not) gets a sucessive style within the one plot - thus, generally just keep cycling
-            markersToIterate = cycle_n_elements(options.markers, numSeries)
-            markerSizesToIterate = cycle_n_elements(options.markerSizes, numSeries)
-            lineWidthsToIterate = cycle_n_elements(options.lineWidth, numSeries)
-            lineStylesToIterate = cycle_n_elements(options.lineStyle, numSeries)
-            colorValuesToIterate = cycle_n_elements(options.colorValues if options.colorValues else options.greyValues, numSeries)
-            hatchesToIterate = cycle_n_elements(options.hatchString or [''], numSeries)
-            seriesNamesToIterate = padded(options.seriesNames or [], numSeries, '_nolegend_')
+            markersToIterate = cycle_n_elements(opt.markers, numSeries)
+            markerSizesToIterate = cycle_n_elements(opt.marker_sizes, numSeries)
+            lineWidthsToIterate = cycle_n_elements(opt.line_width, numSeries)
+            lineStylesToIterate = cycle_n_elements(opt.line_style, numSeries)
+            colorValuesToIterate = cycle_n_elements(opt.color_values if opt.color_values else opt.grey_values, numSeries)
+            hatchesToIterate = cycle_n_elements(opt.patterns or [''], numSeries)
+            seriesNamesToIterate = padded(opt.series_names or [], numSeries, '_nolegend_')
 
-        elif options.cycleStylesWithinFiles:
+        elif opt.style_per_file:
             #this is the default really, sucessive styles within subplots
             ''' This won't work, I believe
             markersToIterate = markerSizesToIterate = lineWidthsToIterate = lineStylesToIterate = []
-            for it, source in [(markersToIterate, options.markers), (markerSizesToIterate, options.markerSizes), 
-                    (lineWidthsToIterate, options.lineWidth), (lineStylesToIterate, options.lineStyle)]:
+            for it, source in [(markersToIterate, opt.markers), (markerSizesToIterate, opt.marker_sizes), 
+                    (lineWidthsToIterate, opt.line_width), (lineStylesToIterate, opt.line_style)]:
                 it = cycle_n_elements_m_times(source, numFuncs, numFiles)
             '''
-            markersToIterate = cycle_n_elements_m_times(options.markers, numFuncs, numFiles)
-            markerSizesToIterate = cycle_n_elements_m_times(options.markerSizes, numFuncs, numFiles)
-            lineWidthsToIterate = cycle_n_elements_m_times(options.lineWidth, numFuncs, numFiles)
-            lineStylesToIterate = cycle_n_elements_m_times(options.lineStyle, numFuncs, numFiles)
+            markersToIterate = cycle_n_elements_m_times(opt.markers, numFuncs, numFiles)
+            markerSizesToIterate = cycle_n_elements_m_times(opt.marker_sizes, numFuncs, numFiles)
+            lineWidthsToIterate = cycle_n_elements_m_times(opt.line_width, numFuncs, numFiles)
+            lineStylesToIterate = cycle_n_elements_m_times(opt.line_style, numFuncs, numFiles)
             
-            #colorValuesToIterate = cycle_n_elements_m_times(options.colorValues if options.colorValues else options.greyValues, numFuncs, numFiles)
-            colorValuesToIterate = cycle_n_elements_m_times(options.colorValues or options.greyValues, numFuncs, numFiles)
-            hatchesToIterate = cycle_n_elements_m_times(options.hatchString or [''], numSeries, numFiles)
-            seriesNamesToIterate = cycle_n_elements_m_times(padded(options.seriesNames or [], numSeries, '_nolegend_'), numSeries, numFiles)
+            colorValuesToIterate = cycle_n_elements_m_times(opt.color_values or opt.grey_values, numFuncs, numFiles)
+            hatchesToIterate = cycle_n_elements_m_times(opt.patterns or [''], numSeries, numFiles)
+            seriesNamesToIterate = cycle_n_elements_m_times(padded(opt.series_names or [], numSeries, '_nolegend_'), numSeries, numFiles)
 
         else:
             #use a single style for all series in a single file
-            markersToIterate = chain.from_iterable( [ [mark] * numFuncs for mark in cycle_n_elements(options.markers, numFiles) ] )
-            markerSizesToIterate = chain.from_iterable( [ [size] * numFuncs for size in cycle_n_elements(options.markerSizes, numFiles) ] )
-            lineWidthsToIterate = chain.from_iterable( [ [width] * numFuncs for width in cycle_n_elements(options.lineWidth, numFiles) ] )
-            lineStylesToIterate = chain.from_iterable( [ [style] * numFuncs for style in cycle_n_elements(options.lineStyle, numFiles) ] )
-            colorValuesToIterate = chain.from_iterable( [ [color] * numFuncs for color in cycle_n_elements(options.colorValues or options.greyValues, numFiles) ] )
-            hatchesToIterate = chain.from_iterable( [ [hatch] * numFuncs for hatch in cycle_n_elements(options.hatchString or [''], numFiles) ] )
-            seriesNamesToIterate = padded(options.seriesNames or [], numSeries, '_nolegend_')  
-            
-            #seriesNamesToIterate = np.ravel( [ [ name for _ in options.dataColumnFunc ] for name, f in  zip(cycle(options.seriesNames if options.seriesNames else '_nolegend_'), fileData) ] )
-            
-            
-            #markerSizesToIterate = np.ravel( [ [ size for _ in options.dataColumnFunc ] for size, f in zip( cycle(options.markerSizes), fileData) ] )
-            #lineWidthsToIterate = np.ravel( [ [ width for _ in options.dataColumnFunc ] for width, f in zip( cycle(options.lineWidth), fileData) ] )
-            #lineStylesToIterate = np.ravel( [ [ style for _ in options.dataColumnFunc ] for style, f in zip( cycle(options.lineStyle), fileData) ] )
-            #colorValuesToIterate = np.ravel( [ [ color for _ in options.dataColumnFunc ] for color, f in zip( cycle(options.colorValues if options.colorValues else options.greyValues), fileData) ] )
-            #hatchesToIterate = np.ravel( [ [ hatch for _ in options.dataColumnFunc ] for hatch, f in  zip(cycle(options.hatchString if options.hatchString else 'o'), fileData) ] )
-            #seriesNamesToIterate = np.ravel( [ [ name for _ in options.dataColumnFunc ] for name, f in  zip(cycle(options.seriesNames if options.seriesNames else '_nolegend_'), fileData) ] )
-            
-            #markersToIterate = cycle_n_elements_m_times(options.markers, numSeries, numFiles)
+            markersToIterate = chain.from_iterable( [ [mark] * numFuncs for mark in cycle_n_elements(opt.markers, numFiles) ] )
+            markerSizesToIterate = chain.from_iterable( [ [size] * numFuncs for size in cycle_n_elements(opt.marker_sizes, numFiles) ] )
+            lineWidthsToIterate = chain.from_iterable( [ [width] * numFuncs for width in cycle_n_elements(opt.line_width, numFiles) ] )
+            lineStylesToIterate = chain.from_iterable( [ [style] * numFuncs for style in cycle_n_elements(opt.line_style, numFiles) ] )
+            colorValuesToIterate = chain.from_iterable( [ [color] * numFuncs for color in cycle_n_elements(opt.color_values or opt.grey_values, numFiles) ] )
+            hatchesToIterate = chain.from_iterable( [ [hatch] * numFuncs for hatch in cycle_n_elements(opt.patterns or [''], numFiles) ] )
+            seriesNamesToIterate = padded(opt.series_names or [], numSeries, '_nolegend_')  
 
         '''
         print len([ d for d in axesToIterate]), 
         print len([ d for d in dataToIterate]),
         print len([ d for d in functionsToIterate])
-        print options.markers, 
+        print opt.markers, 
         print [ m for m in markersToIterate ]
-        print options.markerSizes,
+        print opt.marker_sizes,
         print [ m for m in markerSizesToIterate ]
-        print options.lineWidth,
+        print opt.line_width,
         print [ m for m in lineWidthsToIterate ]
-        print options.lineStyle,
+        print opt.line_style,
         print [ m for m in lineStylesToIterate ]
-        print options.greyValues,
+        print opt.grey_values,
         print [ m for m in colorValuesToIterate ]
         print [ m for m in hatchesToIterate ]
-        print options.seriesNames,
+        print opt.series_names,
         print [ m for m in seriesNamesToIterate ]
         exit()
         '''
@@ -1147,28 +1128,28 @@ def full_plot_routine(options, fileData):
         subplot.get_yaxis().tick_left()
         
         #if location option is m(arginal), add a normal axis label for plots on left or bottom margin
-        if options.yLabel:
-            if options.yLabelLocation == 'm' or not multiplot:
+        if opt.y_label:
+            if opt.y_label_location == 'm' or not multiplot:
                 if num % ncols == 0:
-                    subplot.set_ylabel(options.yLabel, **allKwargDict['yLabelKwargs'])
-        if options.xLabel:
-            if options.xLabelLocation == 'm' or not multiplot:
+                    subplot.set_ylabel(opt.y_label, **allKwargDict['yLabelKwargs'])
+        if opt.x_label:
+            if opt.x_label_location == 'm' or not multiplot:
                 if num >= numSubPlots - ncols:
-                    subplot.set_xlabel(options.xLabel, **allKwargDict['xLabelKwargs'])
+                    subplot.set_xlabel(opt.x_label, **allKwargDict['xLabelKwargs'])
 
         #set the title - this could get set multiple times for a single file/plot with multiple funcs
-        if options.titleFunc and options.titleFunc != 'None':
-            if isinstance(options.titleFunc, str):
-                subplot.set_title(eval(options.titleFunc)(inFile, sep=' '), **allKwargDict['titleKwargs'])
+        if opt.title_func and opt.title_func != 'None':
+            if isinstance(opt.title_func, str):
+                subplot.set_title(eval(opt.title_func)(inFile, sep=' '), **allKwargDict['titleKwargs'])
             else:
-                subplot.set_title(options.titleFunc(inFile, sep=' '), **allKwargDict['titleKwargs'])
-        elif options.titles:
-            titleNum = num if len(options.titles) > 1 else 0
-            subplot.set_title(options.titles[titleNum], **allKwargDict['titleKwargs'])
+                subplot.set_title(opt.title_func(inFile, sep=' '), **allKwargDict['titleKwargs'])
+        elif opt.titles:
+            titleNum = num if len(opt.titles) > 1 else 0
+            subplot.set_title(opt.titles[titleNum], **allKwargDict['titleKwargs'])
      
         #this is a little goofy, as it will be re-set for each subplot, despite being shared
-        if options.xTickFunction:
-            tickFunc = eval(options.xTickFunction)
+        if opt.x_tick_function:
+            tickFunc = eval(opt.x_tick_function)
             #note that the tick_params calls below mainly affect the ticks themselves, rather
             #than the tick _labels_.  Although, the tick_params do set the label fontsizes.
             #This pyplot.xticks call sets the location and labels of the ticks
@@ -1212,7 +1193,7 @@ def full_plot_routine(options, fileData):
         two arguments, hence the * to remove the tuple containing the two lists,
         which I think is required for the lambda'''
         if isinstance(toPlot[0], list):
-            if (not hasattr(options, 'histogram') or not options.histogram) and (not hasattr(options, 'barGraph') or not options.barGraph):
+            if (not hasattr(opt, 'histogram') or not opt.histogram) and (not hasattr(opt, 'bar_graph') or not opt.bar_graph):
                 subplot.plot(*dataFunc(series), 
                         marker=marker, 
                         markersize=markerSize, 
@@ -1224,24 +1205,24 @@ def full_plot_routine(options, fileData):
                         mec=color,
                         **allKwargDict['plotKwargs'])
             else:
-                if hasattr(options, 'histogram') and options.histogram:
-                    bins = np.linspace(options.xRange[0] if options.xRange else 0.0, options.xRange[1] if options.xRange else 1.0, options.histogramBins)
+                if hasattr(opt, 'histogram') and opt.histogram:
+                    bins = np.linspace(opt.x_range[0] if opt.x_range else 0.0, opt.x_range[1] if opt.x_range else 1.0, opt.histogram_bins)
                     outN, outBins, patches = subplot.hist(*dataFunc(series), 
                             bins=bins,
                             facecolor=color,
-                            normed=options.normalizeHistogram,
+                            normed=opt.normalize_histogram,
                             **allKwargDict['histogramKwargs'])
                 else:
                     patches = subplot.bar(*dataFunc(series), 
                             color=color, label=seriesName,
                             **allKwargDict['histogramKwargs'])
-                    if options.seriesNames:
+                    if opt.series_names:
                         subplot.legend(frameon=False, prop=font_manager.FontProperties(**allKwargDict['legendTextKwargs']))
                 for pat in patches:
                     pat.set_hatch(hatch)
 
         else:
-            if (not hasattr(options, 'histogram') or not options.histogram) and (not hasattr(options, 'barGraph') or not options.barGraph):
+            if (not hasattr(opt, 'histogram') or not opt.histogram) and (not hasattr(opt, 'bar_graph') or not opt.bar_graph):
                 subplot.plot(dataFunc(series), 
                         marker=marker, 
                         markersize=markerSize, 
@@ -1250,28 +1231,28 @@ def full_plot_routine(options, fileData):
                         color=color,
                         **allKwargDict['plotKwargs'])
             else:
-                if hasattr(options, 'histogram') and options.histogram:
-                    bins = np.linspace(options.xRange[0] if options.xRange else 0.0, options.xRange[1] if options.xRange else 1.0, options.histogramBins)
+                if hasattr(opt, 'histogram') and opt.histogram:
+                    bins = np.linspace(opt.x_range[0] if opt.x_range else 0.0, opt.x_range[1] if opt.x_range else 1.0, opt.histogram_bins)
                     outN, outBins, patches = subplot.hist(dataFunc(series), 
                             bins=bins,
                             facecolor=color,
-                            normed=options.normalizeHistogram,
+                            normed=opt.normalize_histogram,
                             **allKwargDict['histogramKwargs'])
                 else:
                     patches = subplot.bar(dataFunc(series),
                             color=color, label=seriesName, 
                             **allKwargDict['histogramKwargs'])
                             
-                    if options.seriesNames:
+                    if opt.series_names:
                         subplot.legend(frameon=False, fontsize=24)
                 for pat in patches:
                     pat.set_hatch(hatch)
         
         #set the width of the axes box (frame) which I thought I could set on the frame rectangle, but that didn't work
         #kwargs here are <edge><w or s>, i.e. rightw or tops
-        dzAxisKwargs = prepare_plot_kwargs(options.dzAxisKwargs, [ ])
+        dz_axis_kwargs = prepare_plot_kwargs(opt.dz_axis_kwargs, [ ])
 
-        for opt, val in dzAxisKwargs.items():
+        for opt, val in dz_axis_kwargs.items():
             which = opt[:-1]
             if opt[-1] == 'w':
                 subplot.spines[which].set_linewidth(int(val))
@@ -1281,17 +1262,17 @@ def full_plot_routine(options, fileData):
                 sys.exit('unrecognized dzAxisKwarg: %s=%s' % (opt, val))
    
         #this plots x=0 and y=0 axis lines
-        if options.drawAxesAtZero:
+        if opt.draw_axes_at_zero:
             subplot.axhline(xmin=-sys.maxint - 1, xmax=sys.maxint)
             subplot.axvline(ymin=-sys.maxint - 1, ymax=sys.maxint)
 
-        if options.drawVerticalGrid:
+        if opt.draw_vertical_grid:
             subplot.xaxis.grid(color='gray', linestyle='dashed')
 
-        if options.drawHorizontalGrid:
+        if opt.draw_horizontal_grid:
             subplot.yaxis.grid(color='gray', linestyle='dashed')
 
-    if options.seriesNames:
+    if opt.series_names:
         for ax in axes:
             ax.legend()
 
@@ -1303,8 +1284,8 @@ def full_plot_routine(options, fileData):
     return plt.gcf()
 
     ###################
-    if options.outFile:
-        plt.savefig(options.outFile, transparent=True, bbox_inches='tight')
+    if opt.outFile:
+        plt.savefig(opt.outFile, transparent=True, bbox_inches='tight')
     else:
         plt.show()
 
