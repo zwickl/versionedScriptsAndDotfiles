@@ -133,7 +133,7 @@ for oneSeqFile in seqFiles:
       
         #recSet |= set([ rec for rec in SeqIO.parse(oneSeqFile, "fasta", alphabet=IUPAC.ambiguous_dna) ])
     except IOError:
-        log.write("error reading file %s!" % oneSeqFile)
+        log.write("error reading file %s!\n" % oneSeqFile)
         exit(1)
     
     #if sortOutput:

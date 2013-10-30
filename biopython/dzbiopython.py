@@ -11,7 +11,7 @@ import Bio
 import BCBio
 from BCBio import GFF
 from dzutils import read_from_file_or_pickle
-import pp
+#import pp
 
 #my extensions and functions for working with biopython objects
 
@@ -158,7 +158,7 @@ class TaxonGenomicInformation:
             for rec in self.gff_seqrecord_list:
                 if rec.features[0].type.lower() in ['chromosome', 'contig', 'scaffold']:
                     #trying to verify when this is happening
-                    exit('DEBUG: FIRST RECORD IS %s' % rec.features[0].type)
+                    #exit('DEBUG: FIRST RECORD IS %s' % rec.features[0].type)
                     toIter = rec.features[1:]
                 else:
                     toIter = rec.features
@@ -232,18 +232,22 @@ def parse_feature_name(feature, errorIsFatal=True):
     '''Return what I'm treating as the name of the SeqFeature, which is 
     stored as one of the arbitrarily named qualifiers, named differently
     for IRGSP and OGE gff's
+    
+    5/21/13 - Switched this to prefer Name over Alias, which fixes an issue
+    with MAKER annotations and hopefully won't bork anything else.
+    6/4/13 - Also added ID as a potential feature name
     '''
+
     #print feature.qualifiers
-    if 'Alias' in feature.qualifiers:
-        return feature.qualifiers['Alias'][0]
-    elif 'Name' in feature.qualifiers:
-        return feature.qualifiers['Name'][0]
+    for qual in ['Name', 'Alias', 'ID']:
+        if qual in feature.qualifiers:
+            return feature.qualifiers[qual][0]
+       
+    print feature
+    if errorIsFatal:
+        raise Exception('unable to parse a feature name!:')
     else:
-        print feature
-        if errorIsFatal:
-            raise Exception('unable to parse a feature name!:')
-        else:
-            sys.stderr.write('unable to parse a name!')
+        sys.stderr.write('unable to parse a name!')
 
 
 def int_feature_location(feat):
