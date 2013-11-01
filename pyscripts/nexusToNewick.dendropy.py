@@ -17,24 +17,27 @@ def check_for_polytomies(tree):
 #use argparse module to parse commandline input
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-op', '-outgroup-pattern', dest='outPatt', required=False, default=None,
+parser.add_argument('-op', '--outgroup-pattern', default=None,
                     help='regex pattern matching taxon label to use as outgroup (single taxon outgroup)')
 
 parser.add_argument('treefiles', nargs='*', default=[], help='nexus treefile to convert')
 
-parser.add_argument('-o', '--outfile', dest='outfile', required=False, default=None, 
+parser.add_argument('-o', '--outfile', default=None, 
                     help='file to write output to (default is stdout)')
 
-parser.add_argument('-n', '--nexus', dest='outputNexus', action='store_true', required=False, default=False, 
+parser.add_argument('-n', '--nexus', action='store_true', default=False, 
                     help='output treefile in nexus rather than newick format')
 
-parser.add_argument('-nb', '--no-bifurcating', dest='ignoreBif', action='store_true', required=False, default=False, 
+parser.add_argument('-nb', '--no-bifurcating', action='store_true', default=False, 
                     help='do not include bifurcating trees in output')
 
-parser.add_argument('-np', '--no-polytomies', dest='ignorePoly', action='store_true', required=False, default=False, 
+parser.add_argument('-np', '--no-polytomies', action='store_true', default=False, 
                     help='do not include polytomous trees in output')
 
-parser.add_argument('-p', '--prune-patterns', dest='prunePatts', action='append', required=False, default=None, 
+parser.add_argument('--suppress-branchlengths', action='store_true', default=False, 
+                    help='strip branchlengths from output trees (default False)')
+
+parser.add_argument('-p', '--prune-patterns', action='append', default=None, 
                     help='patterns for taxon names to strip from trees before output.  Single pattern per flag, but can appear multiple times')
 
 options = parser.parse_args()
@@ -43,7 +46,7 @@ options = parser.parse_args()
 
 intrees = dendropy.TreeList()
 for tf in options.treefiles:
-    #intrees.append(dendropy.Tree.get_from_path(tf, "nexus"))
+    #try two input formats
     try:
         intrees.extend(dendropy.TreeList.get_from_path(tf, "nexus"))
     except dendropy.error.DataError:
@@ -63,38 +66,36 @@ ignoredCount = 0
 outgroupIgnoredCount = 0
 for intree in intrees:
     hasPoly = check_for_polytomies(intree)
-    if options.ignoreBif and not hasPoly:
+    if options.no_bifurcating and not hasPoly:
         ignoredCount += 1
         #log.write('ignoring bifurcating tree\n')
-    elif options.ignorePoly and hasPoly:
+    elif options.no_polytomies and hasPoly:
         ignoredCount += 1
         #log.write('ignoring polytomous tree\n')
     else:
-        toRemove = set()
+        to_remove = set()
         #prune taxa first with patterns, THEN look for an outgroup pattern.
         #outgroup pattern could be specified that matches something that has
         #already been deleted
-        if options.prunePatts is not None:
+        if options.prune_patterns is not None:
             leaves = intree.leaf_nodes()
             for l in leaves:
-                for toPrune in options.prunePatts:
-                    if re.search(toPrune, l.taxon.label) is not None:
-                        toRemove.add(l.taxon.label)
+                for to_prune in options.prune_patterns:
+                    if re.search(to_prune, l.taxon.label) is not None:
+                        to_remove.add(l.taxon.label)
                         break
-            toRetain = set(l.taxon.label for l in leaves) - toRemove
-            #intree.retain_taxa_with_labels(labels=toRetain)
-            intree.prune_taxa_with_labels(labels=toRemove)
-            #print intree
-            #exit()
+            to_retain = set(l.taxon.label for l in leaves) - to_remove
+            #intree.retain_taxa_with_labels(labels=to_retain)
+            intree.prune_taxa_with_labels(labels=to_remove)
             #these are called on TreeLists - not sure if applicable here
             intree.taxon_set = intree.infer_taxa()
             intree.reindex_subcomponent_taxa()
 
-        if options.outPatt is not None:
+        if options.outgroup_pattern is not None:
             outgroup = None
             leaves = intree.leaf_nodes()
             for l in leaves:
-                if re.search(options.outPatt, l.taxon.label) is not None:
+                if re.search(options.outgroup_pattern, l.taxon.label) is not None:
                     outgroup = l
                     break
 
@@ -118,10 +119,10 @@ if outgroupIgnoredCount > 0:
     log.write('ignored %d trees because of missing outgroup\n' % outgroupIgnoredCount)
 if outtrees:
     log.write('writing %d trees\n' % len(outtrees))
-    if options.outputNexus:
-        outtrees.write(out, "nexus")
+    if options.nexus:
+        outtrees.write(out, "nexus", suppress_edge_lengths=options.suppress_branchlengths)
     else:
-        outtrees.write(out, "newick")
+        outtrees.write(out, "newick", suppress_edge_lengths=options.suppress_branchlengths)
 else:
     log.write('no trees to output?\n')
 

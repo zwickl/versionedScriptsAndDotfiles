@@ -4,9 +4,9 @@ import sys
 def usage():
     print "Usage: <script> filename [column to use] [histogram width]"
 
-def makeHisto(lines, width = 1.0, col = 0):
+def makeHisto(lines, width = 1.0, col = 0, bin_start=None):
     #figure out the range of the histogram
-    if len(lines) is 0:
+    if not lines:
         sys.exit("list is empty")
     num = float(len(lines))
     if col > len(lines[0]):
@@ -22,14 +22,13 @@ def makeHisto(lines, width = 1.0, col = 0):
     colMin = min(focalCol)
     colMax   = max(focalCol)
     #start is the beginning of the first bin
-    start = int(colMin - 1)
-    #while start + width < colMin:
+    start = bin_start if bin_start is not None else int(colMin - 1)
     while (start + width - colMin) < 0.00001:
         start = start + width
     #end is the beginning of the last bin
     end = int(colMax + 1)
     while end > colMax:
-        end = end - width
+        end -= width
     
     sys.stderr.write("range:\n%f %f %f %f\n" % (start, colMin, colMax, end+width))
 
@@ -43,24 +42,20 @@ def makeHisto(lines, width = 1.0, col = 0):
         #counts.append((val, 0))
         bins.append(0)
         bounds.append(val)
-#        counts[val] = 0
-        val = val + width
-#        sys.stderr.write("%f " % val);
-#    print counts
-#    print bins
-#    print bounds
+        val += width
     print "binStart\tbinEnd\tcount\tpercent"
     for element in focalCol:
         b = 0
-    #    print element
-        while bounds[b] + width < element:
+        while bounds[b] + width <= element:
             #val = val + width
             b = b + 1
             if b == len(bounds):
                 exit("Error: ran past end of bins")
-        bins[b] = bins[b] + 1
-    for c in range(0, len(bins)):
-        print "%f\t%f\t%d\t%f" % (bounds[c], bounds[c] + width, bins[c], float(bins[c]) / num)
+        bins[b] += 1
+    #for c in range(len(bins)):
+    for num, bin in enumerate(bins):
+        #print "%f\t%f\t%d\t%f" % (bounds[c], bounds[c] + width, bins[c], float(bins[c]) / num)
+        print "%f\t%f\t%d\t%f" % (bounds[num], bounds[num] + width, bins, float(bins) / num)
 '''
         val = start
         while val + width < element:
@@ -84,6 +79,7 @@ fname = sys.argv[1]
 
 width = 1.0
 col = 0
+start = None
 try:
     col = int(sys.argv[2])
 except StandardError:
@@ -94,9 +90,14 @@ except StandardError:
     pass
 
 try:
+    start = float(sys.argv[4])
+except StandardError:
+    pass
+
+try:
     infile = open(fname, "ru")
 except IOError:
     sys.exit("problem opening file %s" % fname)
 
-makeHisto([line.split() for line in infile], width, col)
+makeHisto([line.split() for line in infile], width, col, start)
 

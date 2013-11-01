@@ -223,12 +223,16 @@ def simpler_path_to_plot_title(filename, sep='\n'):
         plotTitle += 'CDS+UNKNOWN '
     elif 'cds.gblocks' in filename:
         plotTitle += 'CDS+GBLOCKS'
+    elif 'cds.trimal' in filename:
+        plotTitle += 'CDS+TRIMAL'
     elif 'cds' in filename:
         plotTitle += 'CDS'
     elif 'genes.gblocks.maskedbadalign' in filename:
         plotTitle += 'GENE+GBLOCKS%s+ALMASK' % sep
     elif 'genes.gblocks' in filename:
         plotTitle += 'GENE+GBLOCKS'
+    elif 'genes.trimal' in filename:
+        plotTitle += 'GENE+TRIMAL'
     elif 'genes.intronsstripped' in filename:
         #plotTitle += 'GENE-INTRON'
         plotTitle += 'MASKED-INTRON'
@@ -295,8 +299,12 @@ def simpler_path_to_plot_title_nuc_default_cds(filename, sep='\n'):
         plotTitle += 'CDS-P+UNKNOWN '
     elif 'cds.gblocks.nuc' in filename:
         plotTitle += 'CDS+GBLOCKS'
+    elif 'cds.nuc.trimal' in filename:
+        plotTitle += 'CDS+TRIMAL'
     elif 'cds.gblocks' in filename:
         plotTitle += 'CDS-P+GBLOCKS'
+    elif 'cds.trimal' in filename:
+        plotTitle += 'CDS-P+TRIMAL'
     elif 'cds.nuc' in filename:
         plotTitle += 'CDS'
     elif 'cds' in filename:
@@ -305,6 +313,8 @@ def simpler_path_to_plot_title_nuc_default_cds(filename, sep='\n'):
         plotTitle += 'GENE+GBLOCKS%s+ALMASK' % sep
     elif 'genes.gblocks' in filename:
         plotTitle += 'GENE+GBLOCKS'
+    elif 'genes.trimal' in filename:
+        plotTitle += 'GENE+TRIMAL'
     elif 'genes.intronsstripped' in filename:
         plotTitle += 'MASKED-INTRON'
     elif 'genes.nofullintrons' in filename:
@@ -754,7 +764,7 @@ class PlottingArgumentParser(argparse.ArgumentParser):
                                 help='whether to draw vertical lines from top to bottom axis at major tick points')
        
         if 'defaultDrawHorizontalGrid' in option_defaults:
-            axisArgs.add_argument('--draw-horizonal-grid', default=option_defaults['defaultDrawHorizontalGrid'], action='store_true', 
+            axisArgs.add_argument('--draw-horizontal-grid', default=option_defaults['defaultDrawHorizontalGrid'], action='store_true', 
                                 help='whether to draw horizontal lines from left to right axis at major tick points')
        
         if 'defaultXtick_label_location' in option_defaults:
@@ -931,7 +941,7 @@ def prepare_all_kwargs(opt):
     others = [ ('xTickKwargs', 'x_tick_kwargs'), ('yTickKwargs', 'y_tick_kwargs'), ('xTickLabelKwargs', 'x_tick_label_kwargs' ), ('yTickLabelKwargs', 'y_tick_label_kwargs'), ('plotKwargs', 'plot_kwargs'), ('histogramKwargs', 'histogram_kwargs'), ('legendTextKwargs', 'legend_text_kwargs') ]
     for var, option in others:
         if hasattr(opt, option):
-            allKwargDict[var] = prepare_plot_kwargs(opt.__dict__[opt], []) 
+            allKwargDict[var] = prepare_plot_kwargs(opt.__dict__[option], []) 
         else:
             allKwargDict[var] = []
     
@@ -995,9 +1005,9 @@ def full_plot_routine(opt, fileData):
     ncols = min(opt.columns, numUsedSubplots)
     totalSubplots = nrows * ncols
     sharex = sharey = True
-    if opt.xtick_label_location == 'e':
+    if opt.x_tick_label_location == 'e':
         sharex = False
-    if opt.ytick_label_location == 'e':
+    if opt.y_tick_label_location == 'e':
         sharey = False
     fig, axes = make_figure_and_subplots(nrows, ncols, sharex, sharey)
 
@@ -1252,14 +1262,14 @@ def full_plot_routine(opt, fileData):
         #kwargs here are <edge><w or s>, i.e. rightw or tops
         dz_axis_kwargs = prepare_plot_kwargs(opt.dz_axis_kwargs, [ ])
 
-        for opt, val in dz_axis_kwargs.items():
-            which = opt[:-1]
-            if opt[-1] == 'w':
+        for option, val in dz_axis_kwargs.items():
+            which = option[:-1]
+            if option[-1] == 'w':
                 subplot.spines[which].set_linewidth(int(val))
-            elif opt[-1] == 's':
+            elif option[-1] == 's':
                 subplot.spines[which].set_linestyle(val)
             else:
-                sys.exit('unrecognized dzAxisKwarg: %s=%s' % (opt, val))
+                sys.exit('unrecognized dzAxisKwarg: %s=%s' % (option, val))
    
         #this plots x=0 and y=0 axis lines
         if opt.draw_axes_at_zero:

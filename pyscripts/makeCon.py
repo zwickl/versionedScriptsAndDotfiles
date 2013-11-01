@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 import sys
 
-onlyCount = None
 if len(sys.argv) < 5:
-    print "usage\nmakeCon.py <pos/neg (p or n)> <total taxa> <at least numbers to constrain ...>"
-    exit(1)
+    sys.exit("usage\nmakeCon.py <pos/neg (p or n)> <total taxa> <at least numbers to constrain ...>")
 
 tot = int(sys.argv[2])
 
-conNums = []
-for a in range(3, int(len(sys.argv))):
-    conNums.append(int(sys.argv[a]))
+conNums = [ int(arg) for arg in sys.argv[3:] ]
 
-pos = 0
 if sys.argv[1] not in ['p', 'n']:
     print "second argument must be p or n"
 else:

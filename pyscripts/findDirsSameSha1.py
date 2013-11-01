@@ -33,7 +33,6 @@ def recursive_subdir_generator(path):
     if not contents:
         return
     yield path
-    #for sub_dir in [ path_join(path, sub_obj) for sub_obj in os.listdir(path) if isdir(path_join(path, sub_obj)) and sub_obj[0] != '.' ]:
     for sub_dir in [ path_join(path, sub_obj) for sub_obj in contents if isdir(path_join(path, sub_obj)) and sub_obj[0] != '.' ]:
         for sub_sub_dir in recursive_subdir_generator(sub_dir):
             yield sub_sub_dir

@@ -10,12 +10,10 @@ parser = OptionParser(add_help_option=True)
 parser.add_option("-p", "--precision", dest="prec", type="int", default=2, help="Decimal precision of output")
 parser.add_option("--horizontal", dest="hor", action="store_true", default=False, help="Separate cells with horizontal lines")
 parser.add_option("--vertical", dest="vert", action="store_true",  default=False, help="Separate cells with vertical lines")
-parser.add_option("--rowheaders", dest="rowfile", help="File containing row lables")
-parser.add_option("--colheaders", dest="colfile", help="File containing column lables")
+parser.add_option("--rowheaders", dest="rowfile", default=None, help="File containing row labels")
+parser.add_option("--colheaders", dest="colfile", default=None, help="File containing column labels")
 
 (options, args) = parser.parse_args()
-#if options.helpflag != None:
-#    print_usage("")
 
 if len(args) == 1:
     filename = args[0]
@@ -29,23 +27,16 @@ else:
     infile = sys.stdin
 
 outprec = int(options.prec)
-haveRows = options.rowfile is not None
-haveCols = options.colfile is not None
-hor = options.hor
-vert = options.vert
-rowFile = None
-colFile = None
-rowHeads = []
-colHeads = []
+rowHeads, colHeads = [], []
 
-if haveRows:
+if options.rowfile:
     try:
         rowFile = open(options.rowfile, "rU")
     except IOError:
         exit("Problem opening file %s" % options.rowfile)
     for r in rowFile:
         rowHeads.extend(string.replace(s, "_", " ") for s in r.split())
-if haveCols:
+if options.colfile:
     try:
         colFile = open(options.colfile, "rU")
     except IOError:
@@ -53,12 +44,12 @@ if haveCols:
     for c in colFile:
         colHeads.extend(string.replace(s, "_", " ") for s in c.split())
 
-lines = [ l.split() for l in file ]
+lines = [ l.split() for l in infile ]
 numCols = len(lines[0])
 floatRows = [[ float(e) for e in l ] for l in lines]
 actualRows = [[ "%.*f" % (outprec, e) for e in l ] for l in floatRows ]
 
-if haveRows:
+if options.rowfile:
     numCols = numCols + 1
     for l in range(0, len(actualRows)):
         actualRows[l].insert(0, rowHeads[l])
@@ -66,23 +57,23 @@ if haveRows:
 
 print "\\begin {table}\n\\begin{center}\n\\resizebox{4in}{!}{"
 
-if vert:
+if options.vert:
     print "\\begin{tabular}{ | " + " | ".join("c" for x in range(0, numCols)) + " | }"
 else:
     print "\\begin{tabular}{ " + " ".join("c" for x in range(0, numCols)) + " }"
 
-if hor:
+if options.hor:
     print "\\hline"
-if haveCols:
+if options.colfile:
     print " & ".join(colHeads) + "\\\\"
     print "\\hline"
-elif hor:
+elif options.hor:
     print "\\hline"
 
 outRows = []
 for l in actualRows:
     outRows.append(" & ".join(l) + "\\\\")
-    if hor:
+    if options.hor:
         outRows.append(" \\hline")
 print "\n".join(outRows)
 #for e in floatRows:
