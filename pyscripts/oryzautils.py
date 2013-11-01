@@ -10,8 +10,10 @@ class Oryza(object):
     def __init__(self):
         #self.taxon_names = [ 'O. sativaj AA', 'O. sativai AA', 'O. barthii AA', 'O. brachyantha FF', 'O. glaberrima AA', 'O. glaberrimaF AA', 'O. glaberrimaM AA', 'O. glumaepatula AA', 'O. meridionalis AA', 'O. minuta BB', 'O. minuta CC', 'O. nivara AA', 'O. officinalis CC', 'O. punctata BB', 'O. rufipogon AA' ]
         #self.short_names = [ 'OsatjAA', 'OsatiAA', 'ObartAA', 'ObracFF', 'OglabAA', 'OglaFAA', 'OglaMAA', 'OglumAA', 'OmeriAA', 'OminuBB', 'OminuCC', 'OnivaAA', 'OoffiCC', 'OpuncBB', 'OrufiAA' ]
-        self.taxon_names = [ 'O. barthii AA', 'O. brachyantha FF', 'O. glaberrima AA', 'O. glaberrimaF AA', 'O. glaberrimaM AA', 'O. glumaepatula AA', 'O. meridionalis AA', 'O. minuta BB', 'O. minuta CC', 'O. nivara AA', 'O. officinalis CC', 'O. punctata BB', 'O. rufipogon AA', 'O. sativai AA', 'O. sativaj AA' ]
-        self.short_names = [ 'ObartAA', 'ObracFF', 'OglabAA', 'OglaFAA', 'OglaMAA', 'OglumAA', 'OmeriAA', 'OminuBB', 'OminuCC', 'OnivaAA', 'OoffiCC', 'OpuncBB', 'OrufiAA', 'OsatiAA', 'OsatjAA' ]
+        #self.taxon_names = [ 'O. barthii AA', 'O. brachyantha FF', 'O. glaberrima AA', 'O. glaberrimaF AA', 'O. glaberrimaM AA', 'O. glumaepatula AA', 'O. meridionalis AA', 'O. minuta BB', 'O. minuta CC', 'O. nivara AA', 'O. officinalis CC', 'O. punctata BB', 'O. rufipogon AA', 'O. sativai AA', 'O. sativaj AA' ]
+        #self.short_names = [ 'ObartAA', 'ObracFF', 'OglabAA', 'OglaFAA', 'OglaMAA', 'OglumAA', 'OmeriAA', 'OminuBB', 'OminuCC', 'OnivaAA', 'OoffiCC', 'OpuncBB', 'OrufiAA', 'OsatiAA', 'OsatjAA' ]
+        self.taxon_names = [ 'L. perrii', 'O. barthii AA', 'O. brachyantha FF', 'O. glaberrima AA', 'O. glaberrimaF AA', 'O. glaberrimaM AA', 'O. glumaepatula AA', 'O. meridionalis AA', 'O. minuta BB', 'O. minuta CC', 'O. nivara AA', 'O. officinalis CC', 'O. punctata BB', 'O. rufipogon AA', 'O. sativai AA', 'O. sativaj AA' ]
+        self.short_names = [ 'Lperr', 'ObartAA', 'ObracFF', 'OglabAA', 'OglaFAA', 'OglaMAA', 'OglumAA', 'OmeriAA', 'OminuBB', 'OminuCC', 'OnivaAA', 'OoffiCC', 'OpuncBB', 'OrufiAA', 'OsatiAA', 'OsatjAA' ]
         self.short_to_long = dict( [ (self.short_names[n], self.taxon_names[n]) for n in range(0, len(self.taxon_names)) ])
         self.long_to_short = dict( [ (self.taxon_names[n], self.short_names[n]) for n in range(0, len(self.taxon_names)) ])
     def short_name_to_long(self, short):
@@ -114,47 +116,43 @@ def extract_all_information_for_seqs_in_alignments(filenames, returnAs='list'):
     len 3340   O. sativaj AA        = OsatjAA03g29730 seq=gene; coord=Chr3:16936454..16939793:-1
     ]
     '''
-    if returnAs == 'dict':
-        alignments = {}
-    else:
-        alignments = []
+    alignments = {} if returnAs == 'dict' else []
 
     if isinstance(filenames, str):
         filenames = [ filenames ]
     #work through the files
     for filename in filenames:
         #open a nexus alignment
-        alfile = open(filename, 'rb')
-        #get the part of the alignment filename that will be identical to part of the treefile name, according to my convention
-        coreFilename = extract_core_filename(filename)
-        
-        #read lines at end of nexus file that give information on sequences, including coordinate
-        seqLines = [ line for line in alfile if line.startswith('len') and not 'LOC' in line ]
-        #seqLines = [ line for line in file if ((line[0] == 'O' or line[0:3] == 'len') and not 'LOC' in line )]
-        try:
-            seqDescs = []
-            for desc in seqLines:
-                found = search('.*(O.*) = (.*)', desc)
-                #pull out tuples for normalized taxon names and longer more informative OGE description strings
-                seqDescs.append((found.group(1).strip(), found.group(2).strip()))
-        except:
-            raise RuntimeError('problem parsing file %s' % filename)
-        #make a CoordinateSet structure for this alignment file
-        coords = CoordinateSet(oryza.taxon_names)
-        #parse the description part into my ParsedSequenceDescription data structure
-        if returnAs == 'dict':
-            parsed = dict([(seq[0], ParsedSequenceDescription(seq[1])) for seq in seqDescs])
-            for key, val in parsed.items():
-                coords.set_coordinate(key, val.coord_start)
-        else:
-            parsed = [ (seq[0], ParsedSequenceDescription(seq[1])) for seq in seqDescs ]
-            for p in parsed:
-                coords.set_coordinate(p[0], p[1].coord_start)
-        coords.set_filename(filename)
-        #collect a tuple for this alignment with the filename, parsed seq descriptions, and CoordinateSet
-        if returnAs == 'dict':
-            alignments[str(coreFilename)] = (parsed, coords)
-        else:
-            alignments.append( (str(coreFilename), parsed, coords) )
+        with open(filename, 'rb') as alfile:
+            #get the part of the alignment filename that will be identical to part of the treefile name, according to my convention
+            coreFilename = extract_core_filename(filename)
+            
+            #read lines at end of nexus file that give information on sequences, including coordinate
+            seqLines = [ line for line in alfile if line.startswith('len') and not 'LOC' in line ]
+            try:
+                seqDescs = []
+                for desc in seqLines:
+                    found = search('.*(LO.*) = (.*)', desc)
+                    #pull out tuples for normalized taxon names and longer more informative OGE description strings
+                    seqDescs.append((found.group(1).strip(), found.group(2).strip()))
+            except StandardError:
+                raise RuntimeError('problem parsing file %s' % filename)
+            #make a CoordinateSet structure for this alignment file
+            coords = CoordinateSet(oryza.taxon_names)
+            #parse the description part into my ParsedSequenceDescription data structure
+            if returnAs == 'dict':
+                parsed = dict([(seq[0], ParsedSequenceDescription(seq[1])) for seq in seqDescs])
+                for key, val in parsed.items():
+                    coords.set_coordinate(key, val.coord_start)
+            else:
+                parsed = [ (seq[0], ParsedSequenceDescription(seq[1])) for seq in seqDescs ]
+                for p in parsed:
+                    coords.set_coordinate(p[0], p[1].coord_start)
+            coords.set_filename(filename)
+            #collect a tuple for this alignment with the filename, parsed seq descriptions, and CoordinateSet
+            if returnAs == 'dict':
+                alignments[str(coreFilename)] = (parsed, coords)
+            else:
+                alignments.append( (str(coreFilename), parsed, coords) )
     return alignments
 

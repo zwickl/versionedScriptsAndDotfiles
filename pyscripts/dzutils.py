@@ -1,20 +1,122 @@
 #!/usr/bin/env python
-
 import sys
 import re
 from os import path, stat
 import cPickle
-from itertools import izip
+from collections import Iterable
+from itertools import izip, combinations
 from argparse import ArgumentTypeError, ArgumentParser
 
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+
+def flattened_array_generator(array, level=1, reverse=False):
+    '''Generator to be used in flatten_array function, or by itself'''
+    if isinstance(array, Iterable) and not isinstance(array, str):
+        if reverse:
+            array = array[::-1]
+
+        for toplvl in array:
+            if level == 0:
+                yield toplvl
+            else:
+                for sub in flattened_array_generator(toplvl, level=level-1, reverse=reverse):
+                    yield sub
+    else:
+        yield array
 
 
-#this is for used for type checking as a type= argument in argparse.add_argument
+def flatten_array(array, levels=1, reverse=False):
+    '''Return a list with outermost levels of the input list eliminated
+    Thus, one level just removes the outermost list, etc.  See doctest
+    examples.
+    >>> flatten_array([[1, 2, 3], [4, 5, 6]])
+    [1, 2, 3, 4, 5, 6]
+    >>> flatten_array([[1, [2, 3]], [[4, 5], 6]], levels=2)
+    [1, 2, 3, 4, 5, 6]
+    >>> flatten_array([[1, [2, 3]], [[4, 5], 6]], levels=2, reverse=True)
+    [6, 5, 4, 3, 2, 1]
+    >>> flatten_array([[1, [2, 3]], [[4, 5], 6]], levels=1)
+    [1, [2, 3], [4, 5], 6]
+    >>> flatten_array([[1, [2, 3]], [[4, 5], 6]], levels=1, reverse=True)
+    [6, [4, 5], [2, 3], 1]
+    '''
+    ret = []
+    for el in flattened_array_generator(array, level=levels, reverse=reverse):
+        ret.append(el)
+    return ret
+
+
+class UniqueSubstringClass(object):
+    '''This is used for the function find_shortest_unique_leading_substrings'''
+    def __init__(self, full_string):
+        self.full_string = full_string
+        self.cur_len = 1
+
+    def __eq__(self, other):
+        return self.substr() == other.substr()
+
+    def clashes(self, other):
+        '''If this can't be advanced further, don't consider it clashing'''
+        if self.can_advance() and re.match(self.substr(), other.substr()):
+            return True
+        return False
+
+    def substr(self):
+        return self.full_string[:self.cur_len]
+
+    def advance(self):
+        if self.can_advance():
+            self.cur_len += 1
+
+    def can_advance(self):
+        return self.cur_len < len(self.full_string)
+
+
+def find_shortest_unique_leading_substrings(string_list):
+    '''This just takes the list of strings and finds the shortest substrings
+    from their beginnings that make them all unique, if possible. It should
+    be order-invariant.
+    >>> find_shortest_unique_leading_substrings(['aba', 'a', 'cab', 'ac'])
+    ['ab', 'a', 'c', 'ac']
+    >>> find_shortest_unique_leading_substrings(['ac', 'a', 'cab', 'aba'])
+    ['ac', 'a', 'c', 'ab']
+    >>> find_shortest_unique_leading_substrings(['ac', 'a', 'cab', 'ac'])
+    ['ac', 'a', 'c', 'ac']
+    '''
+    substrs = [ UniqueSubstringClass(string) for string in string_list ]
+
+    for first, sec in combinations(substrs, 2):
+        while first.clashes(sec) or sec.clashes(first):
+            if first.clashes(sec) and first.can_advance():
+                first.advance()
+            if sec.clashes(first) and sec.can_advance():
+                sec.advance()
+
+    return [ string.substr() for string in substrs ]
+
+    '''
+    for num1, num2 in itertools.combinations(nums):
+        first, sec = tuple_list[num1], tuple_list[num2]
+        while re.match(first[1], sec[1]) or re.match(sec[1], first[1]):
+            if re.match(first[1], sec[1]):
+                first[1] = 
+        first[1], sec[1] = 
+        while first[1] == sec[1]:
+    '''
+
+
+
 def proportion_type(string):
-    #it would be nice to be able to pass as specific range, but the func can only take 1 arg
+    '''This is used for type and bound checking, specified as a type= argument in argparse.add_argument().
+    It would be nice to be able to pass as specific range besides 0.0-1.0, but funcs used for type= can 
+    only take 1 arg.
+    On failure raises an ArgumentTypeError, defined by argparse.
+    >>> proportion_type('1.0')
+    1.0
+    >>> proportion_type('1.1')
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: value 1.100000 must be between 0.00 and 1.00
+    '''
     min_val, max_val = 0.0, 1.0
     value = float(string)
     if value < min_val or value > max_val:
@@ -91,31 +193,45 @@ def read_from_file_or_pickle(filename, pickleName, readFunc, *readFuncArgs, **re
     return parsed
 
 
-def extract_sequences_and_stuff_from_nexus_file(nfile, taxToSequenceDict, beginningLinesInNexus, endLinesInNexus):
+def extract_sequences_and_stuff_from_nexus_file(nfile, taxToSequenceDict, beginningLinesInNexus=None, endLinesInNexus=None):
     '''this just gets some random stuff that I extract from a nexus file that I was using in a few different scripts
     this includes a dictionary of taxon names to sequences, the lines in the file before the matrix, and the lines
     in the file after the matrix'''
     foundSequences = False
+    finishedSequences = False
     with open(nfile, 'rb') as nexusFile:
         for line in nexusFile:
             #get the sequence lines in the nexus file
-            if re.search('^[\']', line):
+            
+            if 'matrix' in line.lower() and not foundSequences:
                 foundSequences = True
+                if beginningLinesInNexus:
+                    beginningLinesInNexus.append(line)
 
-                #want to go from 
-                #'Oryza blah AA' ACGT... to [ 'Oryza blah AA', 'ACGT...' ]
-                #this looks like an ugly way to do this, but is much faster than using shlex as I used to
-                #stuff = shlex.split(line)
-                stuff = line.split()
-                stuff = [ re.sub('\'', '', ' '.join(stuff[:-1])), stuff[-1] ]
-
-                if len(stuff) != 2:
-                    exit("problem parsing line %s" % line)
-                taxToSequenceDict[stuff[0]] = stuff[1]
-            else:
-                if foundSequences:
-                    endLinesInNexus.append(line)
+            elif foundSequences and not finishedSequences:
+                #this is assuming that the matrix ends with a line containing only a semicolon and whitespace
+                if re.search('^;', line.strip()):
+                    finishedSequences = True
+                    if endLinesInNexus:
+                        endLinesInNexus.append(line)
                 else:
+                    stuff = line.split()
+                    #taxon name that starts each matrix line can either be quoted or underscored to escape the spaces
+                    if re.search('^[\']', line) or re.search('^[OL][.]', line):
+                        #want to go from 
+                        #'Oryza blah AA' ACGT... to [ 'Oryza blah AA', 'ACGT...' ]
+                        #this looks like an ugly way to do this, but is much faster than using shlex as I used to
+                        #stuff = shlex.split(line)
+                        stuff = [ re.sub('\'', '', ' '.join(stuff[:-1])), stuff[-1] ]
+
+                    if len(stuff) != 2:
+                        sys.exit("problem parsing line %s" % line)
+                    taxToSequenceDict[stuff[0]] = stuff[1]
+            else:
+                #if endLinesInNexus and foundSequences:
+                if endLinesInNexus and finishedSequences:
+                    endLinesInNexus.append(line)
+                if beginningLinesInNexus and not foundSequences:
                     beginningLinesInNexus.append(line)
  
 
@@ -165,12 +281,13 @@ def extract_core_filename(name, no_nchar=False):
     '''
     extract the "core" portion of a filename, regardless of exactly what the original filename is
     this includes the cluster number, number of taxa, number of characters and other stuff
+    6/4/13 - changed this to pull off the ".gblocks" at the end, if present
     >>> extract_core_filename('../alignments/aligned.blink.00047.00002.8T.noDupes.954C.nex')
     '00047.00002.8T.noDupes.954C'
     >>> extract_core_filename('../../alignments/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.nex')
-    '00000.00000.10T.noDupes.2079C.gblocks'
+    '00000.00000.10T.noDupes.2079C'
     >>> extract_core_filename('../garli.gblocks.collapse/runs/aligned.blink.00000.00000.10T.noDupes.2079C.gblocks.best.tre')
-    '00000.00000.10T.noDupes.2079C.gblocks'
+    '00000.00000.10T.noDupes.2079C'
 
     '''
     extracted = None
@@ -182,18 +299,35 @@ def extract_core_filename(name, no_nchar=False):
             break
     if extracted is None:
         exit("problem shortening name 1: %s" % name)
-   
+  
+    if 'gblocks' in extracted:
+        extracted = re.sub('.gblocks', '', extracted)
     extracted2 = None
     #don't think that these really need to be at the end of lines
     #patts = [ '(.*).nex$', '(.*).best.tre$', '(.*).boot.tre$', '(.*).tre$', '(.*).boot$' ]
-    patts = [ '(.*).nex', '(.*).best.tre', '(.*).boot.tre', '(.*).tre', '(.*).boot' ]
+    suffixes = [ '.nex', '.best.tre', '.boot.tre', '.tre', '.boot', '.conf', '.sh', '.scores', '.modelfit.log', '.screen.log', '.log00.log' ]
+    #patts = [ '(.*).nex', '(.*).best.tre', '(.*).boot.tre', '(.*).tre', '(.*).boot', '(.*).conf', '(.*).sh' ]
+
+    for suff in suffixes:
+        if suff in extracted:
+            search = re.search('(.*)' + suff, extracted)
+            if search:
+                extracted2 = search.group(1)
+                break
+            else:
+                sys.exit('WTF?')
+    '''
     for p in patts:
         search = re.search(p, extracted)
         if search:
             extracted2 = search.group(1)
             break
+    '''
     if extracted2 is None:
-        exit("problem shortening name 2: %s" % name)
+        if extracted[-1] != 'C':
+            exit("problem shortening name 2: %s" % name)
+        else:
+            extracted2 = extracted
 
     if no_nchar:
         search = re.search('(.*)[.].*C$', extracted2)
@@ -1038,7 +1172,7 @@ class ParsedSequenceDescription(object):
 
             #get parent gene
             if len(split_desc) > 3:
-#made some hasty changes here - check it through at some point
+                #made some hasty changes here - check it through at some point
                 if not "parent_gene" in split_desc[3]:
                     self.parent = 'none'
                     #exit("no \"parent_gene\" found in %s" % description)
