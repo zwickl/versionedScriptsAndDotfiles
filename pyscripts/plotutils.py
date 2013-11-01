@@ -301,10 +301,14 @@ def simpler_path_to_plot_title_nuc_default_cds(filename, sep='\n'):
         plotTitle += 'CDS+GBLOCKS'
     elif 'cds.nuc.trimal' in filename:
         plotTitle += 'CDS+TRIMAL'
+    elif 'cds.nuc.aliscore' in filename:
+        plotTitle += 'CDS+ALISCORE'
     elif 'cds.gblocks' in filename:
         plotTitle += 'CDS-P+GBLOCKS'
     elif 'cds.trimal' in filename:
         plotTitle += 'CDS-P+TRIMAL'
+    elif 'cds.aliscore' in filename:
+        plotTitle += 'CDS-P+ALISCORE'
     elif 'cds.nuc' in filename:
         plotTitle += 'CDS'
     elif 'cds' in filename:
@@ -315,6 +319,8 @@ def simpler_path_to_plot_title_nuc_default_cds(filename, sep='\n'):
         plotTitle += 'GENE+GBLOCKS'
     elif 'genes.trimal' in filename:
         plotTitle += 'GENE+TRIMAL'
+    elif 'genes.aliscore' in filename:
+        plotTitle += 'GENE+ALISCORE'
     elif 'genes.intronsstripped' in filename:
         plotTitle += 'MASKED-INTRON'
     elif 'genes.nofullintrons' in filename:
