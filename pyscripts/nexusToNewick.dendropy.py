@@ -28,11 +28,16 @@ parser.add_argument('-o', '--outfile', default=None,
 parser.add_argument('-n', '--nexus', action='store_true', default=False, 
                     help='output treefile in nexus rather than newick format')
 
-parser.add_argument('-nb', '--no-bifurcating', action='store_true', default=False, 
+mut_group = parser.add_mutually_exclusive_group()
+
+mut_group.add_argument('-nb', '--no-bifurcating', action='store_true', default=False, 
                     help='do not include bifurcating trees in output')
 
-parser.add_argument('-np', '--no-polytomies', action='store_true', default=False, 
+mut_group.add_argument('-np', '--no-polytomies', action='store_true', default=False, 
                     help='do not include polytomous trees in output')
+
+mut_group.add_argument('--make-bifurcating', action='store_true', default=False, 
+                    help='randomly resolve polytomous nodes with zero-length branches, meaning that all trees will be output and will be bifurcating')
 
 parser.add_argument('--suppress-branchlengths', action='store_true', default=False, 
                     help='strip branchlengths from output trees (default False)')
@@ -45,12 +50,21 @@ options = parser.parse_args()
 #sys.stderr.write('Reading %s ...\n' % options.treefiles)
 
 intrees = dendropy.TreeList()
-for tf in options.treefiles:
-    #try two input formats
+if not options.treefiles:
+    sys.stderr.write('NOTE: reading trees from stdin')
+    trees = sys.stdin.read()
     try:
-        intrees.extend(dendropy.TreeList.get_from_path(tf, "nexus"))
+        intrees.extend(dendropy.TreeList.get_from_string(trees, "nexus"))
     except dendropy.error.DataError:
-        intrees.extend(dendropy.TreeList.get_from_path(tf, "newick"))
+        intrees.extend(dendropy.TreeList.get_from_string(trees, "newick"))
+
+else:
+    for tf in options.treefiles:
+        #try two input formats
+        try:
+            intrees.extend(dendropy.TreeList.get_from_path(tf, "nexus"))
+        except dendropy.error.DataError:
+            intrees.extend(dendropy.TreeList.get_from_path(tf, "newick"))
 
 sys.stderr.write('read %d trees\n' % len(intrees))
 
@@ -64,6 +78,7 @@ log = sys.stderr
 outtrees = dendropy.TreeList()
 ignoredCount = 0
 outgroupIgnoredCount = 0
+madeBifurcating = 0
 for intree in intrees:
     hasPoly = check_for_polytomies(intree)
     if options.no_bifurcating and not hasPoly:
@@ -73,6 +88,9 @@ for intree in intrees:
         ignoredCount += 1
         #log.write('ignoring polytomous tree\n')
     else:
+        if options.make_bifurcating and hasPoly:
+            intree.resolve_polytomies(update_splits=True)
+            madeBifurcating += 1
         to_remove = set()
         #prune taxa first with patterns, THEN look for an outgroup pattern.
         #outgroup pattern could be specified that matches something that has
@@ -117,6 +135,9 @@ if ignoredCount > 0:
     log.write('ignored %d trees\n' % ignoredCount)
 if outgroupIgnoredCount > 0:
     log.write('ignored %d trees because of missing outgroup\n' % outgroupIgnoredCount)
+if madeBifurcating > 0:
+    log.write('%d polytomous trees arbitrarily resolved\n' % madeBifurcating)
+
 if outtrees:
     log.write('writing %d trees\n' % len(outtrees))
     if options.nexus:

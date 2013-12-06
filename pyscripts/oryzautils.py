@@ -135,7 +135,7 @@ def extract_all_information_for_seqs_in_alignments(filenames, returnAs='list'):
                     found = search('.*(LO.*) = (.*)', desc)
                     #pull out tuples for normalized taxon names and longer more informative OGE description strings
                     seqDescs.append((found.group(1).strip(), found.group(2).strip()))
-            except StandardError:
+            except:
                 raise RuntimeError('problem parsing file %s' % filename)
             #make a CoordinateSet structure for this alignment file
             coords = CoordinateSet(oryza.taxon_names)

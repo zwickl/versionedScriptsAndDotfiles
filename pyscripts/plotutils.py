@@ -265,6 +265,9 @@ def simpler_path_to_plot_title_nuc_default_cds(filename, sep='\n'):
     This just simplies the names a bit.  maskedBadAlign.noBrach is just ALMASK
     and other almasks are unknown.  Also, is +GBLOCKS and +ALMASK
 
+    EDIT: changing to +GBMASK, +ALIMASK and +BLSMASK for masking methods
+          changing CDS-P to CDSPROT
+
     ../mafft.cds                            ../mafft.cds.maskedBadAlign             ../mafft.genes                          ../mafft.genes.maskedBadAlign
     ../mafft.cds.allBadAlignAA              ../mafft.cds.maskedBadAlign.noBrach     ../mafft.genes.allBadAlign              ../mafft.genes.maskedBadAlign.noBrach
     ../mafft.cds.gblocks                    ../mafft.cds.maskedBadAlign.onlyAA      ../mafft.genes.gblocks                  ../mafft.genes.maskedBadAlign.onlyAA
@@ -286,41 +289,41 @@ def simpler_path_to_plot_title_nuc_default_cds(filename, sep='\n'):
     plotTitle += sep
 
     if 'cds.allbadalignaa' in filename:
-        plotTitle += 'CDS-P-BADCOLAA '
+        plotTitle += 'CDSPROT-BADCOLAA '
     elif 'cds.allbadalign' in filename:
-        plotTitle += 'CDS-P-BADCOL '
+        plotTitle += 'CDSPROT-BADCOL '
     elif 'cds.gblocks.maskedbadalign' in filename:
-        plotTitle += 'CDS-P+GBLOCKS%s+ALMASK' % sep
+        plotTitle += 'CDSPROT+GBMASK%s+BLSMASK' % sep
     elif 'cds.nuc.maskedbadalign.nobrach' in filename:
-        plotTitle += 'CDS+ALMASK '
+        plotTitle += 'CDS+BLSMASK '
     elif 'cds.maskedbadalign.nobrach' in filename:
-        plotTitle += 'CDS-P+ALMASK '
+        plotTitle += 'CDSPROT+BLSMASK '
     elif 'cds.maskedbadalign ' in filename:
-        plotTitle += 'CDS-P+UNKNOWN '
+        plotTitle += 'CDSPROT+UNKNOWN '
     elif 'cds.gblocks.nuc' in filename:
-        plotTitle += 'CDS+GBLOCKS'
+        plotTitle += 'CDS+GBMASK'
     elif 'cds.nuc.trimal' in filename:
-        plotTitle += 'CDS+TRIMAL'
+        plotTitle += 'CDS+TRIMMASK'
     elif 'cds.nuc.aliscore' in filename:
-        plotTitle += 'CDS+ALISCORE'
+        plotTitle += 'CDS+ALIMASK'
     elif 'cds.gblocks' in filename:
-        plotTitle += 'CDS-P+GBLOCKS'
+        plotTitle += 'CDSPROT+GBMASK'
     elif 'cds.trimal' in filename:
-        plotTitle += 'CDS-P+TRIMAL'
+        plotTitle += 'CDSPROT+TRIMMASK'
     elif 'cds.aliscore' in filename:
-        plotTitle += 'CDS-P+ALISCORE'
+        plotTitle += 'CDSPROT+ALIMASK'
     elif 'cds.nuc' in filename:
         plotTitle += 'CDS'
     elif 'cds' in filename:
-        plotTitle += 'CDS-P'
+        plotTitle += 'CDSPROT'
     elif 'genes.gblocks.maskedbadalign' in filename:
-        plotTitle += 'GENE+GBLOCKS%s+ALMASK' % sep
+        plotTitle += 'GENE+GBMASK%s+BLSMASK' % sep
     elif 'genes.gblocks' in filename:
-        plotTitle += 'GENE+GBLOCKS'
+        plotTitle += 'GENE+GBMASK'
     elif 'genes.trimal' in filename:
-        plotTitle += 'GENE+TRIMAL'
+        plotTitle += 'GENE+TRIMMASK'
     elif 'genes.aliscore' in filename:
-        plotTitle += 'GENE+ALISCORE'
+        plotTitle += 'GENE+ALIMASK'
     elif 'genes.intronsstripped' in filename:
         plotTitle += 'MASKED-INTRON'
     elif 'genes.nofullintrons' in filename:
@@ -330,7 +333,7 @@ def simpler_path_to_plot_title_nuc_default_cds(filename, sep='\n'):
     elif 'genes.allbadalign' in filename:
         plotTitle += 'GENE-BADCOL '
     elif 'genes.maskedbadalign.nobrach' in filename:
-        plotTitle += 'GENE+ALMASK '
+        plotTitle += 'GENE+BLSMASK '
     elif 'genes.maskedbadalign' in filename:
         plotTitle += 'GENE+UNKNOWN '
     elif 'genes.stripns' in filename:
@@ -1185,8 +1188,35 @@ def full_plot_routine(opt, fileData):
         else:
             subplot.set_xticklabels(subplot.get_xticks(), **allKwargDict['xTickLabelKwargs'])
 
-        #this turns out to be the cleanest way of setting the ticklabel kwargs
-        subplot.set_yticklabels(subplot.get_yticks(), **allKwargDict['yTickLabelKwargs'])
+        ##########################################################################################
+        #UPDATE the getting of the tick locs and setting them back as the labels has problems.
+        #If the yrange is being auto determined by the data series and changes, or is the default 
+        #0-1 and then changes to something else the labels will get totally borked.
+
+        if not opt.y_range:
+            sys.exit('Enter an explicit y range for now.  See code')
+
+        #this is all a ridiculous hack.  
+        #turns out that the cleanest way to set the xticklabel kwargs is by calling subplot.get_yticks()
+        #and passing that to subplot.set_yticklabels.  The problem is that what is returned are float numbers
+        #and passing them directly to subplot.set_yticklabels makes the tick labels have a decimal point, even
+        #if they are integers.  So, this checks whether the numbers are actually all ints, and if so ensures that
+        #that are printed as such.
+        def equal_float(a, b):
+            return abs(a-b) <= sys.float_info.epsilon
+
+        ytick_locs = subplot.get_yticks()
+        for num, loc in enumerate(ytick_locs):
+            if not equal_float(loc, float(int(loc))):
+                break
+        else:
+            labels_as_ints = [ str(int(loc)) for loc in ytick_locs ]
+            ytick_locs = labels_as_ints
+
+        subplot.set_yticklabels(ytick_locs, **allKwargDict['yTickLabelKwargs'])
+        #subplot.set_yticklabels(subplot.get_yticks(), **allKwargDict['yTickLabelKwargs'])
+        ###########################################################################################
+
 
         #change tick properties
         if allKwargDict['tickKwargs']:
