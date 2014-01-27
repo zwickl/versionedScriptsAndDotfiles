@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, FileType
 
 def print_usage(errMess):
     if errMess:

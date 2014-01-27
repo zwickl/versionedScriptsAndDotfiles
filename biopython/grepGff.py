@@ -16,23 +16,26 @@ parser = argparse.ArgumentParser(description='extract records from a gff file')
 mutExclGroup = parser.add_mutually_exclusive_group()
 
 #add possible arguments
-parser.add_argument('-v', '--invert-match', dest='invertMatch', action='store_true', default=False,
+parser.add_argument('-v', '--invert-match', action='store_true', default=False,
                     help='invert the sense of the match (default false)')
 
-mutExclGroup.add_argument('-s', '--sort', dest='sortOutput', action='store_true', default=False,
+mutExclGroup.add_argument('-s', '--sort', action='store_true', default=False,
                     help='alphanumerically sort the sequences by name (default false)')
 
-mutExclGroup.add_argument('-sc', '--sort-coord', dest='sortOutputCoord', action='store_true', default=False,
+mutExclGroup.add_argument('-sc', '--sort-coord', action='store_true', default=False,
                     help='sort the sequences by start coordinatre (default false)')
 
-parser.add_argument('-p', '--pickle', dest='usePickle', action='store_true', default=False,
+parser.add_argument('-p', '--pickle', action='store_true', default=False,
                     help='read and write pickled sequence files (<gfffile>.pickle, sometimes faster, default False)')
 
-parser.add_argument('-f', '--patternfile', dest='patternFile', type=str, default=None, 
+parser.add_argument('-f', '--patternfile', type=str, default=None, 
                     help='file from which to read patterns (you must still pass a pattern on the command line, which is ignored)')
 
 parser.add_argument('pattern',
                     help='a quoted regular expression to search sequence names for')
+
+parser.add_argument('--range', nargs=2, type=int, default=[1, -1], metavar=('startbase', 'endbase'),
+                    help='only output annotations entirely within these coordinates, start at 1, last position included, -1 for end')
 
 parser.add_argument('filenames', nargs='*', default=[], 
                     help='a list of filenames to search (none for stdin)')
@@ -42,9 +45,12 @@ options = parser.parse_args()
 
 log = sys.stderr
 
-if options.patternFile:
-    log.write('reading patterns from file %s ...\n' % options.patternFile)
-    seqPatterns = [ line.strip() for line in open(options.patternFile, 'rb') ]
+start_base = options.range[0] - 1
+end_base = options.range[1]
+
+if options.patternfile:
+    log.write('reading patterns from file %s ...\n' % options.patternfile)
+    seqPatterns = [ line.strip() for line in open(options.patternfile, 'rb') ]
     log.write('patterns: %s\n' % str(seqPatterns))
 else:
     seqPatterns = [options.pattern]
@@ -67,7 +73,7 @@ allNewRecs = []
 #for rec in GFF.parse(in_handle, limit_info=limit_info, base_dict=seq_dict):
 #for rec in GFF.parse(in_handle):
 #for rec in GFF.parse(options.filenames[0]):
-if not options.usePickle:
+if not options.pickle:
     gffRecs = GFF.parse(options.filenames[0])
 else:
     gffRecs = read_from_file_or_pickle(options.filenames[0], options.filenames[0] + '.pickle', GFF.parse)
@@ -88,7 +94,7 @@ for rec in gffRecs:
         if string.lower(rec.features[0].type) in [ 'chromosome', 'contig', 'scaffold' ]:
             startFeat = 1
 
-        matchedFeats = set(rec.features[startFeat:]) if options.invertMatch else set()
+        matchedFeats = set(rec.features[startFeat:]) if options.invert_match else set()
         for cpat in compiledPats:
             #loop over features of the rec
             for feat in rec.features[startFeat:]:
@@ -101,20 +107,31 @@ for rec in gffRecs:
                             hit = True
                             break
                     if hit:
-                        if options.invertMatch:
+                        if options.invert_match:
+                            #with invert_match the feat is removed from the set
                             if feat in matchedFeats:
                                 matchedFeats.remove(feat)
                         else:
+                            #otherwise it is added
                             matchedFeats.add(feat)
+                        #either way we can stop looping over patterns
                         break
-        newRec.features.extend(list(matchedFeats))
+        #whatever is in matchedFeats (possibly nothing) can now be added to 
+        #the new rec if it is in the required base range
+        rangeFilteredFeats = set(matchedFeats)
+        for feat in matchedFeats:
+            assert feat.location.start < feat.location.end
+            if feat.location.start.position < start_base or ( feat.location.end.position > end_base and end_base > -1 ):
+                rangeFilteredFeats.remove(feat)
+                log.write('%s matched but not in base range\n' % feat.qualifiers['ID'])
+        newRec.features.extend(list(rangeFilteredFeats))
         sort_feature_list(newRec)
     if newRec.features:
         allNewRecs.append(newRec)
 
-if options.sortOutput:
+if options.sort:
     sort_feature_list(allNewRecs)
-elif options.sortOutputCoord:
+elif options.sort_coord:
     sort_feature_list_by_coordinate(allNewRecs)
 
 #gffOutFilename = re.sub('^.*\/', '', options.gffFilename) + '.extracted'
