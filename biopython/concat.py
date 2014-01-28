@@ -12,26 +12,50 @@ from Bio.Align import MultipleSeqAlignment
 from Bio.Nexus import Nexus
 
 #use argparse module to parse commandline input
-parser = ArgumentParser(description='extract sequences from a fasta file')
+parser = ArgumentParser(description='concatenate a number of alignments, matching up taxon names across them')
 
 #add possible arguments
 #flag
-parser.add_argument('-i', '--interleave', dest='interleave', action='store_true', default=False,
+parser.add_argument('-i', '--interleave', action='store_true', default=False,
                     help='interleave the nexus output matrix')
 
-parser.add_argument('-q', '--quiet', dest='quiet', action='store_true', default=False,
+parser.add_argument('-q', '--quiet', action='store_true', default=False,
                     help='output less crap to stderr')
 
-parser.add_argument('-n', '--num-taxa', dest='numTax', type=int, default=None,
+#parser.add_argument('--no-char-partition', action='store_true', default=False,
+#                    help='don\'t include a sets blocks with a charset for each gene and a charpartition')
+
+parser.add_argument('-n', '--num-taxa', type=int, default=None,
                     help='only consider alignments with the specified number of taxa')
+
+parser.add_argument('--name-pattern', type=str, default='(.*)', 
+                    help='regex to use to pull names to match across alignments from names within alignments. \
+                            Uses capture groups, and if multiple they will be concatenated to make final names')
+
+parser.add_argument('-r', '--taxa-range', nargs=2, default=[1, 9999999999], 
+                    help='only consider alignments with between the specified range of taxa')
 
 #variable number of arguments
 parser.add_argument('filenames', nargs='*', default=[], 
                     help='a list of filenames to search')
 
+#now use the tkinter gui, which may not work, or process the command line
+use_tk_gui = False
+if use_tk_gui:
+    from tkinterutils import *
+    root = Tk()
+    gui = ArgparseGui(root, parser, height=1000, width=1600)
+    
+    root.wait_window(gui.frame)
+    if gui.cancelled:
+        sys.exit('cancelled ...')
+    args = gui.make_commandline_list()
+    print args
 
-#now process the command line
-options = parser.parse_args()
+    options = parser.parse_args(args)
+    print options
+else:
+    options = parser.parse_args()
 
 if not options.filenames:
     raise RuntimeError("Enter alignment filenames to concatenate")
@@ -44,22 +68,27 @@ charsetString = "begin sets;\n"
 charpartString = "charpartition concat = "
 num, startbase, endbase = 1, 1, 1
 
+if options.num_taxa:
+    minTax = maxTax = options.num_taxa
+else:
+    (minTax, maxTax) = options.taxa_range
+
 for filename in options.filenames:
     with open(filename, "rb") as afile:
         thisAlign = AlignIO.read(afile, "nexus", alphabet=IUPAC.ambiguous_dna)
     
-    if not options.numTax or len(thisAlign) == options.numTax:
+    if minTax <= len(thisAlign) <= maxTax:
         endbase = startbase + thisAlign.get_alignment_length() - 1
         #charsetString += "charset %s.%d = %d - %d;\n" % (re.sub('.*/', '', files[num-1]), num, startbase, endbase)
-        charsetString += "charset c%d = %d - %d; [%s]\n" % (num, startbase, endbase, re.sub('.*/', '', options.filenames[num-1]))
-        charpartString += "%d:c%d, " % (num, num)
+        thisCharsetString = "charset c%d = %d - %d; [%s]\n" % (num, startbase, endbase, re.sub('.*/', '', options.filenames[num-1]))
+        thisCharpartString = "%d:c%d, " % (num, num)
         startbase = endbase + 1
         num = num + 1
         
-        allAlignments.append(thisAlign)
+        allAlignments.append((filename, thisAlign, thisCharsetString, thisCharpartString))
 
-charsetString += charpartString 
-charsetString += ";\nend;\n"
+#charsetString += charpartString 
+#charsetString += ";\nend;\n"
 
 #the very simply old way, assuming equal # identically named seqs in all alignments
 if oldConcat:
@@ -72,23 +101,34 @@ if oldConcat:
 else:
     #actually, this is a list of (name:seq dict, alignment) tuples
     alignDicts = []
-    for align in allAlignments:
+    charpartString = ''
+    for filename, align, charset, charpart in allAlignments:
         thisDict = {}
         for seq in align:
-            name = seq.name
+            match = re.search(options.name_pattern, seq.name)
+            if not match:
+                sys.exit('pattern doesn\'t match name %s' % seq.name)
+            #multiple groups can be specified in the pattern, and if some don't match they will be None
+            name = ''.join([g for g in match.groups() if g])
+            #print seq.name, match.groups(), name
             if name in thisDict:
                 sys.stderr.write("sequence name %s already found in alignment:\n" % name)
-                sys.stderr.write(align)
+                sys.stderr.write("filename %s\n" % filename)
+                thisDict = {}
+                break
                 exit(1)
             try:
                 thisDict[name] = seq
             except KeyError:
                 sys.stderr.write("problem adding sequence %s to alignment dictionary\n" % name)
-                sys.stderr.write(align)
+                sys.stderr.write("filename %s\n" % filename)
                 exit(1)
-        if not options.quiet:
-            sys.stderr.write("%d sequences in alignment\n" % len(thisDict))
-        alignDicts.append((thisDict, align))
+        if thisDict:
+            if not options.quiet:
+                sys.stderr.write("%d sequences in alignment\n" % len(thisDict))
+            alignDicts.append((thisDict, align))
+            charsetString += charset
+            charpartString += charpart
     sys.stderr.write("%d alignments read\n" % len(alignDicts))
 
     #figure out all necessary taxa in the final alignment
@@ -144,5 +184,7 @@ else:
     else:
         AlignIO.write(finalAlign, sys.stdout, "nexus")
 
+charsetString += charpartString 
+charsetString += ";\nend;\n"
 sys.stdout.write("%s\n" % charsetString)
 
