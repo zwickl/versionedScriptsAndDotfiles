@@ -11,6 +11,14 @@ from Bio.Alphabet import IUPAC
 from Bio.Align import MultipleSeqAlignment
 from Bio.Nexus import Nexus
 
+def extract_name_with_regex(pattern, name):
+    match = re.search(pattern, name)
+    if not match:
+        sys.exit('pattern doesn\'t match name %s' % name)
+    #multiple groups can be specified in the pattern, and if some don't match they will be None
+    return ''.join([g for g in match.groups() if g])
+
+
 #use argparse module to parse commandline input
 parser = ArgumentParser(description='concatenate a number of alignments, matching up taxon names across them')
 
@@ -22,8 +30,11 @@ parser.add_argument('-i', '--interleave', action='store_true', default=False,
 parser.add_argument('-q', '--quiet', action='store_true', default=False,
                     help='output less crap to stderr')
 
-#parser.add_argument('--no-char-partition', action='store_true', default=False,
-#                    help='don\'t include a sets blocks with a charset for each gene and a charpartition')
+parser.add_argument('--no-char-partition', action='store_true', default=False,
+                    help='don\'t include a sets blocks with a charset for each gene and a charpartition')
+
+parser.add_argument('--ignore-multiple-copy', action='store_true', default=False,
+                    help='just skip over an alignment if multiple names map to the same matchable name (default is to error out)')
 
 parser.add_argument('-n', '--num-taxa', type=int, default=None,
                     help='only consider alignments with the specified number of taxa')
@@ -60,129 +71,100 @@ else:
 if not options.filenames:
     raise RuntimeError("Enter alignment filenames to concatenate")
 
-oldConcat = False
-
-allAlignments = []
-
-charsetString = "begin sets;\n"
-charpartString = "charpartition concat = "
-num, startbase, endbase = 1, 1, 1
-
 if options.num_taxa:
     minTax = maxTax = options.num_taxa
 else:
     (minTax, maxTax) = options.taxa_range
 
+alignDicts = []
+
+charsetString = "begin sets;\n"
+charpartString = "charpartition concat = "
+num, startbase, endbase = 1, 1, 1
+
 for filename in options.filenames:
     with open(filename, "rb") as afile:
-        thisAlign = AlignIO.read(afile, "nexus", alphabet=IUPAC.ambiguous_dna)
+        try:
+            thisAlign = AlignIO.read(afile, "nexus", alphabet=IUPAC.ambiguous_dna)
+        except ValueError:
+            sys.stderr.write('problem reading alignment %s' % filename)
+            raise
     
+    thisDict = {}
     if minTax <= len(thisAlign) <= maxTax:
-        endbase = startbase + thisAlign.get_alignment_length() - 1
-        #charsetString += "charset %s.%d = %d - %d;\n" % (re.sub('.*/', '', files[num-1]), num, startbase, endbase)
-        thisCharsetString = "charset c%d = %d - %d; [%s]\n" % (num, startbase, endbase, re.sub('.*/', '', options.filenames[num-1]))
-        thisCharpartString = "%d:c%d, " % (num, num)
-        startbase = endbase + 1
-        num = num + 1
-        
-        allAlignments.append((filename, thisAlign, thisCharsetString, thisCharpartString))
-
-#charsetString += charpartString 
-#charsetString += ";\nend;\n"
-
-#the very simply old way, assuming equal # identically named seqs in all alignments
-if oldConcat:
-    concat = allAlignments[0]
-    for align in allAlignments[1:]:
-        concat += align
-
-    AlignIO.write(concat, sys.stdout, "nexus")
-
-else:
-    #actually, this is a list of (name:seq dict, alignment) tuples
-    alignDicts = []
-    charpartString = ''
-    for filename, align, charset, charpart in allAlignments:
-        thisDict = {}
-        for seq in align:
-            match = re.search(options.name_pattern, seq.name)
-            if not match:
-                sys.exit('pattern doesn\'t match name %s' % seq.name)
-            #multiple groups can be specified in the pattern, and if some don't match they will be None
-            name = ''.join([g for g in match.groups() if g])
-            #print seq.name, match.groups(), name
+        for seq in thisAlign:
+            name =  extract_name_with_regex(options.name_pattern, seq.name)
             if name in thisDict:
                 sys.stderr.write("sequence name %s already found in alignment:\n" % name)
                 sys.stderr.write("filename %s\n" % filename)
-                thisDict = {}
-                break
-                exit(1)
+                if options.ignore_multiple_copy:
+                    thisDict = {}
+                    break
+                else:
+                    sys.exit(1)
             try:
                 thisDict[name] = seq
             except KeyError:
                 sys.stderr.write("problem adding sequence %s to alignment dictionary\n" % name)
                 sys.stderr.write("filename %s\n" % filename)
-                exit(1)
+                sys.exit(1)
         if thisDict:
             if not options.quiet:
                 sys.stderr.write("%d sequences in alignment\n" % len(thisDict))
-            alignDicts.append((thisDict, align))
-            charsetString += charset
-            charpartString += charpart
-    sys.stderr.write("%d alignments read\n" % len(alignDicts))
+            alignDicts.append((thisDict, thisAlign))
+            
+            endbase = startbase + thisAlign.get_alignment_length() - 1
+            thisCharsetString = "charset c%d = %d - %d; [%s]\n" % (num, startbase, endbase, re.sub('.*/', '', options.filenames[num-1]))
+            thisCharpartString = "%d:c%d, " % (num, num)
+            charsetString += thisCharsetString
+            charpartString += thisCharpartString
+            startbase = endbase + 1
+            num += 1
 
-    #figure out all necessary taxa in the final alignment
-    allNames = set()
+sys.stderr.write("%d alignments read\n" % len(alignDicts))
+
+#figure out all necessary taxa in the final alignment
+allNames = set()
+for mydict, alignment in alignDicts:
+    allNames |= set(mydict.iterkeys())
+
+sys.stderr.write("%d names across all alignments\n" % len(allNames))
+
+#collect the sequences for each taxon for each alignment, or a dummy string of N's if they are missing from an alignment
+rawStrings = {}
+
+#loop over alignments
+for mydict, alignment in alignDicts:
+    dummy = 'N' * alignment.get_alignment_length()
+    #loop over the list of sequences that we're collecting
+    for name in allNames:
+        if name in mydict:
+            rawStrings.setdefault(name, []).append(str(mydict[name].seq))
+        else:
+            rawStrings.setdefault(name, []).append(dummy)
+
+#this is a little cheesy, but find the first alignment that contains each taxon and use the 
+#corresponding SeqRecord as a template to paste the new full alignments into
+finalAlignSeqs = []
+for name in sorted(allNames):
     for mydict, alignment in alignDicts:
-        allNames |= set(mydict.iterkeys())
+        if name in mydict:
+            finalSeq = copy.deepcopy(mydict[name])
+            finalSeq._set_seq(Seq.Seq(''.join(rawStrings[name]), finalSeq.seq.alphabet))
+            finalSeq.id = extract_name_with_regex(options.name_pattern, finalSeq.id)
+            finalAlignSeqs.append(finalSeq)
+            break
 
-    '''
-    finalAlignSeqs = []
-    for mydict, alignment in alignDicts:
-        for name, seq in mydict.items():
-            if name not in allNames:
-                allNames.add(name)
-                finalAlignSeqs.append(copy.deepcopy(seq))
-                finalAlignSeqs[-1]._set_seq('')
-    '''
+finalAlign = MultipleSeqAlignment(finalAlignSeqs)
 
-    sys.stderr.write("%d names across all alignments\n" % len(allNames))
-
-    #collect the sequences for each taxa for each alignment, or a dummy string of N's if they are missing from an alignment
-    #rawStrings = dict.fromkeys(allNames)
-    rawStrings = {}
-    
-    #loop over alignments
-    for mydict, alignment in alignDicts:
-        dummy = 'N' * alignment.get_alignment_length()
-        #loop over the list of sequences that we're collecting
-        for name in allNames:
-            if name in mydict:
-                rawStrings.setdefault(name, []).append(str(mydict[name].seq))
-            else:
-                rawStrings.setdefault(name, []).append(dummy)
-
-    #this is a little cheesy, but find the first alignment that contains each taxon and use the 
-    #corresponding SeqRecord as a template to paste the new full alignments into
-    finalAlignSeqs = []
-    for name in sorted(allNames):
-        for mydict, alignment in alignDicts:
-            if name in mydict:
-                finalSeq = copy.deepcopy(mydict[name])
-                finalSeq._set_seq(Seq.Seq(''.join(rawStrings[name]), finalSeq.seq.alphabet))
-                finalAlignSeqs.append(finalSeq)
-                break
-
-    finalAlign = MultipleSeqAlignment(finalAlignSeqs)
-
-    if options.interleave:
-        temp = '.temp.nex'
-        AlignIO.write(finalAlign, temp, "nexus")
-        backIn = Nexus.Nexus(temp)
-        backIn.write_nexus_data(filename=sys.stdout, interleave=True)
-        os.remove(temp)
-    else:
-        AlignIO.write(finalAlign, sys.stdout, "nexus")
+if options.interleave:
+    temp = '.temp.nex'
+    AlignIO.write(finalAlign, temp, "nexus")
+    backIn = Nexus.Nexus(temp)
+    backIn.write_nexus_data(filename=sys.stdout, interleave=True)
+    os.remove(temp)
+else:
+    AlignIO.write(finalAlign, sys.stdout, "nexus")
 
 charsetString += charpartString 
 charsetString += ";\nend;\n"
