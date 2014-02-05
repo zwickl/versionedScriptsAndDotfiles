@@ -30,7 +30,7 @@ else
 fi
 
 #sytem variables
-export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin
+export PATH=$HOME/bin:/usr/local/bin:$PATH:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin:$HOME/code/MUMmer3.23/
 export MANPATH=`manpath`:/home/zwickl/my_usr/share/man/
 export PS1="\w/ $ "
 
@@ -123,8 +123,9 @@ elif [ $OS = "cygwin" ];then
 	alias syncWorkDeskDown='rsync -avz --exclude-from=/home/zwickl/.syncExclude $MONTY:WIN_SYNC/Desk/ /cygdrive/f/Desk/'
     alias ls='ls --color=auto'
 elif [ $OS = "linux" ];then
-	PATH=/home/zwickl/my_usr/local/bin/:/home/zwickl/my_usr/bin/:$PATH:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
+	PATH=/home/zwickl/my_usr/local/bin/:/home/zwickl/my_usr/bin/:$PATH:/home/zwickl/bin/:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
     PATH=$PATH:$HOME/libbuilds/lagan20/
+    PATH=/share/apps/subversion/bin/:$PATH
 	export PYTHONPATH=/home/zwickl/my_usr/lib/python2.7/:/home/zwickl/my_usr/lib/python/:/share/apps/Python-2.6.4/lib/python2.6/
 	export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
 	export DEV=$HOME
@@ -145,6 +146,8 @@ elif [ $OS = "linux" ];then
 	alias c0='ssh compute-0-0'
 	alias backupToPhylo='rsync --progress -avz --exclude-from=$HOME/.rsync_exclude $HOME/ $PHYLO:fromKwy/'
     alias emergencyShutdownHal='sudo rocks run host command=shutdown'
+    #alias svn='env LD_LIBRARY_PATH=/share/apps/serf/lib/ /share/apps/subversion/bin/svn'
+    alias svn='export LD_LIBRARY_PATH=/share/apps/serf/lib/; /share/apps/subversion/bin/svn'
 fi
 
 #temporary exports
@@ -170,6 +173,7 @@ export PART_EXEC=$PART/builds/gccAss/installed/bin/Garli
 export PART_EXEC_MPI=$PART/builds/gccAss.MPI/installed/bin/Garli
 export PART_EXEC_DEB=$PART/builds/gccAss.DEB/installed/bin/Garli
 export TRUNK_EXEC=$TRUNK/builds/gccAss/installed/bin/Garli
+export TRUNK_EXEC_DEB=$TRUNK/builds/gccAss.DEB/installed/bin/Garli
 export TRUNK_EXEC_MPI=$TRUNK/builds/gccAss.MPI/installed/bin/Garli
 export TESTING_EXEC=$PART_EXEC
 export TESTING_EXEC_MPI=$PART_EXEC_MPI
@@ -455,7 +459,7 @@ function myqrsh(){
     else
         MEM=$@
     fi
-    echo qrsh -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
+    echo qrsh -wd $PWD -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
     qrsh -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
 }
 
@@ -471,7 +475,7 @@ function killAndResubmitJob(){
 }
 
 function killAllSGE(){
-    for JOB in `qstat | awk '{print $1}' | grep '^[0-9]'`
+    for JOB in `qstat | awk '{print $1}' | grep '^[0-9]' | uniq`
     do
         qdel $JOB
     done
@@ -494,6 +498,15 @@ function listJobDirsSGE(){
 
 function cnt(){
     ls $@ | wc -l
+}
+
+function padToTwoDigits(){
+   if [ $1 -lt 10 ];then
+       NUM=0$1
+   else
+       NUM=$1
+   fi
+   echo $NUM
 }
 
 #mac specific
