@@ -30,7 +30,7 @@ else
 fi
 
 #sytem variables
-export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin
+export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin:$HOME/Desktop/code/MUMmer3.23/
 export MANPATH=`manpath`:/home/zwickl/my_usr/share/man/
 export PS1="\w/ $ "
 
@@ -186,10 +186,12 @@ export PYTHONPATH=$HOME/bin/pyscripts/:$HOME/bin/biopython/:$PYTHONPATH
 
 if [ $OS = "linux" ];then
     #export ORYZA_ROOT=$DEV/oryza/
+    export ORYZA_SCRIPTS=$DEV/oryza_scripts/
     export PORYZA_ROOT=$DEV/productionOryza/
     export ORYZA_ROOT=$PORYZA_ROOT
     export FULLORYZA_ROOT=$DEV/fullGenomeOryza/
 else
+    export ORYZA_SCRIPTS=$DEV/experiments/oryza_scripts/
     export OLD_ORYZA_ROOT=$DEV/experiments/oryza/
     export PORYZA_ROOT=$DEV/experiments/productionOryza/
     export ORYZA_ROOT=$PORYZA_ROOT
@@ -209,6 +211,8 @@ if [ ! -d "$ORYZA_ROOT" ];then
     export ORYZA_ROOT=/share/work1/zwickl/experiments/oryza/
     #ls $ORYZA_ROOT &> /dev/null
 fi
+
+<<DEP
 export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/analysisScripts/
 export ANALYSIS_SCRIPTS_FULLORYZA=$FULLORYZA_ROOT/scripts/analysisScripts/
 export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/alignmentScripts/
@@ -216,7 +220,16 @@ export GENERAL_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/generalScripts/
 export ANNOTATION_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/annotationSplittingScripts/
 export PLOT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/plottingScripts/
 export POST_PROCESS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/postProcessScripts/
-export NUMORYZA=11
+DEP
+
+export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/analysisScripts/
+export ANALYSIS_SCRIPTS_FULLORYZA=$FULLORYZA_SCRIPTS/analysisScripts/
+export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/alignmentScripts/
+export GENERAL_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/generalScripts/
+export ANNOTATION_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/annotationSplittingScripts/
+export PLOT_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/plottingScripts/
+export POST_PROCESS_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/postProcessScripts/
+#export NUMORYZA=11
 export NUMFULLORYZA=9
 
 
@@ -232,7 +245,7 @@ alias gp='gnuplot'
 #alias synHome='synergyc  -f --name newlap 192.168.1.64'
 alias synHome='synergyc  -f --name newlap 192.168.1.120'
 alias lsl='ls -ltrh'
-alias hist='history | grep'
+alias hist='shist | grep'
 alias mi='nice make -j 2 && nice make install && pwd > $HOME/.lastMake'
 alias mc='nice make -j 2 && nice make install && nice make check && pwd > $HOME/.lastMake'
 alias dev='cd $DEV'
@@ -286,7 +299,16 @@ alias debLast='gdb `cat $HOME/.lastMake`/installed/bin/Garli'
 #functions
 
 function gits(){
+    #this won't show untracked files, and is much faster
+    git status -uno $@ | less
+}
+
+function gitsu(){
     git status $@ | less
+}
+
+function gitls(){
+    git ls-files $@ | less
 }
 
 function inEachDir(){
@@ -494,6 +516,30 @@ function listJobDirsSGE(){
 
 function cnt(){
     ls $@ | wc -l
+}
+
+function zeroPadNumber(){
+    if [ $# -gt "1" ];then
+        DIGITS=$2
+    else
+        DIGITS=2
+    fi
+
+    RESULT=$1
+    while [ ${#RESULT} -lt "$DIGITS" ]
+    do
+        RESULT=0$RESULT
+    done
+    echo $RESULT
+}
+
+function zeroPaddedNumberGenerator(){
+    SERIES=`for ((VAL=$1;VAL<=$2;VAL++))
+    do
+        zeroPadNumber $VAL $3
+    done
+    `
+    echo $SERIES
 }
 
 #mac specific
