@@ -7,75 +7,89 @@ from itertools import izip_longest
 import dendropy
 
 def check_for_polytomies(tree):
+    '''Check for polytomies by looking for nodes with > 3 neighbors.'''
     for node in tree.postorder_node_iter():
-        #sys.stderr.write("%s\n" % len(node.adjacent_nodes()))
         if len(node.adjacent_nodes()) > 3:
             return True
         elif len(node.adjacent_nodes()) == 2:
             sys.stderr.write('Warning: tree appears to be rooted\n')
     return False
 
-#use argparse module to parse commandline input
-parser = argparse.ArgumentParser()
 
-mut_group1 = parser.add_mutually_exclusive_group()
+parser = argparse.ArgumentParser(description='Read trees from one or many treefiles in nexus or newick format, manipulate or filter, and write to a new treefile')
 
-mut_group1.add_argument('-op', '--outgroup-pattern', default=None,
-                    help='regex pattern matching taxon label to use as outgroup (single taxon outgroup)')
-
-mut_group1.add_argument('-m', '--midpoint-root', action='store_true', default=False,
-                    help='midpoint root the output trees')
-
-parser.add_argument('treefiles', nargs='*', default=[], help='nexus treefile to convert')
+parser.add_argument('treefiles', nargs='*', default=[], help='nexus treefile(s) to convert (omit for stdin)')
 
 parser.add_argument('-o', '--outfile', default=None, 
                     help='file to write output to (default is stdout)')
 
-parser.add_argument('-n', '--nexus', action='store_true', default=False, 
-                    help='output treefile in nexus rather than newick format')
 
-parser.add_argument('--suppress-branchlengths', action='store_true', default=False, 
+rootingArgs = parser.add_argument_group('ARGUMENTS FOR REORIENTING TREES')
+
+mut_group1 = rootingArgs.add_mutually_exclusive_group()
+
+mut_group1.add_argument('-op', '--outgroup-pattern', default=None,
+                    help='regex pattern matching taxon label to use as outgroup (single taxon outgroup) NOTE: trees without a matching outgroup are not rerooted')
+
+mut_group1.add_argument('-m', '--midpoint-root', action='store_true', default=False,
+                    help='midpoint root the output trees')
+
+
+formatArgs = parser.add_argument_group('ARGUMENTS FOR OUTPUT FORMAT')
+
+formatArgs.add_argument('-n', '--nexus', action='store_true', default=False, 
+                    help='output treefile in nexus rather than newick format (default False)')
+
+formatArgs.add_argument('--suppress-branchlengths', action='store_true', default=False, 
                     help='strip branchlengths from output trees (default False)')
 
+formatArgs.add_argument('--rooting-comment', action='store_true', default=None, 
+                    help='include [&U] or [&R] to indicate rooting status before trees in newick or nexus format (default False in newick, True in nexus)')
 
-mut_group = parser.add_mutually_exclusive_group()
+formatArgs.add_argument('--retain-comments', action='store_true', default=False, 
+                    help='output any comments (besides rooting) that might have appeared with a tree (default False)')
 
-mut_group.add_argument('-nb', '--no-bifurcating', action='store_true', default=False, 
-                    help='do not include bifurcating trees in output')
+filterArgs = parser.add_argument_group('ARGUMENTS FOR TREE FILTERING/MANIPULATION')
 
-mut_group.add_argument('-np', '--no-polytomies', action='store_true', default=False, 
-                    help='do not include polytomous trees in output')
+mut_group2 = filterArgs.add_mutually_exclusive_group()
 
-mut_group.add_argument('--make-bifurcating', action='store_true', default=False, 
-                    help='randomly resolve polytomous nodes with zero-length branches, meaning that all trees will be output and will be bifurcating')
+mut_group2.add_argument('-nb', '--no-bifurcating', action='store_true', default=False, 
+                    help='omit bifurcating trees from output (default False)')
 
+mut_group2.add_argument('-np', '--no-polytomies', action='store_true', default=False, 
+                    help='omit polytomous trees from output (default False)')
 
-mut_group2 = parser.add_mutually_exclusive_group()
+mut_group2.add_argument('--make-bifurcating', action='store_true', default=False, 
+                    help='randomly resolve polytomous nodes with zero-length branches, meaning that all trees will be output and will be bifurcating (default False)')
 
-mut_group2.add_argument('--prune-to-common-taxa', action='store_true', default=False, 
+mut_group3 = filterArgs.add_mutually_exclusive_group()
+
+mut_group3.add_argument('--prune-to-common-taxa', action='store_true', default=False, 
                     help='prune all trees down to those taxa present in all of them (default False)')
 
-mut_group2.add_argument('--only-all-taxa', action='store_true', default=False, 
-                    help='only include those trees that contain the maximum taxon set')
+mut_group3.add_argument('--only-all-taxa', action='store_true', default=False, 
+                    help='only include those trees that contain the union of all taxa in any tree (default False)')
 
+filterArgs.add_argument('-p', '--prune-patterns', action='append', default=None, 
+                    help='regex patterns for taxon names to strip from trees before output.  Single pattern per flag, but can appear multiple times')
 
-parser.add_argument('-p', '--prune-patterns', action='append', default=None, 
-                    help='patterns for taxon names to strip from trees before output.  Single pattern per flag, but can appear multiple times')
+filterArgs.add_argument('--max-trees', type=int, default=None,
+                    help='only output the first --max-trees trees that match other filtering criteria')
 
-parser.add_argument('--output-seq-lengths', action='store_true', default=False, 
-                    help='very specialized function to extract and output sequence lengths from tree filenames. Assumes only one tree per file!')
+privateArgs = parser.add_argument_group('PRIVATE FUNCTIONS (END USERS HAVE NO REASON TO USE THESE)')
 
+privateArgs.add_argument('--output-seq-lengths', action='store_true', default=False, 
+                    help='(private) very specialized function to extract and output sequence lengths from tree filenames. Assumes only one tree per file!')
 
 options = parser.parse_args()
 
-#sys.stderr.write('Reading %s ...\n' % options.treefiles)
-
 intrees = dendropy.TreeList()
 if not options.treefiles:
-    sys.stderr.write('NOTE: reading trees from stdin')
+    sys.stderr.write('NOTE: reading trees from stdin\n')
     if options.output_seq_lengths:
-        sys.exit('must pass filenames to output sequence lengths')
+        sys.exit('ERROR: must pass filenames to output sequence lengths\n')
     trees = sys.stdin.read()
+    #try two input formats
     try:
         intrees.extend(dendropy.TreeList.get_from_string(trees, "nexus"))
     except dendropy.error.DataError:
@@ -93,9 +107,8 @@ sys.stderr.write('read %d trees\n' % len(intrees))
 
 if options.output_seq_lengths:
     if len(intrees) != len(options.treefiles):
-        sys.exit('can only have one tree per file to output sequence lengths')
+        sys.exit('ERROR: can only have one tree per file to output sequence lengths\n')
     treefiles = []
-    
 
 #treestr = '(O._barthii_AA:0.00157155,(((O._brachyantha_FF:0.10458481,(O._punctata_BB:0.00266559,O._minuta_BB:0.01210456):0.01556435):0.00268608,(O._officinalis_CC:0.10078888,O._minuta_CC:0.02347313):0.01668656):0.03394209,((O._sativaj_AA:0.01511099,O._rufipogon_AA:0.00251092):0.00401496,O._nivara_AA:0.002933):0.00296048):0.00068407,O._glaberrima_AA:1e-08);'
 #intree = dendropy.Tree()
@@ -112,10 +125,8 @@ for intree, treefile in izip_longest(intrees, options.treefiles):
     hasPoly = check_for_polytomies(intree)
     if options.no_bifurcating and not hasPoly:
         ignoredCount += 1
-        #log.write('ignoring bifurcating tree\n')
     elif options.no_polytomies and hasPoly:
         ignoredCount += 1
-        #log.write('ignoring polytomous tree\n')
     else:
         if options.make_bifurcating and hasPoly:
             intree.resolve_polytomies(update_splits=True)
@@ -142,20 +153,18 @@ for intree, treefile in izip_longest(intrees, options.treefiles):
             outgroup = None
             leaves = intree.leaf_nodes()
             for l in leaves:
-                if re.search(options.outgroup_pattern, l.taxon.label) is not None:
+                #try replacing spaces with _ too
+                if re.search(options.outgroup_pattern, l.taxon.label) is not None or re.search(options.outgroup_pattern, re.sub(' ', '_', l.taxon.label)) is not None:
+                    if outgroup:
+                        sys.exit('ERROR: outgroup pattern matched multiple times\n')
                     outgroup = l
-                    break
-                elif re.search(options.outgroup_pattern, re.sub(' ', '_', l.taxon.label)) is not None:
-                    outgroup = l
-                    break
 
             if outgroup is None:
-                #log.write('ignoring tree without specified outgroup\n')
                 outgroupIgnoredCount += 1
                 continue
             else:
                 #if the tree was already rooted, this will remove that root node
-                #rooting halves the branchlength of the chosen branch
+                #outgroup rooting halves the branchlength of the chosen branch
                 if outgroup.edge_length:
                     intree.reroot_at_edge(outgroup.edge, length1=outgroup.edge_length / 2.0, length2=outgroup.edge_length / 2.0, update_splits=False, delete_outdegree_one=True) 
                 else:
@@ -163,7 +172,6 @@ for intree, treefile in izip_longest(intrees, options.treefiles):
         
         elif options.midpoint_root:
             intree.reroot_at_midpoint(update_splits=False, delete_outdegree_one=True) 
-
         
         outtrees.append(intree)
         if options.output_seq_lengths:
@@ -177,6 +185,9 @@ if options.prune_to_common_taxa:
     for tree in outtrees:
         tree.retain_taxa_with_labels(common_taxon_labels)
         tree.taxon_set = tree.infer_taxa()
+
+    if not common_taxon_labels:
+        sys.exit('ERROR: no taxa found in all trees')
 
     log.write('pruning all trees to set of %d common taxa\n' % len(common_taxon_labels))
 
@@ -204,11 +215,25 @@ if madeBifurcating > 0:
     log.write('%d polytomous trees arbitrarily resolved\n' % madeBifurcating)
 
 if outtrees:
+    if options.max_trees:
+        outtrees[options.max_trees:] = []
     log.write('writing %d trees\n' % len(outtrees))
-    if options.nexus:
-        outtrees.write(out, "nexus", suppress_edge_lengths=options.suppress_branchlengths)
+    
+    if options.rooting_comment is None:
+        if options.nexus:
+            supress_root_comment = False
+        else:
+            supress_root_comment = True
     else:
-        outtrees.write(out, "newick", suppress_edge_lengths=options.suppress_branchlengths)
+        supress_root_comment = not options.rooting_comment
+
+    if options.nexus:
+        if not options.retain_comments:
+            for tree in outtrees:
+                tree.comments = []
+        outtrees.write(out, "nexus", suppress_edge_lengths=options.suppress_branchlengths, suppress_rooting=supress_root_comment)
+    else:
+        outtrees.write(out, "newick", suppress_edge_lengths=options.suppress_branchlengths, suppress_rooting=supress_root_comment)
 
     if options.output_seq_lengths:
         length_filename = 'seqlens.' + options.outfile if options.outfile else 'seqlens'
