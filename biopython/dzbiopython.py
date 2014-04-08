@@ -4,14 +4,12 @@ import re
 from os.path import expandvars
 import copy
 import itertools
+
+import Bio
 from Bio.SeqFeature import FeatureLocation
 from Bio.SeqRecord import SeqRecord
-from Bio import SeqIO
-import Bio
 import BCBio
-from BCBio import GFF
-from dzutils import read_from_file_or_pickle
-#import pp
+from pygot.utils import read_from_file_or_pickle
 
 #my extensions and functions for working with biopython objects
 
@@ -56,7 +54,7 @@ class TaxonGenomicInformation:
             toplevel_filename = expandvars(toplevel_filename)
             if not usePickle:
                 #it can be handy to have a dict of the toplevel seq(s) recs which may just be a single chrom
-                self.toplevel_record_dict = Bio.SeqIO.to_dict(SeqIO.parse(open(toplevel_filename), "fasta"))
+                self.toplevel_record_dict = Bio.SeqIO.to_dict(Bio.SeqIO.parse(open(toplevel_filename), "fasta"))
                 #pull the toplevel reqs back out as a list of seq recs
                 self.toplevel_record_list = [it[1] for it in self.toplevel_record_dict.iteritems()]
             else:
@@ -89,10 +87,10 @@ class TaxonGenomicInformation:
         if seq_filename is not None:
             seq_filename = expandvars(seq_filename)
             if not usePickle:
-                self.seq_dict = Bio.SeqIO.to_dict(SeqIO.parse(open(seq_filename), "fasta"))
+                self.seq_dict = Bio.SeqIO.to_dict(Bio.SeqIO.parse(open(seq_filename), "fasta"))
             else:
                 #haven't actually tested pickle here
-                self.seq_dict = Bio.SeqIO.to_dict(read_from_file_or_pickle(seq_filename, SeqIO.parse, "fasta"))
+                self.seq_dict = Bio.SeqIO.to_dict(read_from_file_or_pickle(seq_filename, Bio.SeqIO.parse, "fasta"))
         else:
             self.seq_dict = dict()
         self.seq_dict.update(seq_dict)
@@ -104,7 +102,7 @@ class TaxonGenomicInformation:
             #print len(self.toplevel_record_dict.items())
             #I think that we can avoid reading this if we don't have toplevels, but it might bork some script
             if self.toplevel_record_dict:
-                self.toplevel_record_list = [feat for feat in GFF.parse(gff_filename, base_dict=self.toplevel_record_dict)]
+                self.toplevel_record_list = [feat for feat in BCBio.GFF.parse(gff_filename, base_dict=self.toplevel_record_dict)]
                 #now assign back to the dict
                 self.toplevel_record_dict = dict([ (top.id, top) for top in self.toplevel_record_list ])
             '''
@@ -124,7 +122,7 @@ class TaxonGenomicInformation:
             #print "SELF.TOPLEVEL"
             #print self.toplevel[0]
             #print "/SELF.TOPLEVEL"
-            self.gff_seqrecord_list = [rec for rec in GFF.parse(gff_filename)]
+            self.gff_seqrecord_list = [rec for rec in BCBio.GFF.parse(gff_filename)]
             '''
             print '3#####################'
             print len(self.gff_seqrecord_list)
@@ -138,7 +136,7 @@ class TaxonGenomicInformation:
                 print self.gff_seqrecord_list[1]
             print '/3#####################'
             '''
-            self.seq_dict = Bio.SeqIO.to_dict([feat for feat in GFF.parse(gff_filename, base_dict=self.seq_dict)])
+            self.seq_dict = Bio.SeqIO.to_dict([feat for feat in BCBio.GFF.parse(gff_filename, base_dict=self.seq_dict)])
 
         else:
             self.gff_seqrecord_list = []
@@ -203,6 +201,7 @@ def get_taxon_genomic_information_dict(source, report=True, readToplevels=True, 
 
     allTaxonInfo = {}
     if useSMP:
+        import pp
         job_server = pp.Server(2)
         sys.stderr.write("Starting parallel python with %d workers\n" % job_server.get_ncpus())
         if not readToplevels:
@@ -516,7 +515,7 @@ def sort_feature_list_by_coordinate(recList):
                 sys.stderr.write('feature:\n%s' % feat)
             exit(1)
     #reclist is a feature, want to sort it's subfeatures
-    elif isinstance(recList, SeqFeature):
+    elif isinstance(recList, Bio.SeqFeature):
         try:
             print recList
             exit()
@@ -530,7 +529,7 @@ def sort_feature_list_by_coordinate(recList):
         exit("what is recList?")
 
 
-def MakeGeneOrderMap(geneOrderFilename):
+def make_gene_order_map(geneOrderFilename):
     '''read the indicated file, which should be a simple file with columns indicating gene number and gene name'''
     mapFile = open(geneOrderFilename, 'rb')
     splitMap = [ line.strip().split() for line in mapFile ]
