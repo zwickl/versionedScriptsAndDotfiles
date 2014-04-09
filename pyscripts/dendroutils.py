@@ -222,6 +222,105 @@ class MyTreeList(TreeList):
                 self.append(tr)
                 #print tr.as_newick_string()
 
+    def as_python_source(self, tree_list_name=None, tree_list_args=None, oids=False):
+        """
+        DJZ - this is an exact copy of the base dendropy TreeList.as_python_source, 
+            but changes one line to instantiate the result as a MyTreeList instead
+        Returns string that will rebuild this tree list in Python.
+        """
+        p = []
+
+        if tree_list_name is None:
+            tree_list_name = "tree_list_%s" % id(self)
+
+
+        if self.label is not None:
+            label = "'" + self.label + "'"
+        else:
+            label = "None"
+        if oids:
+            oid_str = ', oid="%s"' % self.oid
+        else:
+            oid_str = ""
+        if tree_list_args is None:
+            tree_list_args = ""
+        else:
+            tree_list_args = ", " + tree_list_args
+        #p.append("%s = dendropy.TreeList(label=%s%s%s)" 
+        p.append("%s = MyTreeList(label=%s%s%s)" 
+            % (tree_list_name,
+               label,
+               oid_str,
+               tree_list_args))
+
+        taxon_obj_namer = lambda x: "tax_%s" % id(x)
+        taxon_map = {}
+        for taxon in self.taxon_set:
+            tobj_name = taxon_obj_namer(taxon)
+            if taxon.label is not None:
+                label = "'" + taxon.label + "'"
+            else:
+                label = "None"
+            if oids:
+                oid_str = ', oid="%s"' % taxon.oid
+            else:
+                oid_str = ""
+            p.append("%s = %s.taxon_set.require_taxon(label=%s%s)" \
+                % (tobj_name,
+                   tree_list_name,
+                   label,
+                   oid_str))
+            taxon_map[taxon] = tobj_name
+
+        node_obj_namer = lambda x: "nd_%s" % id(x)
+        for tree in self:
+            tree_obj_name = "tree_%s" % id(tree)
+            if tree.label is not None:
+                label = "'" + tree.label + "'"
+            else:
+                label = "None"
+            if oids:
+                oid_str = ', oid="%s"' % tree.oid
+            else:
+                oid_str = ""
+            p.append("%s = dendropy.Tree(label=%s, taxon_set=%s.taxon_set%s)" \
+                % (tree_obj_name,
+                   label,
+                   tree_list_name,
+                   oid_str))
+            p.append("%s.append(%s, reindex_taxa=False)" % (tree_list_name, tree_obj_name))
+            if oids:
+                p.append("%s.seed_node.oid = '%s'" % (tree_obj_name, tree.seed_node.oid))
+            for node in tree.preorder_node_iter():
+                for child in node.child_nodes():
+                    if node is tree.seed_node:
+                        nn = "%s.seed_node" % tree_obj_name
+                    else:
+                        nn = node_obj_namer(node)
+                    if child.label is not None:
+                        label = "'" + child.label + "'"
+                    else:
+                        label = "None"
+                    if child.taxon is not None:
+                        ct = taxon_obj_namer(child.taxon)
+                    else:
+                        ct = "None"
+                    if oids:
+                        oid_str = ', oid="%s"' % child.oid
+                    else:
+                        oid_str = ""
+                    p.append("%s = %s.new_child(label=%s, taxon=%s, edge_length=%s%s)" %
+                            (node_obj_namer(child),
+                             nn,
+                             label,
+                             ct,
+                             child.edge.length,
+                             oid_str))
+                    if oids:
+                        p.append('%s.edge.oid = "%s"' % (node_obj_namer(child), child.edge.oid))
+
+        return "\n".join(p)
+
 
 #this was a hack to ensure that only single taxa were combined, using combine_components, 
 #which works around multiple represenations of same tree, but only for 4 or 5 taxa

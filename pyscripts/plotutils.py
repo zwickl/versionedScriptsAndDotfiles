@@ -1227,9 +1227,10 @@ def full_plot_routine(opt, fileData):
             subplot.tick_params(axis='y', **allKwargDict['yTickKwargs'])
         
         #do the actual data evaluation and plotting
+        #print series
         dataFunc = eval(function)
         toPlot = dataFunc(series)
-        print toPlot
+        #print toPlot
         '''to plot just x values, lambda looks like this:
         lambda rows:[float(r[2]) for r in rows]
         i.e., output is [x1, x2, ...]
@@ -1279,11 +1280,14 @@ def full_plot_routine(opt, fileData):
             else:
                 if hasattr(opt, 'histogram') and opt.histogram:
                     bins = np.linspace(opt.x_range[0] if opt.x_range else 0.0, opt.x_range[1] if opt.x_range else 1.0, opt.histogram_bins)
+                    #bins = opt.histogram_bins
+                    #rng = (opt.x_range[0] if opt.x_range else 0.0, opt.x_range[1] if opt.x_range else 1.0)
                     outN, outBins, patches = subplot.hist(dataFunc(series), 
                             bins=bins,
                             facecolor=color,
                             normed=opt.normalize_histogram,
                             **allKwargDict['histogramKwargs'])
+
                 else:
                     patches = subplot.bar(dataFunc(series),
                             color=color, label=seriesName, 
@@ -1291,8 +1295,9 @@ def full_plot_routine(opt, fileData):
                             
                     if opt.series_names:
                         subplot.legend(frameon=False, fontsize=24)
-                for pat in patches:
-                    pat.set_hatch(hatch)
+                    #this used to be unindented one level, but histogram parts don't seem to have a set_hatch
+                    for pat in patches:
+                        pat.set_hatch(hatch)
         
         #set the width of the axes box (frame) which I thought I could set on the frame rectangle, but that didn't work
         #kwargs here are <edge><w or s>, i.e. rightw or tops
