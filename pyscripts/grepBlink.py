@@ -17,6 +17,9 @@ parser.add_argument('--single-copy', action='store_true', default=False,
 parser.add_argument('-s', '--sort', action='store_true', default=False,
                     help='sort clusters by cluster number (default false)')
 
+parser.add_argument('--list-only', action='store_true', default=False,
+                    help='only output the numbers of the clusters that match, not the actual sequences in the clusters')
+
 parser.add_argument('-f', '--pattern-file', type=str, default=None, 
                     help='file from which to read patterns (you must still pass a pattern on the command line, which is ignored)')
 
@@ -70,7 +73,10 @@ if options.sort:
     matchedRecs = sorted(list(matchedRecs), key=lambda n:n.number)
 
 for r in matchedRecs:
-    r.output()
+    if options.list_only:
+        sys.stdout.write('%s\n' % r.number)
+    else:
+        r.output()
 
 '''
 
