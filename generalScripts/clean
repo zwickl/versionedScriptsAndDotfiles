@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#remove all GARLI log and state files from a directory
 for i in $@
 do
 	echo $i

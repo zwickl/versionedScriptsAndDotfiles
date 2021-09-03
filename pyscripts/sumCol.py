@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import sys
-from argparse import ArgumentParser, FileType
+from argparse import ArgumentParser, FileType, RawDescriptionHelpFormatter
 
 #use argparse module to parse commandline input
-parser = ArgumentParser(description='sum or do other summaries of a column of numbers')
+parser = ArgumentParser(formatter_class=RawDescriptionHelpFormatter, description='''sum or do other summaries of columns of numbers\nexample: to sum PIDs of user processes listed by shell ps command:\nps | sumCol.py --column 1 --ignore-non-numeric''')
 
 parser.add_argument("-s", "--sum", action="store_true", default=False, help="Output Sum")
 
@@ -17,7 +17,7 @@ parser.add_argument("-a", "--all",  action="store_true", default=False, help="Ou
 
 parser.add_argument("-c", "--column", default=None, type=int, help="choose the column to output")
 
-parser.add_argument("-p", "--precision", default=4, type=int, help="number of digits past decimal for floating point (default %(default)")
+parser.add_argument("-p", "--precision", default=4, type=int, help="number of digits past decimal for floating point (default 4)")
 
 parser.add_argument('infile', nargs='?', default=sys.stdin, type=FileType('rU'), help='filename to search (none for stdin)')
 
@@ -66,15 +66,22 @@ if not col:
 cSum = sum(col)
 cNum = len(col)
 
-out = []
+if not cNum:
+    if options.infile is sys.stdin:
+        sys.exit('No values read from stdin!')
+    else:
+        sys.exit('No values read from file %s!' % options.infile)
 
-if oSum:
-    out.append(str(cSum))
-if oAve:
-    precString = '%%.%df' % options.precision
-    out.append(precString % (cSum / cNum))
-if oMinMax:
-    out.append(str(min(col)))
-    out.append(str(max(col)))
+else:
+    out = []
 
-print "\t".join(out)
+    if oSum:
+        out.append(str(cSum))
+    if oAve:
+        precString = '%%.%df' % options.precision
+        out.append(precString % (cSum / cNum))
+    if oMinMax:
+        out.append(str(min(col)))
+        out.append(str(max(col)))
+
+    print "\t".join(out)
