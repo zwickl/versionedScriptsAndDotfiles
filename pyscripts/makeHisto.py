@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 
 def usage():
@@ -53,9 +53,9 @@ def makeHisto(lines, width = 1.0, col = 0, bin_start=None):
                 exit("Error: ran past end of bins")
         bins[b] += 1
     #for c in range(len(bins)):
-    for num, bin in enumerate(bins):
+    for num, b in enumerate(bins):
         #print "%f\t%f\t%d\t%f" % (bounds[c], bounds[c] + width, bins[c], float(bins[c]) / num)
-        print "%f\t%f\t%d\t%f" % (bounds[num], bounds[num] + width, bins, float(bins) / num)
+        print "%f\t%f\t%d\t%f" % (bounds[num], bounds[num] + width, b, float(b) / len(focalCol))
 '''
         val = start
         while val + width < element:

@@ -38,7 +38,7 @@ class row(object):
         return len(self.colEntries)
 
     def __print__(self):
-        print '\t'.join(self.colEntries)
+        print('\t'.join(self.colEntries))
 
 
 class rowset(object):
@@ -126,9 +126,9 @@ if len(chunks) > 1:
 
 if not options.transpose:
     #nested list comp
-    print "\n".join(["\t".join([col[r] for col in tableCols]) for r in xrange(options.nrows)])
+    print("\n".join(["\t".join([col[r] for col in tableCols]) for r in xrange(options.nrows)]))
     
 else:
     #nested list comp
-    print "\n".join(["\t".join([col[r] for r in xrange(options.nrows)]) for col in tableCols])
+    print("\n".join(["\t".join([col[r] for r in xrange(options.nrows)]) for col in tableCols]))
 

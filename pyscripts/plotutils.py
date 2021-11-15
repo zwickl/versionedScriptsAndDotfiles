@@ -1285,6 +1285,7 @@ def full_plot_routine(opt, fileData):
                     outN, outBins, patches = subplot.hist(dataFunc(series), 
                             bins=bins,
                             facecolor=color,
+                            label=seriesName,
                             normed=opt.normalize_histogram,
                             **allKwargDict['histogramKwargs'])
 

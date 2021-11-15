@@ -7,7 +7,7 @@ parser = ArgumentParser(formatter_class=RawDescriptionHelpFormatter, description
 
 parser.add_argument("-s", "--sum", action="store_true", default=False, help="Output Sum")
 
-parser.add_argument("--ignore-non-numeric", action="store_true", default=False, help="Ignore any column elements that can't be converted to floats")
+parser.add_argument("-i", "--ignore-non-numeric", action="store_true", default=False, help="Ignore any column elements that can't be converted to floats")
 
 parser.add_argument("-m", "--mean", action="store_true", default=False, help="Output Mean")
 
@@ -15,7 +15,7 @@ parser.add_argument("-r", "--range", action="store_true", default=False, help="O
 
 parser.add_argument("-a", "--all",  action="store_true", default=False, help="Output All Statistics")
 
-parser.add_argument("-c", "--column", default=None, type=int, help="choose the column to output")
+parser.add_argument("-c", "--column", default=None, type=int, help="choose the column number to output (starting at 1)")
 
 parser.add_argument("-p", "--precision", default=4, type=int, help="number of digits past decimal for floating point (default 4)")
 
@@ -78,10 +78,11 @@ else:
     if oSum:
         out.append(str(cSum))
     if oAve:
-        precString = '%%.%df' % options.precision
+        precString = ('%%.%df' % options.precision)
         out.append(precString % (cSum / cNum))
     if oMinMax:
         out.append(str(min(col)))
         out.append(str(max(col)))
 
-    print "\t".join(out)
+    print(("\t".join(out)))
+    

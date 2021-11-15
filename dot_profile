@@ -4,6 +4,12 @@ if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
+function scr(){
+    if [ ! -e "$1" ];then
+        cp .template $1
+    fi
+    vi +3 $1
+}
 
 #determine OS type
 OS='unknown'
@@ -49,7 +55,7 @@ export HOMECMP="-p 2222 zwickl@66.45.154.119"
 export JASPER=zwickl@129.237.138.173
 export DANIEL=zwickl@machcdxi.getmyip.com
 export HOWIN=129.237.139.38
-export MDGPUS=openlab.umiacs.umd.edu
+export UMDGPU=cbcbgpu01.umiacs.umd.edu
 export LAP_BACKUP_PHYLO=$PHYLO:/mnt/backup1/zwickl/laptop/
 export SAKURA="zwickl@129.237.138.128"
 export LAP=zwickl@129.237.138.142
@@ -57,7 +63,7 @@ export BIGRED=dzwickl@bigred.teragrid.iu.edu
 export ORRORIN=zwickl@orrorin.nescent.org
 export KANG=zwickl@129.237.138.171
 export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
-export HAL=zwickl@hal.biosci.arizona.edu
+export HAL=hal.biosci.arizona.edu
 export WORKLAP=zwickl@128.196.193.227
 export FLOYD=zwickl@128.196.193.200
 export KSMAC=zwickl@129.237.138.142
@@ -85,29 +91,53 @@ alias hal='ssh $HAL'
 #machine dependent stuff
 
 if [ $OS = "darwin" ];then
-    export PATH=/usr/local/bin:$PATH:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin:$HOME/Desktop/code/MUMmer3.23/
-	export DESK=$HOME/Desktop/
+
+    #alias paup=paup4a147_osx
+    alias figtree="java -jar /Applications/FigTree\ v1.4.4.app/Contents/Resources/Java/figtree.jar"
+
+    alias turnOffCPUThrottling='sudo mv /System/Library/Extensions/IOPlatformPluginFamily.kext/Contents/PlugIns/ACPI_SMC_PlatformPlugin.kext/Contents/Resources/MacBookPro8_1.plist ~'
+    alias turnOnCPUThrottling='sudo mv ~/MacBookPro8_1.plist  /System/Library/Extensions/IOPlatformPluginFamily.kext/Contents/PlugIns/ACPI_SMC_PlatformPlugin.kext/Contents/Resources/'
+
+    
+    export DESK=$HOME/Desktop/
 	export DEV=$DESK/GarliDEV/
 	export EF=$DESK/efish/april08/
 	export WIN=$EF/selection/windowStuff/
-	export NCL=$DEV/ncl/
-	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
-	export NCL_INSTALL_DIR=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
-    export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
+	export NCL=$DEV/ncl/ncl-github/
+	export NCL_INST=$NCL/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
+	export NCL_INSTALL_DIR=$NCL/builds/gccNoDynamic/installed/
+
+    export  XCTOOLS=`xcode-select -p`/Toolchains/XcodeDefault.xctoolchain//usr/bin
+    export PATH=$XCTOOLS:$BREW_BIN:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin:$HOME/Desktop/code/MUMmer3.23/:/usr/bin/:/usr/local/bin:/Users/zwickl/.cargo/bin:$PATH
+    #export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
+    export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV//beagle/beagle-lib/builds/default/installed/usr/local/lib
+    export LD_LIBRARY_PATH=/Users/zwickl/Desktop/GarliDEV//beagle/beagle-lib/builds/default/installed/usr/local/lib/:$LD_LIBRAY_PATH
     #export MAFFT_BINARIES=/usr/local/bin/
     export MAFFT_BINARIES=
     PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
-	PATH=$HOME/my_usr/bin:$HOME/my_usr/local/bin:$PATH:/usr/local/cuda/bin
-    PATH=/usr/local/ActivePerl-5.14/bin/:$PATH
+	
+    #PATH=$HOME/my_usr/bin:$HOME/my_usr/local/bin:$PATH:/usr/local/cuda/bin
+	#PATH=$PATH:$HOME/my_usr/bin:$HOME/my_usr/local/bin:/usr/local/cuda/bin
+    
+    #PATH=/usr/local/ActivePerl-5.14/bin/:$PATH
 	GNUTERM=x11
+    function rrun(){
+         rustc $1.rs && ./$1
+     }
     alias ls='ls -G'
+    alias Dendroscope='/Applications/Dendroscope3.2/Dendroscope.app/Contents/MacOS/JavaApplicationStub -g'
     alias inkscape="/Applications/Inkscape.app/Contents/Resources/bin/inkscape"
-    PATH=/usr/local/Trolltech/Qt-4.8.2/bin:$PATH
+    #PATH=/usr/local/Trolltech/Qt-4.8.2/bin:$PATH
+    export PYGOT=$DEV/experiments/pygot/
+    export TERRAPHY=$DEV/experiments/terraces/terraphyDEV/postStrokeWork.terraphy
+
+    export WORKON_HOME=$HOME/virtual-environments/
+    source /Library/Frameworks/Python.framework/Versions/2.7/bin/virtualenvwrapper.sh 
 elif [ $OS = "cygwin" ];then
 	export HOMEDRIVE=/cygdrive/c/
 	export DESK=/cygdrive/f/Desk/
-	export DEV=$DESK/GarliDEV/
-	export NCL=$DEV/ncl/
+        export DEV=$DESK/GarliDEV/
+        export NCL=$DEV/ncl/
 	export NCL_INST=$NCL/branches/v2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
 	export PROJ=$TRUNK/project/standardGarliVC/
 	#export HOMELAP='zwickl@192.168.1.65'
@@ -151,6 +181,8 @@ elif [ $OS = "linux" ];then
     alias svn='export LD_LIBRARY_PATH=/share/apps/serf/lib/; /share/apps/subversion/bin/svn'
 fi
 
+LD_FLAGS=-L/Library/Developer/CommandLineTools/SDKs/MacOSX11.sdk/usr/lib:/Library/Developer/CommandLineTools/SDKs/MacOSX11.sdk//System/Library/Frameworks:$LD_FLAGS
+
 #temporary exports
 export HYPHY_SCRIPTS=/Applications/HYPHY/hyphySVN/HYPHY/TemplateBatchFiles/
 export TESTING_EXEC=/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/trunk/builds/iccAsserts/installed/bin/Garli0.961b
@@ -162,7 +194,7 @@ export MASAMP=$ROOT_INDEL/multiSiteAligned/zipfian1.5/del2Xins/ranaDepth0.1/totR
 
 #filesystem locations - largely machine independent
 export HYPHY_SCRIPTS=/Applications/HYPHY/hyphySVN/HYPHY/TemplateBatchFiles/
-export TRUNK=$DEV/googleCodeRepo/trunk/
+export TRUNK=$DEV/garli-github/garli/trunk/
 export BRANCHES=$DEV/googleCodeRepo/branches/
 export BEAG=$BRANCHES/beagle/
 export PART=$BRANCHES/partitioning/
@@ -170,12 +202,16 @@ export TESTS=$DEV/git/garlitests/
 export TB=$TRUNK/builds/
 export PB=$PART/builds/
 
+export BEAGLE=$DEV/beagle/beagle-lib
+export BEAGLE_LIBPATH=$BEAGLE/builds/default/installed/usr/local/lib/
+
 export PART_EXEC=$PART/builds/gccAss/installed/bin/Garli
 export PART_EXEC_MPI=$PART/builds/gccAss.MPI/installed/bin/Garli
 export PART_EXEC_DEB=$PART/builds/gccAss.DEB/installed/bin/Garli
 export TRUNK_EXEC=$TRUNK/builds/gccAss/installed/bin/Garli
 export TRUNK_EXEC_DEB=$TRUNK/builds/gccAss.DEB/installed/bin/Garli
 export TRUNK_EXEC_MPI=$TRUNK/builds/gccAss.MPI/installed/bin/Garli
+export TRUNK_EXEC_OMP=$TRUNK/../tag-builds/2.1-release/gccDefault.10.7.5.OMP.builtgcc-4.8.1/installed/bin/Garli
 export TESTING_EXEC=$PART_EXEC
 export TESTING_EXEC_MPI=$PART_EXEC_MPI
 export VER2_EXEC=$DEV/googleCodeRepo/tags/2.0-release/builds/gccAss/installed/bin/Garli
@@ -248,7 +284,7 @@ alias lsl='ls -ltrh'
 alias xterm='xterm -ls'
 alias gp='gnuplot'
 #alias synHome='synergyc  -f --name newlap 192.168.1.64'
-alias synHome='synergyc  -f --name newlap 192.168.1.120'
+alias synHome='synergyc  -f --name newlap 192.168.1.113'
 alias lsl='ls -ltrh'
 alias hist='shist | grep'
 alias mi='nice make -j 2 && nice make install && pwd > $HOME/.lastMake'
@@ -292,7 +328,15 @@ function marks(){
 
 function cdm(){
     if [ ! "$#" -eq 1 ];then
-        echo "Enter a named mark"
+        echo
+        echo "Defined marks"
+        for DIR in $HOME/.markedDirs/*
+        do
+            echo
+            echo ${DIR##*/}
+            cat $DIR
+        done
+        #echo "Enter a named mark"
         return
     fi
     cd `cat $HOME/.markedDirs/$1`
@@ -300,6 +344,8 @@ function cdm(){
 
 alias runLast='`cat $HOME/.lastMake`/installed/bin/Garli'
 alias debLast='gdb `cat $HOME/.lastMake`/installed/bin/Garli'
+
+alias phylonet='java -jar $HOME/Desktop/code/PhyloNet_3.5.4.jar'
 
 #functions
 
@@ -539,7 +585,7 @@ function zeroPadNumber(){
 }
 
 function zeroPaddedNumberGenerator(){
-    SERIES=`for ((VAL=$1;VAL<=$2;VAL++))
+    SERIES=`for ((VAL=$1;VAL<$2;VAL++))
     do
         zeroPadNumber $VAL $3
     done
@@ -602,3 +648,9 @@ if [[ $OS == 'darwin' ]]; then
 
     export PATH=$ANDROIDNDK:$ANDROIDSDK/tools:$PATH
 fi
+
+# Setting PATH for Python 3.8
+# The original version is saved in .profile.pysave
+PATH="/Library/Frameworks/Python.framework/Versions/3.8/bin:${PATH}"
+export PATH
+. "$HOME/.cargo/env"

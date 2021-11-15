@@ -10,6 +10,13 @@ arguments = []
 patt = ''
 files = []
 
+def usage():
+    print("%s columNumber filenames argumentsToPassToGrep" % sys.argv[0])
+
+if(len(sys.argv) < 2):
+    usage()
+    sys.exit()
+
 try:
     column = int(sys.argv[1])
 except ValueError:
@@ -33,12 +40,13 @@ for f in files:
             ignored += 1
         else:
             el = re.escape(spline[column - 1])
-            process = subprocess.Popen(' '.join(["echo", el, "|"] + ["grep"] + arguments + [ "'%s'" % patt ]), 
-                    shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = subprocess.Popen(
+                ' '.join(["echo", el, "|"] + ["grep"] + arguments + [ "'%s'" % patt ]), 
+                shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout_list, stderr_list = process.communicate()
 
             if stderr_list:
-                print 'Child process exited with error? %s' % ''.join(stderr_list)
+                print('Child process exited with error? %s' % ''.join(stderr_list))
                 exit()
 
             if stdout_list:

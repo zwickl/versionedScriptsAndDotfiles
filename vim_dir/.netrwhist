@@ -1,2 +1,11 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhist_cnt =0
+let g:netrw_dirhist_cnt =9
+let g:netrw_dirhist_1='/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/dendropy'
+let g:netrw_dirhist_2='/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/dendropy/datamodel'
+let g:netrw_dirhist_3='/Users/zwickl/Desktop/GarliDEV/experiments/terraces/terraphyDEV/postStrokeWork.terraphy/examples/Lsurface/out.HackedIQTREECountELWSetSizes'
+let g:netrw_dirhist_4='/Users/zwickl/Desktop/GarliDEV/experiments/terraces/terraphyDEV/postStrokeWork.terraphy/examples/Lsurface'
+let g:netrw_dirhist_5='/Users/zwickl/Desktop/GarliDEV/experiments/terraces/terraphyDEV/github-unedited/examples/pipeline.output'
+let g:netrw_dirhist_6='/Users/zwickl/Desktop/GarliDEV/experiments/terraces/terraphyDEV/postStrokeWork.terraphy/examples/microExample'
+let g:netrw_dirhist_7='/Users/zwickl/Desktop/GarliDEV/experiments/terraces/terraphyDEV/postStrokeWork.terraphy/examples'
+let g:netrw_dirhist_8='/Users/zwickl/Desktop/GarliDEV/experiments/terraces/terraphyDEV/terraphy-TreesinDesert/TreesIntheDesertExercise/input'
+let g:netrw_dirhist_9='/Users/zwickl'

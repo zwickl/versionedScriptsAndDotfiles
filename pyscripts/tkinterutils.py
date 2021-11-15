@@ -20,6 +20,13 @@ class ArgparseOption(object):
             self.output_arg = option.option_strings[-1]
         else:
             self.output_arg = None
+        
+        if 'HIDE' in option.help:
+            self.hide = True
+            self.return_string = []
+        else:
+            self.hide = False
+            self.return_string = []
 
         self.nargs = option.nargs
 
@@ -32,32 +39,33 @@ class ArgparseBoolOption(ArgparseOption):
         self.var = Variable()
         self.var.set(option.default)
 
-        help_string = re.sub('[(]default [)]', '', option.help).strip()
+        if not self.hide:
+            help_string = re.sub('[(]default [)]', '', option.help).strip()
 
-        if help_string:
-            label_string = help_string
-        else:
-            label_string = re.sub('--', '', option.option_strings[-1])
+            if help_string:
+                label_string = help_string
+            else:
+                label_string = re.sub('--', '', option.option_strings[-1])
 
-        Label(frame, text=fill(label_string, text_widths)).grid(row=row, column=column)
-        
-        self.widget = Checkbutton(frame, variable=self.var, onvalue=1, offvalue=0)
-        '''
-        if isinstance(option, argparse._StoreTrueAction):
-            self.var.set(False)
-        else:
-            self.var.set(True)
-        '''
-        
-        if isinstance(option, argparse._StoreTrueAction):
+            Label(frame, text=fill(label_string, text_widths)).grid(row=row, column=column)
+            
             self.widget = Checkbutton(frame, variable=self.var, onvalue=1, offvalue=0)
-        elif isinstance(option, argparse._StoreFalseAction):
-            self.widget = Checkbutton(frame, variable=self.var, onvalue=0, offvalue=1)
-        
-        if row < 0:
-            self.widget.pack()
-        else:
-            self.widget.grid(row=row, column=column+1, padx=widget_padx)
+            '''
+            if isinstance(option, argparse._StoreTrueAction):
+                self.var.set(False)
+            else:
+                self.var.set(True)
+            '''
+            
+            if isinstance(option, argparse._StoreTrueAction):
+                self.widget = Checkbutton(frame, variable=self.var, onvalue=1, offvalue=0)
+            elif isinstance(option, argparse._StoreFalseAction):
+                self.widget = Checkbutton(frame, variable=self.var, onvalue=0, offvalue=1)
+            
+            if row < 0:
+                self.widget.pack()
+            else:
+                self.widget.grid(row=row, column=column+1, padx=widget_padx)
 
     def make_string(self):
         #print self
@@ -77,18 +85,19 @@ class ArgparseStringOption(ArgparseOption):
         else:
             req_string = ''
 
-        help_string = re.sub('[(]default [)]', '', option.help).strip()
-        if help_string:
-            label_string = req_string + help_string
-        else:
-            label_string = req_string + re.sub('--', '', option.option_strings[-1])
+        if not self.hide:
+            help_string = re.sub('[(]default [)]', '', option.help).strip()
+            if help_string:
+                label_string = req_string + help_string
+            else:
+                label_string = req_string + re.sub('--', '', option.option_strings[-1])
 
-        if row < 0:
-            Label(frame, text=fill(label_string, text_widths)).pack(side=LEFT)
-            self.widget.pack()
-        else:
-            Label(frame, text=fill(label_string, text_widths)).grid(row=row, column=column, padx=widget_padx)
-            self.widget.grid(row=row, column=column+1, padx=widget_padx)
+            if row < 0:
+                Label(frame, text=fill(label_string, text_widths)).pack(side=LEFT)
+                self.widget.pack()
+            else:
+                Label(frame, text=fill(label_string, text_widths)).grid(row=row, column=column, padx=widget_padx)
+                self.widget.grid(row=row, column=column+1, padx=widget_padx)
         
         if option.default:
             if isinstance(option.default, list):
@@ -99,10 +108,9 @@ class ArgparseStringOption(ArgparseOption):
 
     def make_string(self):
         #print self
-        return_string = []
         if self.var.get():
             #print self.output_arg, self.var.get(), type(self.var.get()), self.nargs
-            return_string.append(self.output_arg)
+            self.return_string.append(self.output_arg)
             
             if self.nargs and (self.nargs in [ '*', '+' ] or self.nargs > 1):
                 #shlex.split here properly leaves quoted strings unsplit
@@ -113,11 +121,11 @@ class ArgparseStringOption(ArgparseOption):
                     if s[0] == '-':
                         splt[num] = '"' + s + '"'
 
-                return_string.extend(splt)
+                self.return_string.extend(splt)
             else:
-                return_string.append(self.var.get())
+                self.return_string.append(self.var.get())
         #print '\t', return_string 
-        return return_string
+        return self.return_string
 
 
 class ArgparseOptionMenuOption(ArgparseOption):
@@ -131,19 +139,37 @@ class ArgparseOptionMenuOption(ArgparseOption):
             req_string = ''
         
         self.var.set(option.default)
-        self.widget = OptionMenu(frame, self.var, *option.choices)
-        Label(frame, text=fill(req_string + option.help, text_widths)).grid(row=row, column=column, padx=widget_padx)
-        self.widget.grid(row=row, column=column+1, padx=widget_padx)
+
+        #OptionMenu signature is this:
+        #__init__(self, master, variable, value, *values, **kwargs)
+        #where variable is "the resource textvariable", and value is the 
+        #default value
+        self.widget = OptionMenu(frame, self.var, option.choices[0], *option.choices)
+
+        help_string = re.sub('[(]default [)]', '', option.help).strip()
+        if help_string:
+            label_string = req_string + help_string
+        else:
+            label_string = req_string + re.sub('--', '', option.option_strings[-1])
+
+        if row < 0:
+            Label(frame, text=fill(label_string, text_widths)).pack(side=LEFT)
+            self.widget.pack()
+        else:
+            Label(frame, text=fill(label_string, text_widths)).grid(row=row, column=column, padx=widget_padx)
+            self.widget.grid(row=row, column=column+1, padx=widget_padx)
+ 
+        #Label(frame, text=fill(req_string + option.help, text_widths)).grid(row=row, column=column, padx=widget_padx)
+        #self.widget.grid(row=row, column=column+1, padx=widget_padx)
        
         ArgparseOption.__init__(self, option)
 
     def make_string(self):
         #print self
-        return_string = []
         if self.var.get():
-            return_string.append(self.output_arg)
-            return_string.append(self.var.get())
-        return return_string
+            self.return_string.append(self.output_arg)
+            self.return_string.append(self.var.get())
+        return self.return_string
 
 
 class ArgparseFileOption(ArgparseOption):
@@ -183,19 +209,18 @@ class ArgparseFileOption(ArgparseOption):
 
     def make_string(self):
         #print self
-        return_string = []
         if self.var:
             if self.output_arg:
-                return_string.append(self.output_arg)
+                self.return_string.append(self.output_arg)
             #self.var is actually a tuple here in the case of multiple filenames,
             #but may be just a string otherwise
             if isinstance(self.var, tuple):
                 self.var = list(self.var)
             if isinstance(self.var, list):
-                return_string.extend(self.var)
+                self.return_string.extend(self.var)
             else:
-                return_string.append(self.var)
-        return return_string
+                self.return_string.append(self.var)
+        return self.return_string
 
 
 class ArgparseGui(object):
@@ -339,6 +364,7 @@ class ArgparseGui(object):
         return_list = []
         for option in self.option_list:
             return_list.extend(option.make_string())
+        print return_list
         return return_list
 
     def done(self):
