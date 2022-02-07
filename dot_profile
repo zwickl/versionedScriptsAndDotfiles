@@ -40,50 +40,16 @@ export MANPATH=`manpath`:/home/zwickl/my_usr/share/man/
 export PS1="\w/ $ "
 
 #machines
-export CSEM=zwickl@dscr-login-05.oit.duke.edu
-export DUKE=zwickl@godzilla.acpub.duke.edu
-export LONESTAR=zwickl@lonestar.tacc.utexas.edu
-export DLONESTAR=dhillis@lonestar.tacc.utexas.edu
-export LONEWORK=zwickl@lonestar.tacc.utexas.edu:/work/utexas/ib/zwickl/
-export MONTY=zwickl@129.237.138.231
-export KU=zwickl@people.ku.edu
-export HOME2=zwickl@192.168.2.2
-export DESKTOP=zwickl@129.237.139.73
-export KWY=zwickl@129.237.24.139
-export PHYLO=zwickl@phylo.bio.ku.edu
-export HOMECMP="-p 2222 zwickl@66.45.154.119"
-export JASPER=zwickl@129.237.138.173
-export DANIEL=zwickl@machcdxi.getmyip.com
-export HOWIN=129.237.139.38
 export UMDGPU=cbcbgpu01.umiacs.umd.edu
 export LAP_BACKUP_PHYLO=$PHYLO:/mnt/backup1/zwickl/laptop/
 export SAKURA="zwickl@129.237.138.128"
 export LAP=zwickl@129.237.138.142
-export BIGRED=dzwickl@bigred.teragrid.iu.edu
-export ORRORIN=zwickl@orrorin.nescent.org
-export KANG=zwickl@129.237.138.171
 export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
 export HAL=hal.biosci.arizona.edu
-export WORKLAP=zwickl@128.196.193.227
-export FLOYD=zwickl@128.196.193.200
-export KSMAC=zwickl@129.237.138.142
-export MEDIA=Laura@192.168.1.113
-export GREENTULIP=Laura@192.168.1.136
-export SYNCMEDIA=Laura@192.168.1.113:/cygdrive/g/PicturesSync/
-export OPENTREE=zwickl@opentree-dev.bio.ku.edu
 
 #ssh aliases
-alias opentree='ssh $OPENTREE'
-alias lonestar='ssh $LONESTAR'
-alias dlonestar='ssh $DLONESTAR'
-alias csem='ssh zwickl@dscr-login-03.oit.duke.edu'
-alias nescent='ssh derrickzwickl@xserve1.nescent.org'
-alias orrorin='ssh zwickl@orrorin.nescent.org'
-alias duke='ssh zwickl@godzilla.acpub.duke.edu'
 alias tunnelToHome='ssh -L 5899:127.0.0.1:5999 -p 2222 zwickl@24.124.109.231'
 alias tunnelWithinHome='ssh -L 5899:192.168.2.2:5999  zwickl@192.168.2.2'
-alias phylo='ssh $PHYLO'
-alias jasper='ssh $JASPER'
 alias lap='ssh $LAP'
 alias kang='ssh $KANG'
 alias hal='ssh $HAL'
@@ -132,7 +98,6 @@ if [ $OS = "darwin" ];then
     export TERRAPHY=$DEV/experiments/terraces/terraphyDEV/postStrokeWork.terraphy
 
     export WORKON_HOME=$HOME/virtual-environments/
-    source /Library/Frameworks/Python.framework/Versions/2.7/bin/virtualenvwrapper.sh 
 elif [ $OS = "cygwin" ];then
 	export HOMEDRIVE=/cygdrive/c/
 	export DESK=/cygdrive/f/Desk/
@@ -185,7 +150,6 @@ LD_FLAGS=-L/Library/Developer/CommandLineTools/SDKs/MacOSX11.sdk/usr/lib:/Librar
 
 #temporary exports
 export HYPHY_SCRIPTS=/Applications/HYPHY/hyphySVN/HYPHY/TemplateBatchFiles/
-export TESTING_EXEC=/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/trunk/builds/iccAsserts/installed/bin/Garli0.961b
 export SAMP=$ROOT_INDEL/singleSite/del2Xins/ranaDepth0.1/totRate0.04/00/
 export ASAMP=$ROOT_INDEL/singleSiteAligned/del2Xins/ranaDepth0.1/totRate0.04/00/
 export MSAMP=$ROOT_INDEL/multiSite/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
