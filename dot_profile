@@ -36,8 +36,8 @@ else
 fi
 
 #sytem variables
-export MANPATH=`manpath`:/home/zwickl/my_usr/share/man/
-export PS1="\w/ $ "
+#export MANPATH=`manpath`:/home/zwickl/my_usr/share/man/
+#export PS1="\w/ $ "
 
 #machines
 export UMDGPU=cbcbgpu01.umiacs.umd.edu
@@ -134,8 +134,11 @@ elif [ $OS = "linux" ];then
         export MAFFT_BINARIES=$HOME/my_usr/local/libexec/mafft/
     fi
     alias ls='ls --color=auto'
-	alias qa='qstat -u "*" | sort | grep [0-9]' 
-	alias qz='qstat | sort | grep [0-9]' 
+	#alias qa='qstat -u "*" | sort | grep [0-9]' 
+    alias sq='squeue'
+    alias sqz='squeue -u zwickl'
+    alias cqz='squeue -u zwickl | grep -v JOBID | wc -l '
+	alias qz='qstat -u zwickl | sort | grep [0-9]' 
 	alias devQrsh='qrsh -q dev.q -l h_vmem=4G -l vf=4G'
 	alias ViewLog='vi $TESTS/RUNLOG.log'
 	alias ViewTests='vi $TESTS/TESTRESULTS.log'
@@ -149,16 +152,9 @@ fi
 LD_FLAGS=-L/Library/Developer/CommandLineTools/SDKs/MacOSX11.sdk/usr/lib:/Library/Developer/CommandLineTools/SDKs/MacOSX11.sdk//System/Library/Frameworks:$LD_FLAGS
 
 #temporary exports
-export HYPHY_SCRIPTS=/Applications/HYPHY/hyphySVN/HYPHY/TemplateBatchFiles/
-export SAMP=$ROOT_INDEL/singleSite/del2Xins/ranaDepth0.1/totRate0.04/00/
-export ASAMP=$ROOT_INDEL/singleSiteAligned/del2Xins/ranaDepth0.1/totRate0.04/00/
-export MSAMP=$ROOT_INDEL/multiSite/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
-export MASAMP=$ROOT_INDEL/multiSiteAligned/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
-
 
 #filesystem locations - largely machine independent
-export HYPHY_SCRIPTS=/Applications/HYPHY/hyphySVN/HYPHY/TemplateBatchFiles/
-export TRUNK=$DEV/garli-github/garli/trunk/
+export TRUNK=$HOME/source/garli/garli/trunk/
 export BRANCHES=$DEV/googleCodeRepo/branches/
 export BEAG=$BRANCHES/beagle/
 export PART=$BRANCHES/partitioning/
@@ -170,14 +166,11 @@ export BEAGLE=$DEV/beagle/beagle-lib
 export BEAGLE_LIBPATH=$BEAGLE/builds/default/installed/usr/local/lib/
 
 export PART_EXEC=$PART/builds/gccAss/installed/bin/Garli
-export PART_EXEC_MPI=$PART/builds/gccAss.MPI/installed/bin/Garli
 export PART_EXEC_DEB=$PART/builds/gccAss.DEB/installed/bin/Garli
-export TRUNK_EXEC=$TRUNK/builds/gccAss/installed/bin/Garli
-export TRUNK_EXEC_DEB=$TRUNK/builds/gccAss.DEB/installed/bin/Garli
-export TRUNK_EXEC_MPI=$TRUNK/builds/gccAss.MPI/installed/bin/Garli
-export TRUNK_EXEC_OMP=$TRUNK/../tag-builds/2.1-release/gccDefault.10.7.5.OMP.builtgcc-4.8.1/installed/bin/Garli
+#export TRUNK_EXEC=$TRUNK/builds/gccAss/installed/bin/Garli
+#export TRUNK_EXEC_DEB=$TRUNK/builds/gccAss.DEB/installed/bin/Garli
+#export TRUNK_EXEC_OMP=$TRUNK/../tag-builds/2.1-release/gccDefault.10.7.5.OMP.builtgcc-4.8.1/installed/bin/Garli
 export TESTING_EXEC=$PART_EXEC
-export TESTING_EXEC_MPI=$PART_EXEC_MPI
 export VER2_EXEC=$DEV/googleCodeRepo/tags/2.0-release/builds/gccAss/installed/bin/Garli
 export INDEL_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/scripts/
 export ROOT_INDEL=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/
@@ -188,34 +181,6 @@ export ROOT_JANSEN=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64
 export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commonScripts/
 
 export PYTHONPATH=$HOME/bin/pyscripts/:$HOME/bin/biopython/:$PYTHONPATH
-
-if [ $OS = "linux" ];then
-    #export ORYZA_ROOT=$DEV/oryza/
-    export ORYZA_SCRIPTS=$DEV/oryza_scripts/
-    export PORYZA_ROOT=$DEV/productionOryza/
-    export ORYZA_ROOT=$PORYZA_ROOT
-    export FULLORYZA_ROOT=$DEV/fullGenomeOryza/
-else
-    export ORYZA_SCRIPTS=$DEV/experiments/oryza_scripts/
-    export OLD_ORYZA_ROOT=$DEV/experiments/oryza/
-    export PORYZA_ROOT=$DEV/experiments/productionOryza/
-    export ORYZA_ROOT=$PORYZA_ROOT
-    export FULLORYZA_ROOT=$DEV/experiments/fullGenomeOryza/
-    export FULL_ANALYSES=$ORYZA_ROOT/gramene34_split_cleanedByCSHL/alignmentsAndTrees/ms2006.frac0.5/dag.G1.D4.C4.N5/
-fi
-export G34=$OLD_ORYZA_ROOT/gramene34_omap_genes/
-export C34=$OLD_ORYZA_ROOT/gramene34_cleanedByCSHL/
-export S34=$OLD_ORYZA_ROOT/gramene34_split_cleanedByCSHL/
-export CLUSTC34=$C34/datasetAssembly/withShortModels.withoutSativaTransposonsOrOverlap.ignoreSati.ms2006.frac0.5/paramSweep.reciprocalDag.fixedNearby/geneOrder/dag.G1.D2.C4/nearbySweep/nearby5/
-export CLUSTS34=$S34/datasetAss/noInd/wShort.woSatTransOrOverlap.frac0.5/reciprocalDag/geneOrder/dag.G1.D2.C4/nearbySweep/nearby5/
-
-export SERIOUS=$ORYZA_ROOT/gramene34_omap_genes/datasetAssembly/blastP.clean/seriousRun/
-export SPLITTING=$C34/datasetAssembly/withShortModels.withoutSativaTransposonsOrOverlap.ms2006.frac0.0/paramSweep.reciprocalDag.fixedNearby/geneOrder/joined.G1.D4.C4+G1.D50.C20/nearbySweep/nearby5/
-export RELATIVE_ALIGNMENT_PATH_ORYZA=../../alignments/
-if [ ! -d "$ORYZA_ROOT" ];then
-    export ORYZA_ROOT=/share/work1/zwickl/experiments/oryza/
-    #ls $ORYZA_ROOT &> /dev/null
-fi
 
 <<DEP
 export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/analysisScripts/
@@ -272,6 +237,21 @@ alias ddel="disq_del"
 alias pull="git pull origin"
 alias push="git push origin"
 alias shist="history | readHist"
+
+function foreach (){
+    if [  "$#" -eq 0 ];then
+    echo enter a command followed by the files to apply it to
+    echo quote commands with arguments, 
+    echo i.e. foreach "ls -l" *.log
+fi
+    CMD=$1
+    shift 1
+    for FILE in  $@
+    do
+        $CMD $FILE
+    done
+}
+
 
 function mark(){
     if [ ! "$#" -eq 1 ];then
@@ -613,8 +593,31 @@ if [[ $OS == 'darwin' ]]; then
     export PATH=$ANDROIDNDK:$ANDROIDSDK/tools:$PATH
 fi
 
+alias sq='squeue -o "%.18i %.9P %.8j %.15u %.2t %.10M %.6D %R"'
+
 # Setting PATH for Python 3.8
 # The original version is saved in .profile.pysave
 PATH="/Library/Frameworks/Python.framework/Versions/3.8/bin:${PATH}"
 export PATH
-. "$HOME/.cargo/env"
+
+alias backupWorkingDir='find . -type f -not -name "*.gz" | xargs tar czf'   
+
+
+
+# poke the cluster aliases to set PS1 instead of PROMPT_COMMAND to
+# avoid video artifacts; the check for slurm-selector.sh is false if not
+# on shell.
+if [ -n "${PROMPT_COMMAND}" -a -r /usr/local/bin/slurm-selector.sh ]; then
+      SavePS1=${PS1}
+      # First, deal with default cluster selection
+        Cur_Cluster=$(eval ${PROMPT_COMMAND} 2>/dev/null)
+          PS1="${Cur_Cluster}${SavePS1}"
+            unset PROMPT_COMMAND
+            # now fix up the cluster aliases so they don't cause visual problems.
+              for c in puma ocelote elgato; do
+                      alias ${c}="PS1=\"(${c}) ${SavePS1}\"; . /usr/local/bin/slurm-selector.sh ${c}; unset PROMPT_COMMAND"
+                  #    alias ${c}="PS1=\"(${c}) ${SavePS1}\"; $(alias ${c}); unset PROMPT_COMMAND"
+                        done
+                          unset Cur_Cluster SavePS1
+                      fi
+
