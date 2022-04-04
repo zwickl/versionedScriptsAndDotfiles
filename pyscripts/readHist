@@ -13,4 +13,4 @@ for line in [ l for l in sys.stdin ][::-1]:
         line_dict[line[1]] = line[0]
 
 #write back out after sorting by number
-sys.stdout.write(''.join( ( str(line[0]) + '\t' + line[1] for line in sorted( [ (int(num), command) for command, num in line_dict.iteritems() ] ) ) ))
+sys.stdout.write(''.join( ( str(line[0]) + '\t' + line[1] for line in sorted( [ (int(num), command) for command, num in line_dict.items() ] ) ) ))
