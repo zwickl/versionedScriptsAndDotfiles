@@ -41,17 +41,10 @@ fi
 
 #machines
 export UMDGPU=cbcbgpu01.umiacs.umd.edu
-export LAP_BACKUP_PHYLO=$PHYLO:/mnt/backup1/zwickl/laptop/
-export SAKURA="zwickl@129.237.138.128"
-export LAP=zwickl@129.237.138.142
 export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
 export HAL=hal.biosci.arizona.edu
 
 #ssh aliases
-alias tunnelToHome='ssh -L 5899:127.0.0.1:5999 -p 2222 zwickl@24.124.109.231'
-alias tunnelWithinHome='ssh -L 5899:192.168.2.2:5999  zwickl@192.168.2.2'
-alias lap='ssh $LAP'
-alias kang='ssh $KANG'
 alias hal='ssh $HAL'
 
 #machine dependent stuff
@@ -61,10 +54,6 @@ if [ $OS = "darwin" ];then
     #alias paup=paup4a147_osx
     alias figtree="java -jar /Applications/FigTree\ v1.4.4.app/Contents/Resources/Java/figtree.jar"
 
-    alias turnOffCPUThrottling='sudo mv /System/Library/Extensions/IOPlatformPluginFamily.kext/Contents/PlugIns/ACPI_SMC_PlatformPlugin.kext/Contents/Resources/MacBookPro8_1.plist ~'
-    alias turnOnCPUThrottling='sudo mv ~/MacBookPro8_1.plist  /System/Library/Extensions/IOPlatformPluginFamily.kext/Contents/PlugIns/ACPI_SMC_PlatformPlugin.kext/Contents/Resources/'
-
-    
     export DESK=$HOME/Desktop/
 	export DEV=$DESK/GarliDEV/
 	export EF=$DESK/efish/april08/
@@ -78,8 +67,6 @@ if [ $OS = "darwin" ];then
     #export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
     export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV//beagle/beagle-lib/builds/default/installed/usr/local/lib
     export LD_LIBRARY_PATH=/Users/zwickl/Desktop/GarliDEV//beagle/beagle-lib/builds/default/installed/usr/local/lib/:$LD_LIBRAY_PATH
-    #export MAFFT_BINARIES=/usr/local/bin/
-    export MAFFT_BINARIES=
     PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
 	
     #PATH=$HOME/my_usr/bin:$HOME/my_usr/local/bin:$PATH:/usr/local/cuda/bin
@@ -93,7 +80,6 @@ if [ $OS = "darwin" ];then
     alias ls='ls -G'
     alias Dendroscope='/Applications/Dendroscope3.2/Dendroscope.app/Contents/MacOS/JavaApplicationStub -g'
     alias inkscape="/Applications/Inkscape.app/Contents/Resources/bin/inkscape"
-    #PATH=/usr/local/Trolltech/Qt-4.8.2/bin:$PATH
     export PYGOT=$DEV/experiments/pygot/
     export TERRAPHY=$DEV/experiments/terraces/terraphyDEV/postStrokeWork.terraphy
 
@@ -101,12 +87,10 @@ if [ $OS = "darwin" ];then
 elif [ $OS = "cygwin" ];then
 	export HOMEDRIVE=/cygdrive/c/
 	export DESK=/cygdrive/f/Desk/
-        export DEV=$DESK/GarliDEV/
-        export NCL=$DEV/ncl/
+    export DEV=$DESK/GarliDEV/
+    export NCL=$DEV/ncl/
 	export NCL_INST=$NCL/branches/v2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
 	export PROJ=$TRUNK/project/standardGarliVC/
-	#export HOMELAP='zwickl@192.168.1.65'
-	export HOMELAP='zwickl@192.168.1.114'
 	PATH=$PATH:/cygdrive/c/Program\ Files/Java/jre6/bin/
 	PATH=$PATH:$HOME/bin/pyscripts/:/cygdrive/c/Program\ Files/NCBI/blast-2.2.25/bin/
 	PATH=$PATH:/usr/local/emboss/bin/
@@ -128,11 +112,6 @@ elif [ $OS = "linux" ];then
 	export NCL=/home/zwickl/ncl/
 	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
     #unset MAFFT_BINARIES
-    if [ -d /share/apps/lib/mafft/ ];then
-        export MAFFT_BINARIES=/share/apps/lib/mafft/
-    else
-        export MAFFT_BINARIES=$HOME/my_usr/local/libexec/mafft/
-    fi
     alias ls='ls --color=auto'
 	#alias qa='qstat -u "*" | sort | grep [0-9]' 
     alias sq='squeue'
@@ -145,13 +124,9 @@ elif [ $OS = "linux" ];then
 	alias c0='ssh compute-0-0'
 	alias backupToPhylo='rsync --progress -avz --exclude-from=$HOME/.rsync_exclude $HOME/ $PHYLO:fromKwy/'
     alias emergencyShutdownHal='sudo rocks run host command=shutdown'
-    #alias svn='env LD_LIBRARY_PATH=/share/apps/serf/lib/ /share/apps/subversion/bin/svn'
-    alias svn='export LD_LIBRARY_PATH=/share/apps/serf/lib/; /share/apps/subversion/bin/svn'
 fi
 
 LD_FLAGS=-L/Library/Developer/CommandLineTools/SDKs/MacOSX11.sdk/usr/lib:/Library/Developer/CommandLineTools/SDKs/MacOSX11.sdk//System/Library/Frameworks:$LD_FLAGS
-
-#temporary exports
 
 #filesystem locations - largely machine independent
 export TRUNK=$HOME/source/garli/garli/trunk/
@@ -202,7 +177,6 @@ export POST_PROCESS_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/postProcessScripts/
 #export NUMORYZA=11
 export NUMFULLORYZA=9
 
-
 export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
 
 export LAGAN_DIR=$HOME/libbuilds/lagan20/
@@ -212,8 +186,6 @@ alias desk='cd $DESK'
 alias lsl='ls -ltrh'
 alias xterm='xterm -ls'
 alias gp='gnuplot'
-#alias synHome='synergyc  -f --name newlap 192.168.1.64'
-alias synHome='synergyc  -f --name newlap 192.168.1.113'
 alias lsl='ls -ltrh'
 alias hist='shist | grep'
 alias mi='nice make -j 2 && nice make install && pwd > $HOME/.lastMake'
@@ -325,33 +297,6 @@ function inEachDir(){
 	fi
 }
 
-function usedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado scotty323 cwlinkem
-	do
-		echo -n "$name	"
-		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
-	done
-	echo -n "total	"
-	qstat -u "*" | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
-}
-
-function queuedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado scotty323 cwlinkem
-	do
-		echo -n "$name	"
-		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
-	done
-	echo -n "total	"
-	qstat -u "*" | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
-}
-
-function dstat(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly
-	do
-		echo -n "$name	"
-		disq_stat -u $name 2>/dev/null
-	done
-}
 
 function mkcd(){
 	mkdir $@
@@ -417,36 +362,6 @@ if [[ $OS == 'darwin' ]]; then
     }
 fi
 
-function kwy (){
-NOPROXY=0
-if [[ $OS == 'darwin' ]]; then
-    NOPROXY=`ifconfig | grep inet | grep 129.237 | wc -l`
-elif [[ $OS == 'cygwin' ]]; then
-    NOPROXY=`ipconfig | grep IPv4 | grep 129.237 | wc -l`
-fi
-
-    if [ "$NOPROXY" -eq 0 ];then
-        ssh -t $PHYLO 'ssh zwickl@129.237.24.139'
-     else
-        ssh $KWY
-     fi
-}
-
-function dkwy (){
-NOPROXY=0
-if [[ $OS == 'darwin' ]]; then
-    NOPROXY=`ifconfig | grep inet | grep 129.237 | wc -l`
-elif [[ $OS == 'cygwin' ]]; then
-    NOPROXY=`ipconfig | grep IPv4 | grep 129.237 | wc -l`
-fi
-
-    if [ "$NOPROXY" -eq 0 ];then
-        ssh -t $PHYLO 'ssh derrick@129.237.24.139'
-     else
-        ssh derrick@129.237.24.139
-     fi
-}
-
 function startScript(){
     if [ ! -e "$@" ];then
         echo "#!/bin/bash" > $@ 
@@ -464,49 +379,6 @@ function startGnuplotScript(){
     echo >> $@
     echo >> $@
     vi +3 $@
-}
-
-function myqrsh(){
-    if [ $# -eq 0 ];then
-        MEM=2
-    else
-        MEM=$@
-    fi
-    echo qrsh -wd $PWD -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
-    qrsh -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
-}
-
-function cdjob(){
-    cd `qstat -j $1 | grep cwd | awk '{print $2}'`
-}
-
-function killAndResubmitJob(){
-    cd `qstat -j $1 | grep cwd | awk '{print $2}'`
-    SCRIPT=`qstat -j $1 | grep script_file | awk '{print $2}'`
-    qdel $1
-    qsub $SCRIPT
-}
-
-function killAllSGE(){
-    for JOB in `qstat | awk '{print $1}' | grep '^[0-9]' | uniq`
-    do
-        qdel $JOB
-    done
-}
-
-function killAllQueued(){
-    for JOB in `qstat | grep qw | awk '{print $1}' | grep '^[0-9]'`
-    do
-        qdel $JOB
-    done
-}
-
-function listJobDirsSGE(){
-    for JOB in `qstat | awk '{print $1}' | grep '^[0-9]'`
-    do
-        echo $JOB
-        qstat -j $JOB | grep workdir
-    done
 }
 
 function cnt(){
@@ -571,11 +443,6 @@ fi
 HISTIGNORE=\&
 HISTFILESIZE=1000
 
-function ogeFullData(){
-    PATH=$PATH:/opt/iCommands/
-    icd /iplant/home/shared/agi_data
-}
-
 if [[ $OS == 'darwin' ]]; then
     #for rbenv ruby utility
     PATH=$PATH:/Users/zwickl/.rbenv/bin
@@ -602,8 +469,7 @@ export PATH
 
 alias backupWorkingDir='find . -type f -not -name "*.gz" | xargs tar czf'   
 
-
-
+#For UA HPC
 # poke the cluster aliases to set PS1 instead of PROMPT_COMMAND to
 # avoid video artifacts; the check for slurm-selector.sh is false if not
 # on shell.
