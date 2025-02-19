@@ -69,9 +69,28 @@ fi
 export UMDGPU=cbcbgpu01.umiacs.umd.edu
 export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
 export HAL=hal.biosci.arizona.edu
+export HPC=hpc.arizona.edu
+export SOTERIA=taub.cougar.hpc.arizona.edu
 
 #ssh aliases
 alias hal='ssh $HAL'
+alias bastion='ssh $HPC'
+alias hpc='ssh -X -J $HPC zwickl@shell.hpc.arizona.edu'
+alias taub='ssh zwickl@taub.cougar.hpc.arizona.edu'
+alias cleese='ssh -J $HPC zwickl@cleese'
+alias chase='ssh -J $HPC zwickl@chase.hpc.arizona.edu'
+alias rocky='ssh 192.168.0.49'
+alias soteria_login='ssh shell.cougar.hpc.arizona.edu'
+alias taub='ssh zwickl@taub.cougar.hpc.arizona.edu'
+alias cameron='ssh cameron.cougar.hpc.arizona.edu'
+alias soteria_build='ssh cameron.cougar.hpc.arizona.edu'
+HPCFILE="zwickl@filexfer.hpc.arizona.edu"
+export LESTER=lester.jaguar.hpc.arizona.edu
+alias lester='ssh __epzwickl@$LESTER'
+alias cui_build='ssh __epzwickl@$LESTER'
+export CHRISTY=christy.jaguar.hpc.arizona.edu
+alias christy='ssh -X zwickl@$CHRISTY'
+alias cui_login='ssh -X zwickl@$CHRISTY'
 
 #machine dependent stuff
 
@@ -606,7 +625,6 @@ if [[ $OS == 'darwin' ]]; then
 	alias temp='sysctl kern.cpu_temp'
 	alias top='top -u'
 	export COPYFILE_DISABLE=true
-	source /opt/intel/cc/9.1.037/bin/iccvars.sh
 	export PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
 
 elif [[ $OS == 'cygwin' ]]; then
@@ -734,6 +752,7 @@ if [[ !( "$SSH_CLIENT" == *"10.141.250.29"* ) && !( "$SSH_CLIENT" == *"10.141.25
 fi
 COMMENT
 
+<<<<<<< HEAD
 export SU2_HOME="/home/u2/zwickl/REPO/SU2"
 export SU2_RUN="$SU2_HOME/install/bin"
 #export PATH="/home/u2/zwickl/REPO/SU2:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/bin/intel64:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/mpi/intel64/libfabric/bin:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/mpi/intel64/bin:/opt/ohpc/pub/compiler/intel_2020_u4/debugger_2020/gdb/intel64/bin:/opt/ohpc/pub/apps/cmake/3.21.3/bin:/opt/ohpc/pub/apps/python/3.9.10/bin:/contrib/jlbredas/wien2k/21.1:/contrib/jlbredas/wien2k/21.1/SRC_structeditor/bin:/contrib/jlbredas/wien2k/21.1/SRC_IRelast/script-elastic:/home/u2/zwickl/bin/pyscripts:/home/u2/zwickl/bin:/home/zwickl/my_usr/local/bin:/home/zwickl/my_usr/bin:/usr/local/bin:/opt/ohpc/pub/utils/prun/1.3:/opt/ohpc/pub/utils/autotools/bin:/opt/ohpc/pub/bin:/opt/TurboVNC/bin:/opt/ohpc/pub/sbin:/usr/bin:/usr/local/sbin:/usr/sbin:.:/home/u2/zwickl/.local/bin:"
@@ -757,3 +776,13 @@ else
 fi
 unset __mamba_setup
 # <<< mamba initialize <<<
+=======
+# Setting PATH for Python 3.8
+# The original version is saved in .profile.pysave
+PATH="/Library/Frameworks/Python.framework/Versions/3.8/bin:${PATH}"
+export PATH
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+
+
+>>>>>>> 1cb8e72 (changes from work mac)
