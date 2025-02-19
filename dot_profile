@@ -132,7 +132,6 @@ if [ $OS = "darwin" ];then
     export TERRAPHY=$DEV/experiments/terraces/terraphyDEV/postStrokeWork.terraphy
 
     export WORKON_HOME=$HOME/virtual-environments/
-    source /Library/Frameworks/Python.framework/Versions/2.7/bin/virtualenvwrapper.sh 
 elif [ $OS = "cygwin" ];then
 	export HOMEDRIVE=/cygdrive/c/
 	export DESK=/cygdrive/f/Desk/
@@ -157,7 +156,6 @@ elif [ $OS = "linux" ];then
 	PATH=/home/zwickl/my_usr/local/bin/:/home/zwickl/my_usr/bin/:$PATH:/home/zwickl/bin/:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
     PATH=$PATH:$HOME/libbuilds/lagan20/
     PATH=/share/apps/subversion/bin/:$PATH
-	export PYTHONPATH=/home/zwickl/my_usr/lib/python2.7/:/home/zwickl/my_usr/lib/python/:/share/apps/Python-2.6.4/lib/python2.6/
 	export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
 	export DEV=$HOME
 	export NCL=/home/zwickl/ncl/
@@ -608,7 +606,6 @@ if [[ $OS == 'darwin' ]]; then
 	alias top='top -u'
 	export COPYFILE_DISABLE=true
 	source /opt/intel/cc/9.1.037/bin/iccvars.sh
-	export PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
 
 elif [[ $OS == 'cygwin' ]]; then
 	stty lnext ^q stop undef start undef
