@@ -2,7 +2,7 @@
 import sys
 
 def usage():
-    print "Usage: <script> filename [column to use] [histogram width]"
+    print("Usage: <script> filename [column to use] [histogram width]")
 
 def makeHisto(lines, width = 1.0, col = 0, bin_start=None):
     #figure out the range of the histogram
@@ -16,7 +16,7 @@ def makeHisto(lines, width = 1.0, col = 0, bin_start=None):
         try:
             val = float(line[col])
             focalCol.append(val)
-        except ValueError:
+        except BaseException:
             sys.stderr.write('ignoring non-numeric row\n')
     #focalCol = [float(line[col]) for line in lines]
     colMin = min(focalCol)
@@ -29,7 +29,7 @@ def makeHisto(lines, width = 1.0, col = 0, bin_start=None):
     end = int(colMax + 1)
     while end > colMax:
         end -= width
-    
+   
     sys.stderr.write("range:\n%f %f %f %f\n" % (start, colMin, colMax, end+width))
 
 #    counts = {}
@@ -43,26 +43,26 @@ def makeHisto(lines, width = 1.0, col = 0, bin_start=None):
         bins.append(0)
         bounds.append(val)
         val += width
-    print "binStart\tbinEnd\tcount\tpercent"
+    print("binStart\tbinEnd\tcount\tpercent")
     for element in focalCol:
         b = 0
         while bounds[b] + width <= element:
             #val = val + width
             b = b + 1
             if b == len(bounds):
-                exit("Error: ran past end of bins")
+                exit("Exception: ran past end of bins")
         bins[b] += 1
     #for c in range(len(bins)):
     for num, b in enumerate(bins):
         #print "%f\t%f\t%d\t%f" % (bounds[c], bounds[c] + width, bins[c], float(bins[c]) / num)
-        print "%f\t%f\t%d\t%f" % (bounds[num], bounds[num] + width, b, float(b) / len(focalCol))
+        print("%f\t%f\t%d\t%f" % (bounds[num], bounds[num] + width, b, float(b) / len(focalCol)))
 '''
         val = start
         while val + width < element:
             val = val + width
         try:
             counts[val] = counts[val] + 1
-        except KeyError:
+        except KeyException:
             sys.exit("val %f not found in dict" % val )
             
     bins = counts.keys()
@@ -82,22 +82,29 @@ col = 0
 start = None
 try:
     col = int(sys.argv[2])
-except StandardError:
+except BaseException:
     pass
 try:
     width = float(sys.argv[3])
-except StandardError:
+except BaseException:
     pass
 
 try:
     start = float(sys.argv[4])
-except StandardError:
+except BaseException:
     pass
 
+sep = None
+if fname.endswith('csv'):
+    sep = ','
+
 try:
-    infile = open(fname, "ru")
+    infile = open(fname, "r")
 except IOError:
     sys.exit("problem opening file %s" % fname)
 
-makeHisto([line.split() for line in infile], width, col, start)
+if sep:
+    makeHisto([line.split(sep) for line in infile], width, col, start)
+else:
+    makeHisto([line.split() for line in infile], width, col, start)
 

@@ -3,12 +3,38 @@
 if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
-
 function scr(){
     if [ ! -e "$1" ];then
         cp .template $1
     fi
     vi +3 $1
+}
+
+#from Sara
+function deconda() 
+{ 
+    conda deactivate > /dev/null 2>&1;
+    IFS=':' read -ra PATHAR <<< "$PATH";
+    for i in "${PATHAR[@]}";
+    do
+        if [[ $i == *"conda"* ]]; then
+            echo "removing $i from PATH";
+        else
+            NEWPATH=$i:$NEWPATH;
+        fi;
+    done;
+    export PATH=$NEWPATH;
+    unset NEWPATH;
+    module unload gnu8 cmake && module load gnu8 cmake;
+    echo;
+    echo "Successfully removed conda"
+}
+
+#from Sara
+function xconda() 
+{ 
+    source ~/.conda_init;
+    conda activate
 }
 
 #determine OS type
@@ -36,57 +62,35 @@ else
 fi
 
 #sytem variables
-export MANPATH=`manpath`:/home/zwickl/my_usr/share/man/
-export PS1="\w/ $ "
+#export MANPATH=`manpath`:/home/zwickl/my_usr/share/man/
+#export PS1="\w/ $ "
 
 #machines
-export CSEM=zwickl@dscr-login-05.oit.duke.edu
-export DUKE=zwickl@godzilla.acpub.duke.edu
-export LONESTAR=zwickl@lonestar.tacc.utexas.edu
-export DLONESTAR=dhillis@lonestar.tacc.utexas.edu
-export LONEWORK=zwickl@lonestar.tacc.utexas.edu:/work/utexas/ib/zwickl/
-export MONTY=zwickl@129.237.138.231
-export KU=zwickl@people.ku.edu
-export HOME2=zwickl@192.168.2.2
-export DESKTOP=zwickl@129.237.139.73
-export KWY=zwickl@129.237.24.139
-export PHYLO=zwickl@phylo.bio.ku.edu
-export HOMECMP="-p 2222 zwickl@66.45.154.119"
-export JASPER=zwickl@129.237.138.173
-export DANIEL=zwickl@machcdxi.getmyip.com
-export HOWIN=129.237.139.38
 export UMDGPU=cbcbgpu01.umiacs.umd.edu
-export LAP_BACKUP_PHYLO=$PHYLO:/mnt/backup1/zwickl/laptop/
-export SAKURA="zwickl@129.237.138.128"
-export LAP=zwickl@129.237.138.142
-export BIGRED=dzwickl@bigred.teragrid.iu.edu
-export ORRORIN=zwickl@orrorin.nescent.org
-export KANG=zwickl@129.237.138.171
 export AMAZON=zwickl@ec2-184-72-132-13.compute-1.amazonaws.com
 export HAL=hal.biosci.arizona.edu
-export WORKLAP=zwickl@128.196.193.227
-export FLOYD=zwickl@128.196.193.200
-export KSMAC=zwickl@129.237.138.142
-export MEDIA=Laura@192.168.1.113
-export GREENTULIP=Laura@192.168.1.136
-export SYNCMEDIA=Laura@192.168.1.113:/cygdrive/g/PicturesSync/
-export OPENTREE=zwickl@opentree-dev.bio.ku.edu
+export HPC=hpc.arizona.edu
+export SOTERIA=taub.cougar.hpc.arizona.edu
 
 #ssh aliases
-alias opentree='ssh $OPENTREE'
-alias lonestar='ssh $LONESTAR'
-alias dlonestar='ssh $DLONESTAR'
-alias csem='ssh zwickl@dscr-login-03.oit.duke.edu'
-alias nescent='ssh derrickzwickl@xserve1.nescent.org'
-alias orrorin='ssh zwickl@orrorin.nescent.org'
-alias duke='ssh zwickl@godzilla.acpub.duke.edu'
-alias tunnelToHome='ssh -L 5899:127.0.0.1:5999 -p 2222 zwickl@24.124.109.231'
-alias tunnelWithinHome='ssh -L 5899:192.168.2.2:5999  zwickl@192.168.2.2'
-alias phylo='ssh $PHYLO'
-alias jasper='ssh $JASPER'
-alias lap='ssh $LAP'
-alias kang='ssh $KANG'
 alias hal='ssh $HAL'
+alias bastion='ssh $HPC'
+alias hpc='ssh -X -J $HPC zwickl@shell.hpc.arizona.edu'
+alias taub='ssh zwickl@taub.cougar.hpc.arizona.edu'
+alias cleese='ssh -J $HPC zwickl@cleese'
+alias chase='ssh -J $HPC zwickl@chase.hpc.arizona.edu'
+alias rocky='ssh 192.168.0.49'
+alias soteria_login='ssh shell.cougar.hpc.arizona.edu'
+alias taub='ssh zwickl@taub.cougar.hpc.arizona.edu'
+alias cameron='ssh cameron.cougar.hpc.arizona.edu'
+alias soteria_build='ssh cameron.cougar.hpc.arizona.edu'
+HPCFILE="zwickl@filexfer.hpc.arizona.edu"
+export LESTER=lester.jaguar.hpc.arizona.edu
+alias lester='ssh __epzwickl@$LESTER'
+alias cui_build='ssh __epzwickl@$LESTER'
+export CHRISTY=christy.jaguar.hpc.arizona.edu
+alias christy='ssh -X zwickl@$CHRISTY'
+alias cui_login='ssh -X zwickl@$CHRISTY'
 
 #machine dependent stuff
 
@@ -95,25 +99,12 @@ if [ $OS = "darwin" ];then
     #alias paup=paup4a147_osx
     alias figtree="java -jar /Applications/FigTree\ v1.4.4.app/Contents/Resources/Java/figtree.jar"
 
-    alias turnOffCPUThrottling='sudo mv /System/Library/Extensions/IOPlatformPluginFamily.kext/Contents/PlugIns/ACPI_SMC_PlatformPlugin.kext/Contents/Resources/MacBookPro8_1.plist ~'
-    alias turnOnCPUThrottling='sudo mv ~/MacBookPro8_1.plist  /System/Library/Extensions/IOPlatformPluginFamily.kext/Contents/PlugIns/ACPI_SMC_PlatformPlugin.kext/Contents/Resources/'
-
-    
-    export DESK=$HOME/Desktop/
-	export DEV=$DESK/GarliDEV/
-	export EF=$DESK/efish/april08/
-	export WIN=$EF/selection/windowStuff/
-	export NCL=$DEV/ncl/ncl-github/
-	export NCL_INST=$NCL/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
-	export NCL_INSTALL_DIR=$NCL/builds/gccNoDynamic/installed/
 
     export  XCTOOLS=`xcode-select -p`/Toolchains/XcodeDefault.xctoolchain//usr/bin
     export PATH=$XCTOOLS:$BREW_BIN:$HOME/bin:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin:$HOME/Desktop/code/MUMmer3.23/:/usr/bin/:/usr/local/bin:/Users/zwickl/.cargo/bin:$PATH
     #export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefaults/installed/lib
     export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH:/Users/zwickl/Desktop/GarliDEV//beagle/beagle-lib/builds/default/installed/usr/local/lib
     export LD_LIBRARY_PATH=/Users/zwickl/Desktop/GarliDEV//beagle/beagle-lib/builds/default/installed/usr/local/lib/:$LD_LIBRAY_PATH
-    #export MAFFT_BINARIES=/usr/local/bin/
-    export MAFFT_BINARIES=
     PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:$PATH"
 	
     #PATH=$HOME/my_usr/bin:$HOME/my_usr/local/bin:$PATH:/usr/local/cuda/bin
@@ -125,189 +116,268 @@ if [ $OS = "darwin" ];then
          rustc $1.rs && ./$1
      }
     alias ls='ls -G'
-    alias Dendroscope='/Applications/Dendroscope3.2/Dendroscope.app/Contents/MacOS/JavaApplicationStub -g'
-    alias inkscape="/Applications/Inkscape.app/Contents/Resources/bin/inkscape"
-    #PATH=/usr/local/Trolltech/Qt-4.8.2/bin:$PATH
-    export PYGOT=$DEV/experiments/pygot/
-    export TERRAPHY=$DEV/experiments/terraces/terraphyDEV/postStrokeWork.terraphy
-
-    export WORKON_HOME=$HOME/virtual-environments/
 elif [ $OS = "cygwin" ];then
-	export HOMEDRIVE=/cygdrive/c/
-	export DESK=/cygdrive/f/Desk/
-        export DEV=$DESK/GarliDEV/
-        export NCL=$DEV/ncl/
-	export NCL_INST=$NCL/branches/v2.1/builds/gccNoDynamic.NCL_CONST_FUNCS/installed/
-	export PROJ=$TRUNK/project/standardGarliVC/
-	#export HOMELAP='zwickl@192.168.1.65'
-	export HOMELAP='zwickl@192.168.1.114'
-	PATH=$PATH:/cygdrive/c/Program\ Files/Java/jre6/bin/
-	PATH=$PATH:$HOME/bin/pyscripts/:/cygdrive/c/Program\ Files/NCBI/blast-2.2.25/bin/
-	PATH=$PATH:/usr/local/emboss/bin/
 	PATH=/usr/bin:$PATH
-	alias backupHomeToG='rsync -av --exclude-from=/home/zwickl/.rsyncBackupExclude /cygdrive/c/Documents\ and\ settings/zwickl/ /cygdrive/g/derrickHomeBackup/'
-	alias backupHomeToI='rsync -av --exclude-from=/home/zwickl/.rsyncBackupExclude /cygdrive/c/Documents\ and\ settings/zwickl/ /cygdrive/i/derrickHomeBackup/'
-	alias backupHomeToJ='rsync -av --exclude-from=/home/zwickl/.rsyncBackupExclude /cygdrive/c/Documents\ and\ settings/zwickl/ /cygdrive/j/derrickHomeBackup/'
-	alias syncWorkDeskUp='rsync -avzu --exclude-from=/home/zwickl/.syncExclude /cygdrive/f/Desk/ $MONTY:WIN_SYNC/Desk/'
-	alias syncWorkDeskDown='rsync -avz --exclude-from=/home/zwickl/.syncExclude $MONTY:WIN_SYNC/Desk/ /cygdrive/f/Desk/'
     alias ls='ls --color=auto'
 elif [ $OS = "linux" ];then
-    export PATH=$HOME/bin:/usr/local/bin:$PATH:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE:$NCL_INST/bin:$HOME/code/MUMmer3.23/
-	PATH=/home/zwickl/my_usr/local/bin/:/home/zwickl/my_usr/bin/:$PATH:/home/zwickl/bin/:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
-    PATH=$PATH:$HOME/libbuilds/lagan20/
-    PATH=/share/apps/subversion/bin/:$PATH
-	export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
+    #export PATH=$HOME/bin:/usr/local/bin:$PATH:$HOME/bin/pyscripts:$HOME/bin/biopython:$HOME/bin/generalScripts:$HOME/bin/$MACHTYPE
+	#PATH=/home/zwickl/my_usr/local/bin/:/home/zwickl/my_usr/bin/:$PATH:/home/zwickl/bin/:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/
+	#export PYTHONPATH=/home/zwickl/my_usr/lib/python2.7/:/home/zwickl/my_usr/lib/python/
+	#export LD_LIBRARY_PATH=/opt/rocks/lib/mysql/:/home/zwickl/googleCodeRepo/branches/beagle/beagle-lib/builds/gccDefault/installed/lib:$LD_LIBRARY_PATH
 	export DEV=$HOME
-	export NCL=/home/zwickl/ncl/
-	export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
-    #unset MAFFT_BINARIES
-    if [ -d /share/apps/lib/mafft/ ];then
-        export MAFFT_BINARIES=/share/apps/lib/mafft/
-    else
-        export MAFFT_BINARIES=$HOME/my_usr/local/libexec/mafft/
-    fi
-    alias ls='ls --color=auto'
-	alias qa='qstat -u "*" | sort | grep [0-9]' 
-	alias qz='qstat | sort | grep [0-9]' 
-	alias devQrsh='qrsh -q dev.q -l h_vmem=4G -l vf=4G'
-	alias ViewLog='vi $TESTS/RUNLOG.log'
-	alias ViewTests='vi $TESTS/TESTRESULTS.log'
-	alias c0='ssh compute-0-0'
-	alias backupToPhylo='rsync --progress -avz --exclude-from=$HOME/.rsync_exclude $HOME/ $PHYLO:fromKwy/'
-    alias emergencyShutdownHal='sudo rocks run host command=shutdown'
-    #alias svn='env LD_LIBRARY_PATH=/share/apps/serf/lib/ /share/apps/subversion/bin/svn'
-    alias svn='export LD_LIBRARY_PATH=/share/apps/serf/lib/; /share/apps/subversion/bin/svn'
-fi
+	#export NCL=/home/zwickl/ncl/
+	#export NCL_INST=$NCL/ncl-2.1/builds/gccNoDynamic/installed/
+   
 
-LD_FLAGS=-L/Library/Developer/CommandLineTools/SDKs/MacOSX11.sdk/usr/lib:/Library/Developer/CommandLineTools/SDKs/MacOSX11.sdk//System/Library/Frameworks:$LD_FLAGS
+    
+######UAHPC#######
 
-#temporary exports
-export HYPHY_SCRIPTS=/Applications/HYPHY/hyphySVN/HYPHY/TemplateBatchFiles/
-export TESTING_EXEC=/Users/zwickl/Desktop/GarliDEV/googleCodeRepo/trunk/builds/iccAsserts/installed/bin/Garli0.961b
-export SAMP=$ROOT_INDEL/singleSite/del2Xins/ranaDepth0.1/totRate0.04/00/
-export ASAMP=$ROOT_INDEL/singleSiteAligned/del2Xins/ranaDepth0.1/totRate0.04/00/
-export MSAMP=$ROOT_INDEL/multiSite/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
-export MASAMP=$ROOT_INDEL/multiSiteAligned/zipfian1.5/del2Xins/ranaDepth0.1/totRate0.04/00/
+    #UAHPC ENV VARS
+    export SQUEUE_FORMAT="%.7i %.9P %.10j %.10Q %.10u %.10a %.2t %.4C %.5m %.3D %.20b %V %R %L"
+    export SACCT_FORMAT="JobID%8,JobName,Partition,User,Account,AllocCPUS%6,State,ExitCode%4,NodeList,Submit,Start,End"
+    export RACK1=r1u[03-18,25-40]n[1-2]
+    export RACK2=r2u[03-18,25-40]n[1-2]
+    export RACK3=r3u[03-18,25-40]n[1-2]
+    export RACK4=r4u[03-18,25-40]n[1-2]
+    export RACK5=r5u[03-18,25-40]n[1-2]
+    export RACK6=r6u[03-18,25-40]n[1-2]
+    export GPUS="r5u11n1 r5u35n1 r5u37n1 r5u39n1 r5u09n1 r5u05n1 r5u33n1 r5u31n1 r5u17n1 r5u25n1 r5u29n1 r5u15n1 r5u27n1 r5u13n1"
+    export BUYINGPUS="r5u05n1 r5u39n1 r5u03n1 r5u37n1 r5u09n1 r5u35n1"
+    export GPULIST="r5u11n1,r5u35n1,r5u37n1,r5u39n1,r5u09n1,r5u05n1,r5u33n1,r5u31n1,r5u17n1,r5u25n1,r5u29n1,r5u15n1,r5u27n1,r5u13n1" 
+    export MIG=r5u13n1
+    export GPUS="r5u11n1 r5u35n1 r5u37n1 r5u39n1 r5u09n1 r5u05n1 r5u33n1 r5u31n1 r5u17n1 r5u25n1 r5u29n1 r5u15n1 r5u27n1 r5u13n1"
+    export BUYINGPUS="r5u05n1 r5u39n1 r5u03n1 r5u37n1 r5u09n1 r5u35n1"
+    export GPULIST="r5u11n1,r5u35n1,r5u37n1,r5u39n1,r5u09n1,r5u05n1,r5u33n1,r5u31n1,r5u17n1,r5u25n1,r5u29n1,r5u15n1,r5u27n1,r5u13n1" 
+    export MIG=r5u13n1
+    export SACCT_FORMAT="jobid,user%15,account%15,JobName,NodeList,reqtres%50,ReqCPUS,State,ExitCode%4, Submit,Start,End,CPUTime"
+    export VENV=/groups/zwickl/virtualenvironments
+    
+    export APPTAINER_CACHEDIR=/groups/zwickl/.apptainer/cache
+    export PIP_CACHE_DIR=/groups/zwickl/.pip/cache
+    export NOTEBOOK_ROOT=/xdisk/zwickl
+    
+    #UAHPC ALIASES
+    alias sq='squeue'
+    alias sa='sacct'
+    alias sb='sbatch'
+    alias sqz='squeue -u zwickl'
+    alias sqps='sq -p standard'
+    alias sqph='sq -p high_priority'
+    alias sqspd='sq -S pd'
+    alias sqsr='sq --state R'
+    alias nb='nodes-busy'
+    alias cqz='squeue -u zwickl | grep -v JOBID | wc -l '
+    alias safe_fm='sudo /usr/local/sbin/safe_fm'
+    alias safe_cp='sudo /usr/local/sbin/safe_cp'
+    alias ujs='user-job-summary'
+    alias sqgpu='sq -S t,P,V  | grep gres '
+
+    alias sqmig='sq --node=$MIG'
+    alias sacctmig='sacct -X  --node=$MIG  --start=2/26/24' 
+    alias nvsmig='ssh $MIG nvidia-smi'
+    alias enter='elgato;inter'
+    alias nenter='puma-tst;  /usr/local/bin/salloc --job-name=interactive --mem-per-cpu=4GB --nodes=1 --ntasks=94 --time=01:00:00 --account=hpcteam --partition=standard --constraint=rocky9'
+    alias winter='interactive -t 4:00:00'
+    alias R4.0='module swap R/4.1 R/4.0; echo R_LIBS=~/R/library_R_v4.0/ > ~/.Renviron; R'
+    alias R4.1='module swap R/4.0 R/4.1; echo R_LIBS=~/R/library_R_v4.1/ > ~/.Renviron; R'
+    alias R4.2='module swap R/4.0 R/4.2; echo R_LIBS=~/R/library_R_v4.2/ > ~/.Renviron; R'
+
+    alias mavail='ModuleCommand avail'
+    alias mshow='ModuleCommand show'
+    alias mlist='ModuleCommand list'
+    alias cleese='ssh cleese'
+    alias chase='ssh chase.hpc.arizona.edu'
+    #alias sq='squeue -o "%.10i %.11P %.10j %.15u %.15g %.2t %.10M %.20V %.6D %R"'
+    alias ucp='sudo /usr/local/sbin/safe_cp'
+    alias ufm='sudo /usr/local/sbin/safe_fm'
+    alias uva="sudo va -u $UNAME"
+    alias uuquota="sudo /usr/local/sbin/suquota -u"
+    alias gep='getent passwd'
+    alias geg='getent group'
+    alias jh='job-history'
+    alias nvs='nvidia-smi'
+    alias apsh='apptainer shell'
+    alias apbu='apptainer build'
 
 
-#filesystem locations - largely machine independent
-export HYPHY_SCRIPTS=/Applications/HYPHY/hyphySVN/HYPHY/TemplateBatchFiles/
-export TRUNK=$DEV/garli-github/garli/trunk/
-export BRANCHES=$DEV/googleCodeRepo/branches/
-export BEAG=$BRANCHES/beagle/
-export PART=$BRANCHES/partitioning/
-export TESTS=$DEV/git/garlitests/
-export TB=$TRUNK/builds/
-export PB=$PART/builds/
 
-export BEAGLE=$DEV/beagle/beagle-lib
-export BEAGLE_LIBPATH=$BEAGLE/builds/default/installed/usr/local/lib/
+####UAHPC FUNCTIONS
 
-export PART_EXEC=$PART/builds/gccAss/installed/bin/Garli
-export PART_EXEC_MPI=$PART/builds/gccAss.MPI/installed/bin/Garli
-export PART_EXEC_DEB=$PART/builds/gccAss.DEB/installed/bin/Garli
-export TRUNK_EXEC=$TRUNK/builds/gccAss/installed/bin/Garli
-export TRUNK_EXEC_DEB=$TRUNK/builds/gccAss.DEB/installed/bin/Garli
-export TRUNK_EXEC_MPI=$TRUNK/builds/gccAss.MPI/installed/bin/Garli
-export TRUNK_EXEC_OMP=$TRUNK/../tag-builds/2.1-release/gccDefault.10.7.5.OMP.builtgcc-4.8.1/installed/bin/Garli
-export TESTING_EXEC=$PART_EXEC
-export TESTING_EXEC_MPI=$PART_EXEC_MPI
-export VER2_EXEC=$DEV/googleCodeRepo/tags/2.0-release/builds/gccAss/installed/bin/Garli
-export INDEL_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/scripts/
-export ROOT_INDEL=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/indelibleSims/
-export TANDY_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/tandyData/scripts
-export ROOT_TANDY=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/tandyData/
-export JANSEN_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64/scripts
-export ROOT_JANSEN=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/jansen64/
-export COMMON_SCRIPTS=$DEV/experiments/orientedGapTests/mixedModel.Oct2010/commonScripts/
 
-export PYTHONPATH=$HOME/bin/pyscripts/:$HOME/bin/biopython/:$PYTHONPATH
+#For UA HPC
+function user { 
+IFS='@' read -ra UNAME <<< "$1"
+    UHOME=$( getent passwd ${UNAME[0]} | cut -d':' -f 6 ); 
+        if [[ "$UHOME" == *"home"* ]] ; then
+            echo; echo "User Found"; printf_new "-" 30 ; echo
+                    export UHOME
+                    echo "User Home: $UHOME, now stored as environment variable: UHOME" ; echo
+                    alias urc="sudo cat $UHOME/.bashrc"
+                    alias uhist="sudo cat $UHOME/.bash_history"
+                    alias uprof="sudo cat $UHOME/.bash_profile"
+                    alias uhome="sudo ls $UHOME/"
+                    export OOD_BASE="ondemand/data/sys/dashboard/batch_connect/sys"
+                    export OOD="$UHOME/$OOD_BASE"
+        else
+            echo "User not found."
+        fi
+}
 
-if [ $OS = "linux" ];then
-    #export ORYZA_ROOT=$DEV/oryza/
-    export ORYZA_SCRIPTS=$DEV/oryza_scripts/
-    export PORYZA_ROOT=$DEV/productionOryza/
-    export ORYZA_ROOT=$PORYZA_ROOT
-    export FULLORYZA_ROOT=$DEV/fullGenomeOryza/
+library () 
+{ 
+message="Searching for system libraries matching keyword: $1";
+echo;
+echo $message;
+printf_new "*" ${#message};
+echo;
+if [[ -n $(ldconfig -p | grep $1) ]]; then
+    ldconfig -p -v | grep --color=auto $1;
+    echo;
 else
-    export ORYZA_SCRIPTS=$DEV/experiments/oryza_scripts/
-    export OLD_ORYZA_ROOT=$DEV/experiments/oryza/
-    export PORYZA_ROOT=$DEV/experiments/productionOryza/
-    export ORYZA_ROOT=$PORYZA_ROOT
-    export FULLORYZA_ROOT=$DEV/experiments/fullGenomeOryza/
-    export FULL_ANALYSES=$ORYZA_ROOT/gramene34_split_cleanedByCSHL/alignmentsAndTrees/ms2006.frac0.5/dag.G1.D4.C4.N5/
+    echo "no libraries found";
+    echo;
 fi
-export G34=$OLD_ORYZA_ROOT/gramene34_omap_genes/
-export C34=$OLD_ORYZA_ROOT/gramene34_cleanedByCSHL/
-export S34=$OLD_ORYZA_ROOT/gramene34_split_cleanedByCSHL/
-export CLUSTC34=$C34/datasetAssembly/withShortModels.withoutSativaTransposonsOrOverlap.ignoreSati.ms2006.frac0.5/paramSweep.reciprocalDag.fixedNearby/geneOrder/dag.G1.D2.C4/nearbySweep/nearby5/
-export CLUSTS34=$S34/datasetAss/noInd/wShort.woSatTransOrOverlap.frac0.5/reciprocalDag/geneOrder/dag.G1.D2.C4/nearbySweep/nearby5/
+}
 
-export SERIOUS=$ORYZA_ROOT/gramene34_omap_genes/datasetAssembly/blastP.clean/seriousRun/
-export SPLITTING=$C34/datasetAssembly/withShortModels.withoutSativaTransposonsOrOverlap.ms2006.frac0.0/paramSweep.reciprocalDag.fixedNearby/geneOrder/joined.G1.D4.C4+G1.D50.C20/nearbySweep/nearby5/
-export RELATIVE_ALIGNMENT_PATH_ORYZA=../../alignments/
-if [ ! -d "$ORYZA_ROOT" ];then
-    export ORYZA_ROOT=/share/work1/zwickl/experiments/oryza/
-    #ls $ORYZA_ROOT &> /dev/null
+
+# poke the cluster aliases to set PS1 instead of PROMPT_COMMAND to
+# avoid video artifacts; the check for slurm-selector.sh is false if not
+# on shell.
+if [ -n "${PROMPT_COMMAND}" -a -r /usr/local/bin/slurm-selector.sh ]; then
+      SavePS1=${PS1}
+      # First, deal with default cluster selection
+        Cur_Cluster=$(eval ${PROMPT_COMMAND} 2>/dev/null)
+          PS1="${Cur_Cluster}${SavePS1}"
+            unset PROMPT_COMMAND
+            # now fix up the cluster aliases so they don't cause visual problems.
+              for c in puma ocelote elgato; do
+                      alias ${c}="PS1=\"(${c}) ${SavePS1}\"; . /usr/local/bin/slurm-selector.sh ${c}; unset PROMPT_COMMAND"
+                  #    alias ${c}="PS1=\"(${c}) ${SavePS1}\"; $(alias ${c}); unset PROMPT_COMMAND"
+              done
+            unset Cur_Cluster SavePS1
 fi
 
-<<DEP
-export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/analysisScripts/
-export ANALYSIS_SCRIPTS_FULLORYZA=$FULLORYZA_ROOT/scripts/analysisScripts/
-export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/alignmentScripts/
-export GENERAL_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/generalScripts/
-export ANNOTATION_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/annotationSplittingScripts/
-export PLOT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/plottingScripts/
-export POST_PROCESS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/postProcessScripts/
-DEP
+    function lsood(){
+        DIR=`gethome $1`/ondemand/data/sys/dashboard/batch_connect/sys
+        echo $DIR
+        sudo ls $DIR 
+    }
+    
+    function foreachgpu(){
+        for G in $GPUS
+        do
+            $@ --node=$G
+        done
+        
+    }
 
-export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/analysisScripts/
-export ANALYSIS_SCRIPTS_FULLORYZA=$FULLORYZA_SCRIPTS/analysisScripts/
-export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/alignmentScripts/
-export GENERAL_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/generalScripts/
-export ANNOTATION_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/annotationSplittingScripts/
-export PLOT_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/plottingScripts/
-export POST_PROCESS_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/postProcessScripts/
-#export NUMORYZA=11
-export NUMFULLORYZA=9
+    function subdirdu(){
+        DIR=$1
+        for F in `sudo ls -a $DIR`
+        do
+            if [ ! $F == ".."* ] ; then
+            sudo du -sh $DIR/$F
+        fi
+        done
+    }
+
+    function sqza(){
+        CUR=$SLURM_CONF
+        for TEST in puma ocelote elgato
+        do
+            if [[ "$CUR" == *"$TEST"* ]]; then
+                RESTORE=$TEST
+            fi
+        done
+
+        for CLUST in puma ocelote elgato
+        do
+            . /usr/local/bin/slurm-selector.sh $CLUST
+            echo "***" $CLUST "***"
+            sqz
+        done
+
+        . /usr/local/bin/slurm-selector.sh $RESTORE
+    }
+    
+    function ModuleCommand(){
+     type module &>  /dev/null
+     if [[ $? ]]; then 
+            ssh cleese module $@
+        else
+            module $@
+        fi
+    }
+    
+    function inter(){
+        interactive -a hpcteam $@
+    }
+
+    function minter(){
+        
+        #/usr/local/bin/salloc --job-name=MIGinteractive --mem-per-cpu=4GB --nodes=1 --ntasks=8 --time=01:00:00 --partition=standard --account=hpcteam --gres=gpu:1g.10gb --reservation=zwickl_35 $@
+        /usr/local/bin/salloc --job-name=MIGinteractive --mem-per-cpu=4GB --nodes=1 --ntasks=8 --time=04:00:00 --partition=standard --account=hpcteam --gres=gpu:nvidia_a100_80gb_pcie_2g.20gb  $@
+        #module load cuda11/11.8 cuda11-sdk/22.11 cuda11-dnn/8.9.2
+    }
 
 
-export BEAST=/home/zwickl/libbuilds/BEASTv1.6.1/
+    function debugIconIntel(){
+        DIR=$PWD
+        CORE=$DIR/$1
+        #module purge
+        #module load intel/2020.4 netcdf-cxx/intel/4.3.1 netcdf-fortran/intel/4.5.3
+        gdb -d /xdisk/zwickl/userQuestions/sylviaTestExample/icon-2.6.1.compiled/ /xdisk/zwickl/userQuestions/sylviaTestExample/icon-2.6.1.compiled/bin/icon $CORE
+        }
+   
 
-export LAGAN_DIR=$HOME/libbuilds/lagan20/
+    function gethome(){
+    getent passwd $1 | grep -o ":/home.*:" | sed 's/://g'
+    }
 
-#command aliases
-alias desk='cd $DESK'
-alias lsl='ls -ltrh'
-alias xterm='xterm -ls'
-alias gp='gnuplot'
-#alias synHome='synergyc  -f --name newlap 192.168.1.64'
-alias synHome='synergyc  -f --name newlap 192.168.1.113'
-alias lsl='ls -ltrh'
-alias hist='shist | grep'
-alias mi='nice make -j 2 && nice make install && pwd > $HOME/.lastMake'
-alias mc='nice make -j 2 && nice make install && nice make check && pwd > $HOME/.lastMake'
-alias dev='cd $DEV'
-alias tunk='cd $TRUNK'
-alias branch='cd $BRANCHES'
-alias fin='grep Final'
-alias cdtr='cd `ls -d $TESTS/rev* | tail -1`'
-alias cdr='cd "`ls -dtr */ | tail -1`"'
-#alias vir='vi `ls -trl . | grep -v "^d" | awk '{print $9}' | tail -n1`'
-alias vir='vi `ls -tr . | tail -1`'
-alias dush='du -shc *'
-alias llog='*.log00.log'
-alias cdt='cd $TESTS'
-alias tabify="perl -p -i -e 's/[ ]+/\t/g'"
-alias vig='vi garli.conf'
-#alias dstat="disq_stat"
-alias dsub="disq_sub"
-alias ddel="disq_del"
+    function lsh(){
+    sudo ls `gethome $1`
+    }
+
+    function uvi(){
+    sudo cat $@ | less
+    }
+
+
+
+########end UAHPC functions ######
+
+
+########end UAHPC######
+fi
+
+#OS independent aliases 
 alias pull="git pull origin"
 alias push="git push origin"
 alias shist="history | readHist"
+alias ls='ls --color=auto'
+alias lsl='ls -ltrh'
+alias hist='shist | grep'
+alias dush='du -shc *'
+
+
+####OS independent functions 
+    function foreach (){
+    if [  "$#" -eq 0 ];then
+    echo enter a command followed by the files to apply it to
+    echo quote commands with arguments, 
+    echo i.e. foreach "ls -l" *.log
+fi
+    CMD=$1
+    shift 1
+    for FILE in  $@
+    do
+        $CMD $FILE
+    done
+}
+
 
 function mark(){
+    #create a named mark for the current working path
     if [ ! "$#" -eq 1 ];then
         echo "Enter a name for this mark"
         return
@@ -316,6 +386,7 @@ function mark(){
 }
 
 function marks(){
+    #list marked paths
     for DIR in $HOME/.markedDirs/*
     do
         echo
@@ -325,6 +396,8 @@ function marks(){
 }
 
 function cdm(){
+    #cd to a named marked path
+    #if no name is specified, list marked paths
     if [ ! "$#" -eq 1 ];then
         echo
         echo "Defined marks"
@@ -334,18 +407,17 @@ function cdm(){
             echo ${DIR##*/}
             cat $DIR
         done
-        #echo "Enter a named mark"
         return
     fi
-    cd `cat $HOME/.markedDirs/$1`
+    
+    markFile=$HOME/.markedDirs/$1
+    if [ ! -e $markFile ]
+    then
+        echo "mark $1 not defined"
+    else
+        cd `cat $HOME/.markedDirs/$1`
+    fi
 }
-
-alias runLast='`cat $HOME/.lastMake`/installed/bin/Garli'
-alias debLast='gdb `cat $HOME/.lastMake`/installed/bin/Garli'
-
-alias phylonet='java -jar $HOME/Desktop/code/PhyloNet_3.5.4.jar'
-
-#functions
 
 function gits(){
     #this won't show untracked files, and is much faster
@@ -379,38 +451,59 @@ function inEachDir(){
 	fi
 }
 
-function usedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado scotty323 cwlinkem
-	do
-		echo -n "$name	"
-		qstat -u $name | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
-	done
-	echo -n "total	"
-	qstat -u "*" | grep [0-9] | grep -v "qw" | awk '{print $9}' | grep [0-9] | sumCol.py
-}
-
-function queuedCount(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly bhurwitz sanderm dboss juliej mcmahonm machado scotty323 cwlinkem
-	do
-		echo -n "$name	"
-		qstat -u $name | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
-	done
-	echo -n "total	"
-	qstat -u "*" | grep [0-9] | grep qw | awk '{print $8}' | grep [0-9] | sumCol.py
-}
-
-function dstat(){
-	for name in zwickl jeet tracyh mholder joaks1 johnkelly
-	do
-		echo -n "$name	"
-		disq_stat -u $name 2>/dev/null
-	done
-}
 
 function mkcd(){
 	mkdir $@
 	cd $@
 }
+
+###end OS independent functions 
+
+<<DEP
+export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/analysisScripts/
+export ANALYSIS_SCRIPTS_FULLORYZA=$FULLORYZA_ROOT/scripts/analysisScripts/
+export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/alignmentScripts/
+export GENERAL_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/generalScripts/
+export ANNOTATION_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/annotationSplittingScripts/
+export PLOT_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/plottingScripts/
+export POST_PROCESS_SCRIPTS_ORYZA=$ORYZA_ROOT/scripts/postProcessScripts/
+DEP
+
+#export ANALYSIS_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/analysisScripts/
+#export ANALYSIS_SCRIPTS_FULLORYZA=$FULLORYZA_SCRIPTS/analysisScripts/
+#export ALIGNMENT_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/alignmentScripts/
+#export GENERAL_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/generalScripts/
+#export ANNOTATION_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/annotationSplittingScripts/
+#export PLOT_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/plottingScripts/
+#export POST_PROCESS_SCRIPTS_ORYZA=$ORYZA_SCRIPTS/postProcessScripts/
+#export NUMORYZA=11
+#export NUMFULLORYZA=9
+
+
+#specialized command aliases
+alias desk='cd $DESK'
+alias xterm='xterm -ls'
+alias gp='gnuplot'
+alias mi='nice make -j 2 && nice make install && pwd > $HOME/.lastMake'
+alias mc='nice make -j 2 && nice make install && nice make check && pwd > $HOME/.lastMake'
+alias dev='cd $DEV'
+alias tunk='cd $TRUNK'
+alias branch='cd $BRANCHES'
+alias fin='grep Final'
+alias cdtr='cd `ls -d $TESTS/rev* | tail -1`'
+alias cdr='cd "`ls -dtr */ | tail -1`"'
+#alias vir='vi `ls -trl . | grep -v "^d" | awk '{print $9}' | tail -n1`'
+alias vir='vi `ls -tr . | tail -1`'
+alias llog='*.log00.log'
+alias cdt='cd $TESTS'
+alias tabify="perl -p -i -e 's/[ ]+/\t/g'"
+alias vig='vi garli.conf'
+#alias dstat="disq_stat"
+alias dsub="disq_sub"
+alias ddel="disq_del"
+
+
+#specialized functions
 
 function vm(){
     if [ $# -eq 2 ];then
@@ -471,36 +564,6 @@ if [[ $OS == 'darwin' ]]; then
     }
 fi
 
-function kwy (){
-NOPROXY=0
-if [[ $OS == 'darwin' ]]; then
-    NOPROXY=`ifconfig | grep inet | grep 129.237 | wc -l`
-elif [[ $OS == 'cygwin' ]]; then
-    NOPROXY=`ipconfig | grep IPv4 | grep 129.237 | wc -l`
-fi
-
-    if [ "$NOPROXY" -eq 0 ];then
-        ssh -t $PHYLO 'ssh zwickl@129.237.24.139'
-     else
-        ssh $KWY
-     fi
-}
-
-function dkwy (){
-NOPROXY=0
-if [[ $OS == 'darwin' ]]; then
-    NOPROXY=`ifconfig | grep inet | grep 129.237 | wc -l`
-elif [[ $OS == 'cygwin' ]]; then
-    NOPROXY=`ipconfig | grep IPv4 | grep 129.237 | wc -l`
-fi
-
-    if [ "$NOPROXY" -eq 0 ];then
-        ssh -t $PHYLO 'ssh derrick@129.237.24.139'
-     else
-        ssh derrick@129.237.24.139
-     fi
-}
-
 function startScript(){
     if [ ! -e "$@" ];then
         echo "#!/bin/bash" > $@ 
@@ -518,49 +581,6 @@ function startGnuplotScript(){
     echo >> $@
     echo >> $@
     vi +3 $@
-}
-
-function myqrsh(){
-    if [ $# -eq 0 ];then
-        MEM=2
-    else
-        MEM=$@
-    fi
-    echo qrsh -wd $PWD -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
-    qrsh -l h_vmem="$MEM"G -l s_vmem="$MEM"G -l vf="$MEM"G
-}
-
-function cdjob(){
-    cd `qstat -j $1 | grep cwd | awk '{print $2}'`
-}
-
-function killAndResubmitJob(){
-    cd `qstat -j $1 | grep cwd | awk '{print $2}'`
-    SCRIPT=`qstat -j $1 | grep script_file | awk '{print $2}'`
-    qdel $1
-    qsub $SCRIPT
-}
-
-function killAllSGE(){
-    for JOB in `qstat | awk '{print $1}' | grep '^[0-9]' | uniq`
-    do
-        qdel $JOB
-    done
-}
-
-function killAllQueued(){
-    for JOB in `qstat | grep qw | awk '{print $1}' | grep '^[0-9]'`
-    do
-        qdel $JOB
-    done
-}
-
-function listJobDirsSGE(){
-    for JOB in `qstat | awk '{print $1}' | grep '^[0-9]'`
-    do
-        echo $JOB
-        qstat -j $JOB | grep workdir
-    done
 }
 
 function cnt(){
@@ -620,34 +640,138 @@ elif [[ $OS == 'cygwin' ]]; then
 
 fi
 
-#ignore sucessive duplicate commands
-HISTIGNORE=\&
-HISTFILESIZE=1000
 
-function ogeFullData(){
-    PATH=$PATH:/opt/iCommands/
-    icd /iplant/home/shared/agi_data
+function dotdu(){
+for DIR in `sudo ls -a  $1`
+do
+    if [[ $DIR == "."* ]]; then
+        if [[ $DIR == "." ]]; then
+            continue
+        fi
+        if [[ $DIR == ".." ]]; then
+            continue
+        fi
+    sudo du -hs $1/$DIR
+    fi
+done
 }
 
-if [[ $OS == 'darwin' ]]; then
-    #for rbenv ruby utility
-    PATH=$PATH:/Users/zwickl/.rbenv/bin
 
-    # Setting PATH for Python 2.7
-    # The orginal version is saved in .profile.pysave
-    PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:${PATH}"
-    export PATH
+function activate(){
+    VENV_PATH=$VENVV/$1/
+    export VENV_PATH
+    if [ ! -d $VENV_PATH ]; then
+        drectory $VENV_OPATH not found for virtual environment $1
+    fi
 
-    export ANDROIDSDK=$HOME/android_dev/adt-bundle-mac-x86_64-20130522/sdk
-    export ANDROIDNDK=$HOME/android_dev/android-ndk-r8e
-    export ANDROIDNDKVER=r8e
-    export ANDROIDAPI=14
+# source $VENV_PATH/bin/activate  # commented out by conda initialize
+}
 
-    export PATH=$ANDROIDNDK:$ANDROIDSDK/tools:$PATH
+
+alias backupWorkingDir='find . -type f -not -name "*.gz" | xargs tar czf'   
+
+#export path=/home/u2/zwickl/bin:/home/zwickl/my_usr/local/bin/:/home/zwickl/my_usr/bin/:/home/u2/zwickl/bin:/usr/local/bin:/opt/ohpc/pub/apps/cmake/3.21.3/bin:/home/zwickl/my_usr/local/bin:/home/zwickl/my_usr/bin:/home/u2/zwickl/bin:/usr/local/bin:/opt/ohpc/pub/mpi/openmpi3-gnu8/3.1.4/bin:/opt/ohpc/pub/compiler/gcc/8.3.0/bin:/opt/ohpc/pub/utils/prun/1.3:/opt/ohpc/pub/utils/autotools/bin:/opt/ohpc/pub/bin:/opt/TurboVNC/bin:/opt/ohpc/pub/sbin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/u2/zwickl/bin/pyscripts:/home/u2/zwickl/bin/biopython:/home/u2/zwickl/bin/generalScripts:/home/u2/zwickl/bin/x86_64-redhat-linux-gnu:/bin:/home/u2/zwickl/code/MUMmer3.23:/home/zwickl/bin:/share/apps/bin:/share/apps/opt/gdb/bin:/usr/local/cuda/bin:/share/apps/opt/gcc/bin:/home/u2/zwickl/libbuilds/lagan20:/home/u2/zwickl/.local/bin:/home/zwickl/ncl/ncl-2.1/builds/gccNoDynamic/installed/bin:/home/u2/zwickl/bin/pyscripts:/home/u2/zwickl/bin/biopython:/home/u2/zwickl/bin/generalScripts:/home/u2/zwickl/bin/x86_64-redhat-linux-gnu:/home/zwickl/ncl//ncl-2.1/builds/gccNoDynamic/installed//bin:/home/u2/zwickl/code/MUMmer3.23/:/home/zwickl/bin/:/share/apps/bin/:/share/apps/opt/gdb/bin/:/usr/local/cuda/bin:/share/apps/opt/gcc/bin/:/home/u2/zwickl/libbuilds/lagan20/
+
+export PATH=~/bin/pyscripts:/home/u2/zwickl/bin:/home/zwickl/my_usr/local/bin/:/home/zwickl/my_usr/bin/:/home/u2/zwickl/bin:/usr/local/bin:$PATH
+
+
+#version with mutation++ built on cleese, copied here:
+#/xdisk/zwickl/userQuestions/danielfraijo.clustercrash/SU2_Install-withmutation++BuiltonCleese
+#troubleshooting cluster crashing problem from danielfraijo
+#this is analogous to stuff that comes from his bashrc
+#export SU2_RUN=/xdisk/zwickl/userQuestions/danielfraijo.clustercrash/REPO/SU2/SU2_Install/bin
+#export SU2_HOME=/xdisk/zwickl/userQuestions/danielfraijo.clustercrash/REPO/SU2
+#export SU2_RUN=/xdisk/zwickl/userQuestions/danielfraijo.clustercrash/SU2_Install-withmutation++BuiltonCleese/bin/
+#export SU2_HOME=/xdisk/zwickl/userQuestions/danielfraijo.clustercrash/SU2_Install-withmutation++BuiltonCleese
+#export PATH=$PATH:$SU2_RUN
+#export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+
+#**Mutation++**
+#export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
+#export LD_LIBRARY_PATH=$SU2_HOME/install/usr/local/lib64:$LD_LIBRARY_PATH
+#export LD_LIBRARY_PATH=$SU2_HOME/build/subprojects/Mutationpp:$LD_LIBRARY_PATH
+
+
+#export CESMCASEDIR=/xdisk/zwickl/userQuestions/CESM.leongwaisiu/CESMCASES
+#export CESMDATAROOT=/xdisk/zwickl/userQuestions/CESM.leongwaisiu/CESMDATAROOT
+
+
+export NOTEBOOK_ROOT=/xdisk/zwickl
+
+
+# added by WIEN2k: BEGIN
+# --------------------------------------------------------
+alias lsi="ls -aslp *.in*"
+alias lso="ls -aslp *.output*"
+alias lsd="ls -aslp *.def"
+alias lsc="ls -aslp *.clm*"
+alias lss="ls -aslp *.scf* */*.scf"
+alias lse="ls -aslp *.error"
+alias LS="ls -aslp | grep /"
+alias pslapw="ps -ef |grep "lapw""
+alias cdw="cd /home/u2/zwickl/WIEN2k"
+if [ "$OMP_NUM_THREADS" = "" ]; then export OMP_NUM_THREADS=1; fi
+#export LD_LIBRARY_PATH=.....
+export EDITOR="vim"
+export SCRATCH=/tmp
+if [ "$WIENROOT" = "" ]; then export WIENROOT=/contrib/jlbredas/wien2k/21.1/; fi
+export W2WEB_CASE_BASEDIR=/home/u2/zwickl/WIEN2k
+export STRUCTEDIT_PATH=$WIENROOT/SRC_structeditor/bin
+export PDFREADER=evince
+export PATH=$WIENROOT:$STRUCTEDIT_PATH:$WIENROOT/SRC_IRelast/script-elastic:$PATH:.
+export OCTAVE_EXEC_PATH=${PATH}::
+export OCTAVE_PATH=${STRUCTEDIT_PATH}::
+
+export PATH=$PATH:$WIENROOT:.
+ulimit -s unlimited
+alias octave="octave -p $OCTAVE_PATH"
+# --------------------------------------------------------
+# added by WIEN2k: END 
+
+
+#Want o load required modules if this shell comes from a Wien2K process started by ssh.
+#We can't perfectly diagnose whether this shell was started by Wien2K
+#This will work properly for Wien purposes, 
+#but ciould load the modules in other unintended cases 
+#(anytime that a job starts subproceses by SSH, which isn't common.
+#Criteria:
+#A non-interactive ssh session will have no SSH_TTY set, so checking for that.
+#SSH_CLIENT variable shows the system that the ssh shell originated from and 
+#will look like SSH_CLIENT=10.141.250.28 37706 22
+#Checking that client does not match the login nodes (junonia and wentletrap) IPs
+#This ensure that these modules are not loaded during a normal slurm submission, 
+#only when the ssh is directed from one compute node to another
+#the IPs might need to be adjusted if login nodes change
+: << COMMENT
+if [[ !( "$SSH_CLIENT" == *"10.141.250.29"* ) && !( "$SSH_CLIENT" == *"10.141.250.28"* ) && ( -z "$SSH_TTY" ) ]]; then
+    if module is-loaded gnu8 ;then
+        module unload openmpi3
+        module swap gnu8 intel
+    fi
+    module load aocl-fftw-intel
 fi
+COMMENT
 
-# Setting PATH for Python 3.8
-# The original version is saved in .profile.pysave
-PATH="/Library/Frameworks/Python.framework/Versions/3.8/bin:${PATH}"
-export PATH
-. "$HOME/.cargo/env"
+export SU2_HOME="/home/u2/zwickl/REPO/SU2"
+export SU2_RUN="$SU2_HOME/install/bin"
+#export PATH="/home/u2/zwickl/REPO/SU2:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/bin/intel64:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/mpi/intel64/libfabric/bin:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/mpi/intel64/bin:/opt/ohpc/pub/compiler/intel_2020_u4/debugger_2020/gdb/intel64/bin:/opt/ohpc/pub/apps/cmake/3.21.3/bin:/opt/ohpc/pub/apps/python/3.9.10/bin:/contrib/jlbredas/wien2k/21.1:/contrib/jlbredas/wien2k/21.1/SRC_structeditor/bin:/contrib/jlbredas/wien2k/21.1/SRC_IRelast/script-elastic:/home/u2/zwickl/bin/pyscripts:/home/u2/zwickl/bin:/home/zwickl/my_usr/local/bin:/home/zwickl/my_usr/bin:/usr/local/bin:/opt/ohpc/pub/utils/prun/1.3:/opt/ohpc/pub/utils/autotools/bin:/opt/ohpc/pub/bin:/opt/TurboVNC/bin:/opt/ohpc/pub/sbin:/usr/bin:/usr/local/sbin:/usr/sbin:.:/home/u2/zwickl/.local/bin:"
+export PYTHONPATH=":"
+export MPP_DIRECTORY="$SU2_HOME/subprojects/Mutationpp"
+export MPP_DATA_DIRECTORY="$MPP_DIRECTORY/data/"
+#libmutation__.so library is here, not /install/lib64 as suggested by install:
+#export LD_LIBRARY_PATH="$SU2_HOME/build/subprojects/Mutationpp:/opt/ohpc/pub/compiler/intel_2020_u4/lib/intel64:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/compiler/lib/intel64_lin:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/mpi/intel64/libfabric/lib:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/mpi/intel64/lib/release:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/mpi/intel64/lib:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/ipp/lib/intel64:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/mkl/lib/intel64_lin:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/tbb/lib/intel64/gcc4.7:/opt/ohpc/pub/compiler/intel_2020_u4/debugger_2020/libipt/intel64/lib:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/daal/lib/intel64_lin:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/daal/../tbb/lib/intel64_lin/gcc4.4:/opt/ohpc/pub/apps/python/3.9.10/lib"
+#export PATH="/install/bin:/home/u2/zwickl/REPO/SU2:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/bin/intel64:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/mpi/intel64/libfabric/bin:/opt/ohpc/pub/compiler/intel_2020_u4/compilers_and_libraries/linux/mpi/intel64/bin:/opt/ohpc/pub/compiler/intel_2020_u4/debugger_2020/gdb/intel64/bin:/opt/ohpc/pub/apps/cmake/3.21.3/bin:/opt/ohpc/pub/apps/python/3.9.10/bin:/contrib/jlbredas/wien2k/21.1:/contrib/jlbredas/wien2k/21.1/SRC_structeditor/bin:/contrib/jlbredas/wien2k/21.1/SRC_IRelast/script-elastic:/home/u2/zwickl/bin/pyscripts:/home/u2/zwickl/bin:/home/zwickl/my_usr/local/bin:/home/zwickl/my_usr/bin:/usr/local/bin:/opt/ohpc/pub/utils/prun/1.3:/opt/ohpc/pub/utils/autotools/bin:/opt/ohpc/pub/bin:/opt/TurboVNC/bin:/opt/ohpc/pub/sbin:/usr/bin:/usr/local/sbin:/usr/sbin:.:/home/u2/zwickl/.local/bin"
+
+
+# >>> mamba initialize >>>
+# !! Contents within this block are managed by 'mamba init' !!
+export MAMBA_EXE='/home/u2/zwickl/.local/bin/micromamba';
+export MAMBA_ROOT_PREFIX='y';
+__mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__mamba_setup"
+else
+    alias micromamba="$MAMBA_EXE"  # Fallback on help from mamba activate
+fi
+unset __mamba_setup
+# <<< mamba initialize <<<
